@@ -65,6 +65,11 @@ curl -X POST http://localhost:8000/analyze \
   -H "Content-Type: application/json" \
   -d '{"ticker": "AAPL"}'
 ```
+### 6. Check Analysis REsult
+- Swap {"analysis_id"} with your analysis_id given from previous command.
+```bash
+curl http://localhost:8000/analyze/{"analysis_id"}
+```
 
 **🎉 Done!** API docs at http://localhost:8000/docs
 
@@ -703,10 +708,11 @@ def get_your_data(self, limit: int = 10) -> List[Dict]:
 
 ## 📚 Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 3 minutes
-- **[TEST_DATABASE.md](TEST_DATABASE.md)** - Complete database guide
-- **API Docs** - http://localhost:8000/docs (interactive)
-- **Examples** - See `examples/` directory
+
+   - **[getting-started](docs/gettig-started.md)**
+   - **[api-reference](docs/api-reference.md)**
+   - **[architecture](docs/architecture.md)**
+   - **[creating-agents](docs/creating-agents.md)**
 
 ---
 

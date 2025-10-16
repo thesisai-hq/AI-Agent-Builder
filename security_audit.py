@@ -1,144 +1,112 @@
 """
-Security Audit Script - Run before committing
+Security utilities - UPDATED for complete database
 """
 
-import os
 import re
-import sys
+from typing import Set
 
-
-def check_hardcoded_credentials():
-    """Check for hardcoded credentials in code"""
-    print("🔍 Checking for hardcoded credentials...")
-
-    issues = []
-    patterns = [
-        (r'password\s*=\s*["\'](?!.*\$|.*getenv)[^"\']+["\']', "Hardcoded password"),
-        (r'api_key\s*=\s*["\'][^"\']+["\']', "Hardcoded API key"),
-        (r'secret\s*=\s*["\'][^"\']+["\']', "Hardcoded secret"),
-        (r"postgresql://[^:]+:[^@]+@", "Credentials in connection string"),
+# Table whitelist - PREVENTS SQL INJECTION
+# UPDATED with all 13 mock tables
+ALLOWED_TABLES: Set[str] = frozenset(
+    [
+        # Analysis storage
+        "analyses",
+        # Fundamental data
+        "mock_fundamentals",
+        "mock_balance_sheet",
+        "mock_cash_flow",
+        "mock_earnings",
+        "mock_sec_filings",
+        # Technical data
+        "mock_prices",
+        "mock_technical_indicators",
+        # Sentiment data
+        "mock_news",
+        "mock_analyst_ratings",
+        "mock_insider_trades",
+        # Risk data
+        "mock_risk_metrics",
+        "mock_options_data",
+        # Macro data
+        "mock_macro_indicators",
     ]
-
-    for root, dirs, files in os.walk("agent_builder"):
-        for file in files:
-            if file.endswith(".py"):
-                filepath = os.path.join(root, file)
-                with open(filepath, "r") as f:
-                    content = f.read()
-                    for pattern, issue_type in patterns:
-                        matches = re.findall(pattern, content, re.IGNORECASE)
-                        if matches:
-                            issues.append(f"{filepath}: {issue_type}")
-
-    if issues:
-        print("❌ Found credential issues:")
-        for issue in issues:
-            print(f"   - {issue}")
-        return False
-    else:
-        print("   ✅ No hardcoded credentials found")
-        return True
+)
 
 
-def check_env_in_git():
-    """Check if .env is excluded from git"""
-    print("\n🔍 Checking .gitignore...")
+def validate_table_name(table: str) -> str:
+    """
+    Validate table name to prevent SQL injection
 
-    if not os.path.exists(".gitignore"):
-        print("   ❌ .gitignore missing!")
-        return False
+    CRITICAL: Prevents malicious table names from executing arbitrary SQL
 
-    with open(".gitignore", "r") as f:
-        content = f.read()
+    Args:
+        table: Table name to validate
 
-    if ".env" in content:
-        print("   ✅ .env excluded from git")
-        return True
-    else:
-        print("   ❌ .env not in .gitignore!")
-        return False
+    Returns:
+        Validated table name
 
+    Raises:
+        ValueError: If table name is not in whitelist
 
-def check_sql_injection():
-    """Check for SQL injection vulnerabilities"""
-    print("\n🔍 Checking for SQL injection risks...")
-
-    issues = []
-
-    # Check repository.py for table validation
-    repo_file = "agent_builder/repositories/repository.py"
-    if os.path.exists(repo_file):
-        with open(repo_file, "r") as f:
-            content = f.read()
-
-        if "validate_table_name" in content:
-            print("   ✅ Table name validation present")
-        else:
-            issues.append("repository.py: Missing table name validation")
-
-    if issues:
-        print("   ❌ Found SQL injection risks:")
-        for issue in issues:
-            print(f"      - {issue}")
-        return False
-    else:
-        print("   ✅ No obvious SQL injection vulnerabilities")
-        return True
+    Example:
+        >>> validate_table_name('mock_fundamentals')  # OK
+        'mock_fundamentals'
+        >>> validate_table_name('users; DROP TABLE analyses--')  # BLOCKED
+        ValueError: Invalid table name
+    """
+    if table not in ALLOWED_TABLES:
+        raise ValueError(f"Invalid table name: {table}")
+    return table
 
 
-def check_required_files():
-    """Check for required open source files"""
-    print("\n🔍 Checking required files...")
+def sanitize_ticker(ticker: str) -> str:
+    """
+    Sanitize stock ticker symbol
 
-    required = {
-        "LICENSE": "License file",
-        "README.md": "Project documentation",
-        ".env.example": "Environment template",
-        "CONTRIBUTING.md": "Contribution guidelines",
-    }
+    Only allows: A-Z letters, uppercase, 1-5 characters
 
-    missing = []
-    for file, desc in required.items():
-        if os.path.exists(file):
-            print(f"   ✅ {file}")
-        else:
-            missing.append(f"{file} - {desc}")
+    Args:
+        ticker: Stock ticker to sanitize
 
-    if missing:
-        print("   ⚠️  Missing files:")
-        for item in missing:
-            print(f"      - {item}")
-        return False
+    Returns:
+        Sanitized ticker
 
-    return True
+    Raises:
+        ValueError: If ticker format is invalid
 
+    Example:
+        >>> sanitize_ticker('AAPL')
+        'AAPL'
+        >>> sanitize_ticker('aapl')
+        'AAPL'
+        >>> sanitize_ticker('AAPL; DROP TABLE--')  # BLOCKED
+        ValueError: Invalid ticker
+    """
+    ticker = ticker.upper().strip()
 
-def main():
-    """Run security audit"""
-    print("=" * 60)
-    print("🛡️  Security Audit for Open Source Release")
-    print("=" * 60)
+    # Only allow A-Z, 1-5 characters
+    if not re.match(r"^[A-Z]{1,5}$", ticker):
+        raise ValueError(f"Invalid ticker format: {ticker}")
 
-    checks = [
-        check_hardcoded_credentials(),
-        check_env_in_git(),
-        check_sql_injection(),
-        check_required_files(),
-    ]
-
-    print("\n" + "=" * 60)
-
-    if all(checks):
-        print("✅ ALL SECURITY CHECKS PASSED!")
-        print("=" * 60)
-        print("\n🎉 Ready for public GitHub release!")
-        return 0
-    else:
-        print("❌ SECURITY ISSUES FOUND!")
-        print("=" * 60)
-        print("\n⚠️  DO NOT commit to public repo until fixed!")
-        return 1
+    return ticker
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+def validate_agent_id(agent_id: str) -> str:
+    """
+    Validate agent ID format
+
+    Only allows: a-z, 0-9, underscore, 1-50 characters
+
+    Args:
+        agent_id: Agent ID to validate
+
+    Returns:
+        Validated agent ID
+
+    Raises:
+        ValueError: If agent ID format is invalid
+    """
+    if not re.match(r"^[a-z0-9_]{1,50}$", agent_id):
+        raise ValueError(f"Invalid agent ID format: {agent_id}")
+
+    return agent_id
