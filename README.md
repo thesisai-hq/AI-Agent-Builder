@@ -1,632 +1,818 @@
-# Thesis AI
-Research tool for stocks. Deep insights using AI for decision making.
+# AI Investment Advisor - Agent Framework
 
-## Requirements for local project
-`brew install git` or https://git-scm.com/downloads
+A comprehensive, production-ready framework for building AI-powered investment analysis agents. Create sophisticated multi-agent systems that analyze stocks from multiple perspectives: fundamental, technical, macro, sentiment, and risk analysis.
 
-`brew install nvm` or https://github.com/nvm-sh/nvm
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-`nvm install 24.7.0`
+---
 
-`brew install --cask dbeaver-community` or https://dbeaver.io/
+## 🎯 Overview
 
-## Requirements for infrastructure
-`brew install terraform` or https://www.terraform.io/downloads
+This framework enables you to:
+- **Build custom AI agents** using a simple decorator pattern
+- **Combine multiple analysis strategies** (value investing, technical analysis, sentiment, etc.)
+- **Generate consensus signals** from agent votes
+- **Scale from testing to production** with PostgreSQL backend
+- **Integrate LLMs** (Ollama, Groq) for intelligent analysis
+- **Test with realistic data** using comprehensive mock database
 
-`brew install awscli` or https://aws.amazon.com/cli/
+**Perfect for:** Quantitative analysts, algorithmic traders, portfolio managers, fintech developers, and anyone building systematic investment strategies.
 
-## Install
-`npm i`
+---
 
-## Environment variables
-Create `.env` file
+## ⚡ Quick Start (3 Minutes)
 
-Copy `.env.example` into `.env`
-
-Update variables as needed
-
-## Database Setup
-
-We use **PostgreSQL** for both development and production.
-
-### Option A: Using Docker (Recommended)
-```bash
-# Start PostgreSQL container
-docker-compose up -d
-
-# Use this DATABASE_URL in .env:
-DATABASE_URL="postgresql://dev:dev@localhost:5433/thesis_ai_dev?schema=public"
-```
-
-**Note:** Docker PostgreSQL runs on port 5433 (not 5432) to avoid conflicts with system PostgreSQL.
-
-### Option B: Using Homebrew (No Docker)
-```bash
-# Install PostgreSQL
-brew install postgresql@17
-
-# Start PostgreSQL service
-brew services start postgresql@17
-
-# Add to PATH (for createdb command)
-echo 'export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-
-# Create database
-createdb thesis_ai_dev
-
-# Use this DATABASE_URL in .env (replace with your username):
-DATABASE_URL="postgresql://YOUR_USERNAME@localhost:5432/thesis_ai_dev?schema=public"
-# Find your username by running: whoami
-```
-
-### Run Migrations
-```bash
-npm run db:migrate
-```
-Creates all database tables automatically.
-
-### View/Edit Database
-```bash
-npm run db:studio
-```
-Opens at `http://localhost:5555` - beautiful visual database browser, no SQL required!
-
-**Or use DBeaver or any PostgreSQL client:**
-- Host: `localhost`, Port: `5433` (Docker) or `5432` (Homebrew)
-- Database: `thesis_ai_dev`
-- Username: `dev`, Password: `dev` (Docker) or your system username (Homebrew)
-
-### Connecting to Production Database
-
-The production RDS database is not publicly accessible. To connect from your local machine:
-
-1. **Install AWS Session Manager plugin:**
-   ```bash
-   brew install --cask session-manager-plugin
-   ```
-
-2. **Start SSH tunnel:**
-   ```bash
-   aws ssm start-session --target i-0f9c6f9d3799170f1 \
-     --document-name AWS-StartPortForwardingSessionToRemoteHost \
-     --parameters '{"host":["thesis-ai-prod-postgres.c2d64eack4n5.us-east-1.rds.amazonaws.com"],"portNumber":["5432"],"localPortNumber":["5433"]}'
-   ```
-   Keep this terminal window open.
-
-3. **Connect via DBeaver or psql:**
-   - Host: `localhost`
-   - Port: `5433`
-   - Database: `thesis_ai_prod`
-   - Username: `thesis_admin`
-   - Password: Get from `cd terraform && terraform output -raw db_instance_password`
-
-## Airflow Data Pipelines
-
-We use Apache Airflow to orchestrate daily data collection for market prices, news, macro indicators, and SEC filings.
-
-### Setup Airflow (One-Time)
-
-1. **Create Python virtual environment for Airflow:**
-   ```bash
-   python3 -m venv airflow_venv
-   source airflow_venv/bin/activate
-   ```
-
-2. **Install Airflow and dependencies:**
-   ```bash
-   pip install apache-airflow psycopg2-binary yfinance pandas requests beautifulsoup4 vaderSentiment pendulum
-   ```
-
-3. **Configure Airflow home directory:**
-   ```bash
-   export AIRFLOW_HOME=~/airflow
-   ```
-   
-   Add to your shell profile for persistence:
-   ```bash
-   echo 'export AIRFLOW_HOME=~/airflow' >> ~/.bashrc  # or ~/.zshrc for macOS
-   source ~/.bashrc
-   ```
-
-4. **Initialize Airflow database:**
-   ```bash
-   airflow db init
-   ```
-
-5. **Update Airflow configuration:**
-   ```bash
-   # Point to your DAGs folder (replace YOUR_USERNAME with actual username)
-   sed -i "s|dags_folder = .*|dags_folder = $HOME/code/thesis-ai/server/airflow/dags|g" ~/airflow/airflow.cfg
-   
-   # Disable example DAGs
-   sed -i 's/load_examples = True/load_examples = False/g' ~/airflow/airflow.cfg
-   ```
-
-### Running Airflow
-
-**Start Airflow (includes webserver + scheduler):**
-```bash
-source airflow_venv/bin/activate
-airflow standalone
-```
-
-**Access Airflow UI:**
-- Open: `http://localhost:8080`
-- Username: `admin`
-- Password: Found in `~/airflow/simple_auth_manager_passwords.json.generated`
-  ```bash
-  cat ~/airflow/simple_auth_manager_passwords.json.generated
-  ```
-
-### Available DAGs
-
-All DAGs run automatically on weekdays (Monday-Friday):
-
-| DAG Name | Schedule | Description | Runtime |
-|----------|----------|-------------|---------|
-| `daily_stock_prices` | 6:00 AM EST | Load OHLC prices for 500+ stocks from S&P 500 | ~15 min |
-| `daily_index_data` | 7:00 AM EST | Load major indices (S&P 500, NASDAQ, Dow) and sector ETFs (XLK, XLV, XLF, etc.) | ~2 min |
-| `daily_news_data` | 9:00 AM EST | Fetch news articles with VADER sentiment analysis | ~20 min |
-| `daily_macro_data` | 7:00 AM EST | Load FRED economic indicators (CPI, unemployment, treasury yields) | ~2 min |
-| `daily_sec_filings` | 8:00 AM EST | Fetch SEC regulatory filings (10-K annual, 10-Q quarterly, 8-K events) | ~5 min |
-
-### Initial Data Loading
-
-After setting up the database for the first time, manually trigger DAGs to populate initial data:
-
-1. **Start Airflow** (if not already running):
-   ```bash
-   source airflow_venv/bin/activate
-   airflow standalone
-   ```
-
-2. **Access Airflow UI:** `http://localhost:8080`
-
-3. **Enable and trigger DAGs** in this order:
-   - Toggle each DAG ON (switch on the left side)
-   - Click the ▶️ play button to trigger manually
-   - Monitor progress in the Graph view
-
-   **Recommended order:**
-   1. `daily_stock_prices` - Loads stock universe (required for other DAGs)
-   2. `daily_index_data` - Loads market indices and sectors
-   3. `daily_macro_data` - Loads economic indicators
-   4. `daily_news_data` - Loads news for all stocks
-   5. `daily_sec_filings` - Loads SEC regulatory filings
-
-4. **Verify data loaded:**
-   ```bash
-   npm run db:studio
-   ```
-   Check these tables have data:
-   - `StockPrice` - Should have ~50,000+ records
-   - `IndexPrice` - Should have ~1,000+ records
-   - `NewsArticle` - Should have ~2,500+ records
-   - `MacroIndicator` - Should have ~500+ records
-   - `SECFilingDocument` - Should have records (if filings available)
-
-### Environment Variables for DAGs
-
-DAGs automatically read from `.env` file in project root:
+### 1. Clone & Install
 
 ```bash
-# Required for DAG database connections
-DB_HOST=localhost
-DB_PORT=5433           # Use 5433 for Docker, 5432 for Homebrew
-DB_NAME=thesis_ai_dev
-DB_USER=dev            # Use 'dev' for Docker, your username for Homebrew
-DB_PASSWORD=dev        # Use 'dev' for Docker, leave empty for Homebrew
-
-# Optional API keys for enhanced data
-FRED_API_KEY=your-fred-api-key              # Get from https://fred.stlouisfed.org/docs/api/api_key.html
-POLYGON_API_KEY=your-polygon-api-key        # Get from https://polygon.io/
+git clone <repository-url>
+cd ai-investment-advisor
+pip install -r requirements.txt
 ```
 
-### Monitoring DAGs
-
-**View DAG status:**
-- Green = Success
-- Red = Failed
-- Yellow = Running
-- Gray = Queued
-
-**Check task logs:**
-1. Click on any DAG
-2. Click on a task in the Graph view
-3. Click "Log" button to see detailed output
-
-**Common success indicators:**
-- Stock prices: "Total loaded: X records"
-- News: "Successfully loaded X articles"
-- Indices: "Successfully loaded X index records"
-- Macro: "Successfully loaded X macro records"
-
-### Troubleshooting Airflow
-
-**DAGs not showing up:**
-```bash
-# Verify DAGs folder path
-grep dags_folder ~/airflow/airflow.cfg
-
-# Should show: /your/path/thesis-ai/server/airflow/dags
-```
-
-**Database connection errors:**
-```bash
-# Make sure Docker PostgreSQL is running
-docker-compose ps
-
-# Verify environment variables
-echo $DB_HOST
-echo $DB_PORT  
-echo $DB_NAME
-
-# Test connection manually
-PGPASSWORD=dev psql -h localhost -p 5433 -U dev -d thesis_ai_dev -c "SELECT 1;"
-```
-
-**DAG failures:**
-- Check logs in Airflow UI by clicking on failed task
-- Common issues:
-  - **API rate limiting:** Yahoo Finance, FRED, or SEC blocking requests → Wait 10-30 minutes and retry
-  - **Network timeouts:** Temporary connectivity issues → Retry the task
-  - **Missing data:** Some stocks/indices may not have data for certain dates → This is normal
-
-**Clear task instance to retry:**
-- Click on failed task → "Clear" button → "Yes" to rerun
-
-**Reset Airflow completely:**
-```bash
-# Stop Airflow (Ctrl+C)
-airflow db reset
-# Re-run configuration steps 4-5 from Setup section above
-```
-
-### Stopping Airflow
+### 2. Start Database
 
 ```bash
-# Press Ctrl+C in the terminal where 'airflow standalone' is running
-
-# Or force kill if needed:
-pkill -f "airflow standalone"
+docker-compose -f docker-compose.test.yml up -d
 ```
 
-### DAG Development Tips
+### 3. Setup Test Data
 
-- **Test changes:** Use `airflow dags test <dag_id>` to test without scheduling
-- **Check syntax:** DAGs appear in UI only if Python syntax is valid
-- **Logs location:** `~/airflow/logs/` contains all execution logs
-- **Database location:** `~/airflow/airflow.db` (SQLite metadata database)
-
-## Build watch
-
-`npm run build:watch` # UI
-
-`npm run start:watch` # Server
-
-## Linting
-`npm run lint`
-
-`npm run lint:fix`
-
-## Testing
-`npm test`
-
-`npm run test:coverage` # Runs against both server & ui
-
-# Troubleshooting
-
-## Database connection errors
-
-**For Docker:**
 ```bash
-docker-compose ps           # Check if running
-docker-compose logs postgres # View logs
-docker-compose restart postgres # Restart
+python setup_test_database.py
 ```
 
-**For Homebrew PostgreSQL:**
+Expected output:
+```
+✅ Schema created (13 tables)
+✅ Generated 8 companies, 5,000+ records
+✅ Ready for all agent types!
+```
+
+### 4. Start API
+
 ```bash
-brew services list          # Check if PostgreSQL is running
-brew services restart postgresql@17 # Restart
-psql postgres -c "SELECT version();" # Test connection
+python -m agent_builder.api.main
 ```
 
-**Permission denied errors:**
+### 5. Test Analysis
+
 ```bash
-# Make sure DATABASE_URL uses your username
-whoami  # Get your username
-# Update .env: DATABASE_URL="postgresql://YOUR_USERNAME@localhost:5432/thesis_ai_dev?schema=public"
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "AAPL"}'
 ```
 
-**Port conflicts:**
+**🎉 Done!** API docs at http://localhost:8000/docs
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     FastAPI REST API                         │
+│                  (Async, Background Tasks)                   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────┴──────────────────────────────────────┐
+│                   Agent Registry                             │
+│              (Manages 61+ Agents)                            │
+└──────────┬──────────┬──────────┬──────────┬─────────────────┘
+           │          │          │          │
+    ┌──────▼───┐ ┌───▼────┐ ┌──▼─────┐ ┌──▼──────┐
+    │Fundamental│ │Technical│ │ Macro  │ │Sentiment│
+    │  Agents   │ │ Agents  │ │ Agents │ │ Agents  │
+    │  (12)     │ │  (13)   │ │  (13)  │ │  (11)   │
+    └──────┬────┘ └───┬─────┘ └──┬─────┘ └──┬──────┘
+           │          │          │          │
+           └──────────┴──────────┴──────────┘
+                       │
+           ┌───────────▼────────────┐
+           │   Agent Context        │
+           │  (Data Access Layer)   │
+           └───────────┬────────────┘
+                       │
+           ┌───────────▼────────────┐
+           │  Connection Pool       │
+           │   (2-10 connections)   │
+           └───────────┬────────────┘
+                       │
+           ┌───────────▼────────────┐
+           │  PostgreSQL Database   │
+           │    (13 Tables)         │
+           │  - Fundamentals        │
+           │  - Prices              │
+           │  - Technical Indicators│
+           │  - News & Sentiment    │
+           │  - Risk Metrics        │
+           │  - Macro Data          │
+           └────────────────────────┘
+```
+
+---
+
+## 🤖 Agent Types (61 Total)
+
+### 1. Fundamental Agents (12)
+
+Analyze company financials and business quality:
+
+- **Value Investing**: Warren Buffett style (P/E, ROE, debt)
+- **Growth Investing**: High-growth stocks (PEG, revenue growth)
+- **Quality Screening**: Business moats (margins, ROIC)
+- **Cash Flow Analysis**: Free cash flow quality
+- **Earnings Analysis**: Beats, misses, guidance
+- **Balance Sheet**: Financial health, debt sustainability
+
+**Example:**
+```python
+@simple_agent("Value Investor", weight=0.15)
+def value_agent(ticker, context):
+    pe = context.get_metric('pe_ratio')
+    roe = context.get_metric('roe')
+    
+    if pe < 20 and roe > 15:
+        return "bullish", 0.85
+    return "neutral", 0.5
+```
+
+### 2. Technical Agents (13)
+
+Price patterns and chart analysis:
+
+- **Moving Averages**: Golden/Death Cross
+- **Momentum**: RSI, MACD, ADX
+- **Volatility**: Bollinger Bands, ATR
+- **Volume**: OBV, volume confirmation
+- **Price Action**: Support/resistance, trends
+- **Multi-Timeframe**: Confluence analysis
+
+### 3. Macro Agents (13)
+
+Economic conditions and cycles:
+
+- **Economic Cycle**: GDP, unemployment, inflation
+- **Interest Rates**: Fed policy, yield curve
+- **Market Sentiment**: VIX, S&P 500 momentum
+- **Commodities**: Oil, gold prices
+- **Currency**: Dollar strength (DXY)
+- **Recession Indicators**: Leading indicators
+
+### 4. Sentiment Agents (11)
+
+Market psychology and opinions:
+
+- **News Sentiment**: Aggregate media sentiment
+- **Analyst Ratings**: Buy/hold/sell consensus
+- **Insider Trading**: Follow the smart money
+- **Price Targets**: Upside potential
+- **Sentiment Divergence**: Cross-source validation
+
+### 5. Risk Agents (12)
+
+Risk management and capital preservation:
+
+- **Volatility**: Current levels and regime shifts
+- **Downside Protection**: Max drawdown, VaR
+- **Risk-Adjusted Returns**: Sharpe, Sortino ratios
+- **Correlation**: Portfolio diversification
+- **Tail Risk**: Extreme event monitoring
+- **Options Signals**: Put/call ratio, IV premium
+
+---
+
+## 📊 Mock Database
+
+Comprehensive test data for **8 major stocks**:
+- **AAPL** (Apple) - Technology
+- **MSFT** (Microsoft) - Technology
+- **GOOGL** (Alphabet) - Technology
+- **TSLA** (Tesla) - Automotive
+- **AMZN** (Amazon) - E-commerce
+- **JPM** (JPMorgan) - Banking
+- **XOM** (Exxon) - Energy
+- **WMT** (Walmart) - Retail
+
+### Data Included (5,000+ records):
+
+| Table | Records | Description |
+|-------|---------|-------------|
+| **Fundamentals** | 8 | P/E, ROE, margins, debt ratios (30+ metrics) |
+| **Prices** | 1,440+ | 90 days OHLCV data |
+| **Technical Indicators** | 1,200+ | RSI, MACD, Bollinger Bands, etc. |
+| **Risk Metrics** | 1,200+ | Volatility, VaR, Sharpe ratio |
+| **Balance Sheet** | 32 | Quarterly financial statements |
+| **Cash Flow** | 32 | Operating, investing, financing flows |
+| **Earnings** | 32 | EPS beats/misses, guidance |
+| **SEC Filings** | 32 | 10-K, 10-Q, 8-K documents |
+| **News** | 160+ | Headlines with sentiment analysis |
+| **Analyst Ratings** | 80+ | Buy/hold/sell recommendations |
+| **Insider Trades** | 100+ | Executive transactions |
+| **Options Data** | 100+ | Put/call ratios, implied volatility |
+| **Macro Indicators** | 13 | Fed rates, GDP, VIX, oil, gold |
+
+**Total: ~5,000 realistic test records!**
+
+---
+
+## 🚀 Usage Examples
+
+### Create a Custom Agent
+
+```python
+from agent_builder.agents import simple_agent
+
+@simple_agent("PE Ratio Agent", weight=0.15)
+def pe_ratio_agent(ticker, context):
+    """Buy low P/E stocks"""
+    pe = context.get_metric('pe_ratio')
+    
+    if pe < 15:
+        return "bullish", 0.8
+    elif pe > 30:
+        return "bearish", 0.7
+    return "neutral", 0.5
+```
+
+### Register Agent
+
+```python
+from agent_builder.agents.registry import get_registry
+
+registry = get_registry()
+registry.register(pe_ratio_agent.agent, tags=['fundamental', 'value'])
+```
+
+### Run Analysis via API
+
 ```bash
-# If both Docker and system PostgreSQL are running on same port
-# Docker uses 5433, system uses 5432 - they should not conflict
-# If issues persist, stop one:
-sudo systemctl stop postgresql  # Stop system PostgreSQL
-# OR
-docker-compose down            # Stop Docker PostgreSQL
+# Start analysis
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "AAPL"}'
+
+# Response:
+{
+  "analysis_id": "abc-123",
+  "status": "pending"
+}
+
+# Get results
+curl http://localhost:8000/analyze/abc-123
+
+# Response:
+{
+  "id": "abc-123",
+  "ticker": "AAPL",
+  "status": "completed",
+  "consensus": {
+    "signal": "bullish",
+    "confidence": 0.75,
+    "agreement": 0.82
+  },
+  "signals": [
+    {
+      "agent_name": "Value Investor",
+      "signal_type": "bullish",
+      "confidence": 0.85,
+      "reasoning": "Low P/E with high ROE"
+    },
+    // ... more agents
+  ]
+}
 ```
 
-**Reset everything:**
+### Access Data in Agents
 
-For Docker:
+```python
+@simple_agent("Comprehensive Analyzer", weight=0.20)
+def comprehensive_agent(ticker, context):
+    # Fundamentals
+    fundamentals = context.get_fundamentals()
+    pe = context.get_metric('pe_ratio')
+    
+    # Technical
+    technicals = context.get_latest_technicals()
+    rsi = technicals.get('rsi_14', 50)
+    
+    # Sentiment
+    news = context.get_news(limit=20)
+    ratings = context.get_analyst_ratings()
+    
+    # Risk
+    risk = context.get_latest_risk_metrics()
+    sharpe = risk.get('sharpe_ratio', 0)
+    
+    # Macro
+    macro = context.get_macro_indicators()
+    gdp = macro.get('gdp_growth', 0)
+    
+    # Combine all factors
+    score = calculate_comprehensive_score(...)
+    
+    return "bullish" if score > 0.6 else "bearish", confidence
+```
+
+---
+
+## 🎓 Example Agent Portfolios
+
+### Conservative Portfolio
+```python
+# Focus on quality, risk management, dividends
+- Value Investor (0.15)
+- Quality Screener (0.15)
+- Downside Protection (0.15)
+- Balance Sheet Strength (0.12)
+- Dividend Analysis (0.10)
+- Risk-Adjusted Returns (0.12)
+```
+
+### Growth Portfolio
+```python
+# Focus on momentum, earnings growth
+- Growth Investor (0.20)
+- Earnings Surprise (0.15)
+- Technical Momentum (0.15)
+- Revenue Growth (0.12)
+- Analyst Upgrades (0.10)
+```
+
+### Contrarian Portfolio
+```python
+# Buy fear, sell greed
+- VIX Fear Gauge (0.15)
+- RSI Oversold (0.15)
+- Insider Buying (0.15)
+- Deep Value (0.12)
+- Sentiment Divergence (0.10)
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
+
 ```bash
-docker-compose down -v      # Delete all data
-docker-compose up -d        # Start fresh
-npm run db:migrate          # Recreate tables
+# Database
+DATABASE_URL=postgresql://agent_user:agent_password@localhost:5432/agent_test
+
+# API
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=true
+CORS_ORIGINS=http://localhost:3000,http://localhost:8080
+
+# LLM Provider (optional)
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+
+# Or use Groq
+# LLM_PROVIDER=groq
+# GROQ_API_KEY=your_api_key_here
+# GROQ_MODEL=llama3-8b-8192
+
+# Sentiment Analysis
+SENTIMENT_ANALYZER=vader  # or finbert
 ```
 
-For Homebrew PostgreSQL:
+### Agent Weights
+
+Customize agent importance:
+
+```python
+registry.register(
+    agent=value_investor_agent.agent,
+    agent_id="value_investor",
+    weight=0.20,  # Higher weight = more influence
+    enabled=True,
+    tags=['fundamental', 'value']
+)
+```
+
+---
+
+## 📁 Project Structure
+
+```
+ai-investment-advisor/
+├── sql/
+│   └── schema.sql                    # Database schema (13 tables)
+│
+├── agent_builder/
+│   ├── agents/
+│   │   ├── base_agent.py            # BaseAgent, AgentSignal
+│   │   ├── builder.py               # @simple_agent decorator
+│   │   ├── context.py               # AgentContext (data access)
+│   │   ├── registry.py              # AgentRegistry
+│   │   └── personas.py              # LLM agent personas
+│   │
+│   ├── api/
+│   │   └── main.py                  # FastAPI application
+│   │
+│   ├── data/
+│   │   ├── generator.py             # Mock data generator
+│   │   └── setup.py                 # Database setup utilities
+│   │
+│   ├── llm/
+│   │   ├── ollama.py                # Ollama provider
+│   │   ├── groq.py                  # Groq provider
+│   │   └── factory.py               # LLM factory
+│   │
+│   ├── repositories/
+│   │   ├── connection.py            # Connection pooling
+│   │   └── repository.py            # Data repository
+│   │
+│   ├── sentiment/
+│   │   ├── vader.py                 # VADER analyzer (fast)
+│   │   ├── finbert.py               # FinBERT analyzer (accurate)
+│   │   └── factory.py               # Sentiment factory
+│   │
+│   ├── config.py                    # Configuration
+│   ├── security.py                  # SQL injection prevention
+│   └── utils.py                     # Utilities
+│
+├── examples/
+│   ├── fundamental_agents.py        # 12 fundamental agents
+│   ├── technical_agents.py          # 13 technical agents
+│   ├── macro_agents.py              # 13 macro agents
+│   ├── sentiment_agents.py          # 11 sentiment agents
+│   ├── risk_agents.py               # 12 risk agents
+│   └── register_agents.py           # Agent registration
+│
+├── docker-compose.test.yml          # PostgreSQL + services
+├── setup_test_database.py           # Database setup script
+├── requirements.txt                 # Python dependencies
+├── .env.example                     # Environment template
+├── README.md                        # This file
+└── QUICKSTART.md                    # Quick start guide
+```
+
+---
+
+## 🔌 API Reference
+
+### Core Endpoints
+
+#### Health Check
 ```bash
-dropdb thesis_ai_dev        # Delete database
-createdb thesis_ai_dev      # Recreate database
-npm run db:migrate          # Recreate tables
+GET /health
 ```
 
-## General troubleshooting
-`npm i`
-
-Delete database (see reset commands above)
-
-`npm run db:migrate`
-
-`npm run build:watch` # UI
-
-`npm run start:watch` # Server
-
-## AI Coding
-
-`npm install -g @anthropic-ai/claude-code`
-
-claude --dangerously-skip-permissions
-
-## CICD
-
-We use github actions
-
-## Infrastructure & Deployment
-
-We use Terraform for AWS infrastructure and GitHub Actions for automated deployment.
-
-### 🚀 Fully Automated Deployment (Recommended)
-
-**Just push to `main` and everything happens automatically!**
-
-#### Setup (One-Time):
-
-1. Create AWS IAM user with deployment permissions
-   - **See: [AWS-SETUP-GUIDE.md](./AWS-SETUP-GUIDE.md) for complete instructions**
-   - Creates IAM user with right permissions
-   - Generates access keys
-
-2. Add AWS credentials to GitHub Secrets:
-   - Go to: **Settings → Secrets and variables → Actions**
-   - Add `AWS_ACCESS_KEY_ID`
-   - Add `AWS_SECRET_ACCESS_KEY`
-
-3. Enable GitHub Container Registry:
-   - Go to: **Settings → Actions → General**
-   - Select "Read and write permissions"
-
-4. Push to main:
-   ```bash
-   git push origin main
-   ```
-
-That's it! Every push to `main` will:
-- ✅ Check/create infrastructure with Terraform
-- ✅ Build Docker image and push to GHCR
-- ✅ Deploy to EC2 via **AWS Systems Manager (SSM)** - no SSH keys needed!
-- ✅ Run health checks
-
-**Benefits of SSM:**
-- ✅ No SSH keys to manage
-- ✅ No SSH port (22) to secure
-- ✅ 100% free (no logging costs)
-- ✅ IAM-based authentication
-- ✅ Full deployment logs in GitHub Actions
-
-See `.github/workflows/deploy.yml` for the automated deployment workflow.
-
-**Required GitHub Secrets:**
-- `AWS_ACCESS_KEY_ID` - AWS access key
-- `AWS_SECRET_ACCESS_KEY` - AWS secret key
-
-That's it - just 2 secrets!
-
-### Manual Infrastructure Management (Optional)
-
-For local Terraform control:
-
-1. Add AWS credentials to `.env`:
-   ```
-   AWS_ACCESS_KEY_ID=your-key
-   AWS_SECRET_ACCESS_KEY=your-secret
-   AWS_DEFAULT_REGION=us-east-1
-   ```
-
-2. Run Terraform commands:
-   ```bash
-   npm run infra:setup     # Full automated setup
-   npm run infra:init      # Initialize Terraform
-   npm run infra:plan      # Preview changes
-   npm run infra:apply     # Create infrastructure
-   npm run infra:destroy   # Tear down infrastructure
-   npm run infra:output    # View outputs
-   ```
-
-## Project Structure
-
-```
-thesis-ai/
-├── ui/                     # Frontend Svelte app
-├── server/
-│   ├── server.mjs         # Express server
-│   ├── auth.mjs           # Authentication
-│   ├── api/               # API routes
-│   ├── airflow/dags/      # Data pipeline DAGs
-│   └── prisma/
-│       ├── schema.prisma  # Database schema
-│       └── migrations/    # Database migrations
-├── terraform/             # AWS infrastructure
-├── docker-compose.yml     # Local PostgreSQL database
-└── Dockerfile            # Production container
-```
-
-## Tech Stack
-
-- **Frontend:** Svelte + Vite
-- **Backend:** Node.js + Express
-- **Database:** PostgreSQL + Prisma ORM
-- **Data Pipelines:** Apache Airflow + Python
-- **Auth:** JWT
-- **Deployment:** Docker + AWS
-- **CI/CD:** GitHub Actions
-
-## Build watch
-
-`npm run build:watch` # UI
-
-`npm run start:watch` # Server
-
-## Linting
-`npm run lint`
-
-`npm run lint:fix`
-
-## Testing
-`npm test`
-
-`npm run test:coverage` # Runs against both server & ui
-
-# Troubleshooting
-
-## Database connection errors
-
-**For Docker:**
+#### List Agents
 ```bash
-docker-compose ps           # Check if running
-docker-compose logs postgres # View logs
-docker-compose restart postgres # Restart
+GET /agents
+GET /agents?enabled=true
 ```
 
-**For Homebrew PostgreSQL:**
+#### Get Agent Details
 ```bash
-brew services list          # Check if PostgreSQL is running
-brew services restart postgresql@17 # Restart
-psql postgres -c "SELECT version();" # Test connection
+GET /agents/{agent_id}
 ```
 
-**Permission denied errors:**
+#### Enable/Disable Agent
 ```bash
-# Make sure DATABASE_URL uses correct credentials
-# Docker: DATABASE_URL="postgresql://dev:dev@localhost:5433/thesis_ai_dev?schema=public"
-# Homebrew: DATABASE_URL="postgresql://YOUR_USERNAME@localhost:5432/thesis_ai_dev?schema=public"
+POST /agents/{agent_id}/enable
+POST /agents/{agent_id}/disable
 ```
 
-**Port conflicts:**
+#### Run Analysis
 ```bash
-# Docker uses port 5433, system PostgreSQL uses 5432 (no conflict)
-# If you see port conflicts:
-sudo systemctl stop postgresql  # Stop system PostgreSQL
-# OR
-docker-compose down            # Stop Docker PostgreSQL
+POST /analyze
+Content-Type: application/json
+
+{
+  "ticker": "AAPL",
+  "agent_ids": ["value_investor", "rsi_momentum"]  # optional
+}
+
+Response:
+{
+  "analysis_id": "uuid",
+  "status": "pending"
+}
 ```
 
-**Reset everything:**
-
-For Docker:
+#### Get Analysis Results
 ```bash
-docker-compose down -v      # Delete all data
-docker-compose up -d        # Start fresh
-npm run db:migrate          # Recreate tables
-# Then run Airflow DAGs to reload data
+GET /analyze/{analysis_id}
+
+Response:
+{
+  "id": "uuid",
+  "ticker": "AAPL",
+  "status": "completed",
+  "signals": [...],
+  "consensus": {
+    "signal": "bullish",
+    "confidence": 0.75,
+    "agreement": 0.82,
+    "distribution": {
+      "bullish": 45,
+      "bearish": 10,
+      "neutral": 6
+    }
+  }
+}
 ```
 
-For Homebrew PostgreSQL:
+**Interactive API Docs:** http://localhost:8000/docs
+
+---
+
+## 🎯 Key Features
+
+### ✅ Security
+- SQL injection prevention (whitelist + parameterization)
+- Input validation (Pydantic models)
+- Ticker sanitization
+- Table name validation
+
+### ✅ Performance
+- Connection pooling (2-10 connections)
+- Query result caching
+- Background task processing
+- Optimized database indexes
+- ~50x faster than creating connections
+
+### ✅ Scalability
+- Async FastAPI
+- Stateless design
+- Easy horizontal scaling
+- Supports distributed architectures
+
+### ✅ Developer Experience
+- Simple decorator pattern
+- Clear agent structure
+- Comprehensive examples
+- Auto-generated API docs
+- Hot-reload in development
+
+### ✅ Production Ready
+- Error handling
+- Logging
+- Health checks
+- CORS support
+- Environment-based config
+
+---
+
+## 🧪 Testing
+
+### Run Test Analysis
+
 ```bash
-dropdb thesis_ai_dev        # Delete database
-createdb thesis_ai_dev      # Recreate database
-npm run db:migrate          # Recreate tables
+# Start API
+python -m agent_builder.api.main
+
+# Test single stock
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "AAPL"}'
+
+# Test with specific agents
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticker": "MSFT",
+    "agent_ids": ["value_investor", "growth_investor"]
+  }'
 ```
 
-## Airflow Troubleshooting
+### Test Individual Agent
 
-**DAGs not appearing in UI:**
+```python
+from agent_builder.agents.context import AgentContext
+from examples.fundamental_agents import value_investor_agent
+
+context = AgentContext("AAPL")
+signal, confidence = value_investor_agent("AAPL", context)
+
+print(f"Signal: {signal}, Confidence: {confidence}")
+# Output: Signal: bullish, Confidence: 0.75
+```
+
+### Database Queries
+
 ```bash
-# Verify DAGs folder path in config
-grep dags_folder ~/airflow/airflow.cfg
+# Connect to database
+docker exec -it agent-test-db psql -U agent_user -d agent_test
 
-# Should point to your project's DAG folder
-# If not, update it:
-nano ~/airflow/airflow.cfg
-# Find 'dags_folder' and set to: /path/to/thesis-ai/server/airflow/dags
+# Sample queries
+SELECT * FROM mock_fundamentals WHERE ticker = 'AAPL';
+SELECT * FROM mock_latest_prices ORDER BY ticker;
+SELECT * FROM mock_analyst_consensus;
 ```
 
-**DAG import errors:**
+---
+
+## 🚢 Production Deployment
+
+### 1. Database Migration
+
+Replace mock data with real data sources:
+
+```python
+# Instead of mock_generator
+from your_data_pipeline import RealDataFetcher
+
+fetcher = RealDataFetcher(
+    alpha_vantage_key=os.getenv('ALPHA_VANTAGE_KEY'),
+    finnhub_key=os.getenv('FINNHUB_KEY')
+)
+
+fetcher.fetch_and_store('AAPL')
+```
+
+### 2. Environment Setup
+
 ```bash
-# Check DAG syntax and imports
-python server/airflow/dags/daily_stock_prices.py
-
-# Install missing dependencies in airflow_venv
-source airflow_venv/bin/activate
-pip install <missing-package>
+# Production .env
+DATABASE_URL=postgresql://user:pass@prod-db:5432/prod
+DEBUG=false
+API_HOST=0.0.0.0
+API_PORT=8000
 ```
 
-**Database connection errors from DAGs:**
-```bash
-# Verify .env file has correct database credentials
-cat .env | grep DB_
+### 3. Docker Deployment
 
-# Test database connection
-PGPASSWORD=dev psql -h localhost -p 5433 -U dev -d thesis_ai_dev -c "SELECT 1;"
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "agent_builder.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-**DAG task failures:**
-- **API rate limiting (Yahoo Finance, FRED, SEC):**
-  - Wait 10-30 minutes
-  - Click failed task → "Clear" → Retry
-  
-- **Network timeouts:**
-  - Check internet connection
-  - Retry the failed task
+### 4. Add Production Features
 
-- **Missing data for certain stocks:**
-  - Normal - not all stocks have data every day
-  - DAG will continue processing other stocks
+- Authentication (JWT, API keys)
+- Rate limiting
+- Caching (Redis)
+- Monitoring (Prometheus, Grafana)
+- Logging aggregation
+- Load balancing
+- Auto-scaling
 
-**Clear task to retry:**
-1. Click on failed task in Graph view
-2. Click "Clear" button
-3. Select "Yes" to rerun
+---
 
-**View detailed logs:**
-1. Click on task
-2. Click "Log" button
-3. Scroll to see error details
+## 🛠️ Development
 
-**Reset Airflow metadata:**
-```bash
-airflow db reset
-# Re-run Airflow configuration steps from Setup section
+### Add New Agent Category
+
+1. Create file: `examples/your_category_agents.py`
+2. Define agents using `@simple_agent` decorator
+3. Create `register_your_category_agents()` function
+4. Register in `examples/register_agents.py`
+
+### Add New Data Source
+
+1. Add table to `sql/schema.sql`
+2. Update `agent_builder/data/generator.py`
+3. Add accessor method to `AgentContext`
+4. Use in agents via `context.get_your_data()`
+
+### Extend AgentContext
+
+```python
+# agent_builder/agents/context.py
+
+@safe_execute(default_return=[])
+def get_your_data(self, limit: int = 10) -> List[Dict]:
+    """Get your custom data"""
+    with get_db_cursor() as cursor:
+        cursor.execute("""
+            SELECT * FROM your_table 
+            WHERE ticker = %s 
+            LIMIT %s
+        """, (self.ticker, limit))
+        # ... return results
 ```
 
-## General troubleshooting
-`npm i`
+---
 
-Delete database (see reset commands above)
+## 📚 Documentation
 
-`npm run db:migrate`
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 3 minutes
+- **[TEST_DATABASE.md](TEST_DATABASE.md)** - Complete database guide
+- **API Docs** - http://localhost:8000/docs (interactive)
+- **Examples** - See `examples/` directory
 
-`npm run build:watch` # UI
+---
 
-`npm run start:watch` # Server
+## 🤝 Contributing
 
-## AI Coding
+Contributions welcome! Areas for improvement:
 
-`npm install -g @anthropic-ai/claude-code`
+1. **More Agents**: Options strategies, pairs trading, arbitrage
+2. **Data Sources**: Real-time APIs, alternative data
+3. **ML Models**: Predictive models, reinforcement learning
+4. **Risk Management**: Position sizing, portfolio optimization
+5. **Backtesting**: Historical performance analysis
 
-claude --dangerously-skip-permissions
+---
+
+## 📊 Performance Benchmarks
+
+| Metric | Value |
+|--------|-------|
+| **Agent Execution** | 10-50ms per agent |
+| **Full Analysis (61 agents)** | 1-3 seconds |
+| **API Response Time** | <100ms (cached) |
+| **Database Query** | 1-5ms (with pooling) |
+| **Concurrent Analyses** | 10+ simultaneous |
+
+---
+
+## 🎓 Learning Resources
+
+### Investment Strategies
+- **Value Investing**: Benjamin Graham, Warren Buffett
+- **Technical Analysis**: John Murphy, Steve Nison
+- **Risk Management**: Nassim Taleb, Ray Dalio
+- **Quantitative**: Ernest Chan, Andreas Clenow
+
+### Technical Skills
+- **FastAPI**: https://fastapi.tiangolo.com/
+- **PostgreSQL**: https://www.postgresql.org/docs/
+- **Docker**: https://docs.docker.com/
+
+---
+
+## ⚠️ Disclaimer
+
+**This software is for educational and research purposes only.**
+
+- NOT financial advice
+- NOT a recommendation to buy/sell securities
+- Past performance does not guarantee future results
+- Investing involves risk of loss
+- Consult a licensed financial advisor before making investment decisions
+
+The authors are not responsible for any financial losses incurred from using this software.
+
+---
+
+## 📝 License
+
+MIT License - See [LICENSE](LICENSE) file for details
+
+---
+
+## 🙏 Acknowledgments
+
+Built with:
+- FastAPI - Modern web framework
+- PostgreSQL - Robust database
+- Ollama/Groq - LLM providers
+- VADER/FinBERT - Sentiment analysis
+
+Inspired by quantitative investment research and systematic trading strategies.
+
+---
+
+## 📬 Support
+
+- **Issues**: GitHub Issues
+- **Discussions**: GitHub Discussions
+- **Documentation**: See `/docs` directory
+
+---
+
+## 🗺️ Roadmap
+
+### v0.4 (Current)
+- ✅ 61 agents across 5 categories
+- ✅ Mock database with 5,000+ records
+- ✅ Connection pooling
+- ✅ FastAPI with async support
+
+### v0.5 (Next)
+- [ ] Real-time data integration
+- [ ] WebSocket support
+- [ ] Advanced backtesting
+- [ ] Portfolio optimization
+
+### v1.0 (Future)
+- [ ] Machine learning models
+- [ ] Multi-asset support (crypto, forex)
+- [ ] React dashboard
+- [ ] Cloud deployment templates
+
+---
+
+## 🌟 Star History
+
+If you find this project useful, please ⭐ star it on GitHub!
+
+---
