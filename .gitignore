@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Environment variables - CRITICAL!
+.env
+.env.*
+*.env
+!.env.example
+
+# Database
+*.db
+*.sqlite3
+*.sql
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets - CRITICAL!
+secrets/
+*.pem
+*.key
+*.p12
+credentials.json
+service-account.json
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Backup files
+*.backup
+*.bak
+*~

@@ -1,0 +1,418 @@
+version: '3.8'
+
+# ============================================================================
+# AI Investment Advisor - Test Environment
+# Complete Docker setup for development and testing
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # PostgreSQL Database
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: agent-test-db
+    restart: unless-stopped
+    
+    environment:
+      # Database credentials
+      POSTGRES_USER: agent_user
+      POSTGRES_PASSWORD: agent_password
+      POSTGRES_DB: agent_test
+      
+      # Performance tuning for development
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Persist data (comment out for fresh start each time)
+      - postgres_data:/var/lib/postgresql/data
+      
+      # Optional: Initialize with schema on first run
+      # - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    
+    command:
+      - "postgres"
+      # Connection settings
+      - "-c" 
+      - "max_connections=100"
+      # Memory settings (adjust based on your system)
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      # Performance settings
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      # Logging (useful for debugging)
+      - "-c"
+      - "log_statement=all"
+      - "-c"
+      - "log_duration=on"
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_user -d agent_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    networks:
+      - agent-network
+
+  # --------------------------------------------------------------------------
+  # pgAdmin - Web UI for Database Management (Optional)
+  # --------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: agent-pgadmin
+    restart: unless-stopped
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@agent.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    
+    ports:
+      - "5050:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      # Optional: Pre-configure database connection
+      - ./docker/pgadmin-servers.json:/pgadmin4/servers.json:ro
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - agent-network
+    
+    profiles:
+      - with-admin  # Only start with: docker compose --profile with-admin up
+
+  # --------------------------------------------------------------------------
+  # Ollama - Local LLM Server (Optional)
+  # --------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agent-ollama
+    restart: unless-stopped
+    
+    ports:
+      - "11434:11434"
+    
+    volumes:
+      # Persist downloaded models
+      - ollama_data:/root/.ollama
+    
+    environment:
+      # Enable GPU if available (requires nvidia-docker)
+      # OLLAMA_GPU: "1"
+      OLLAMA_HOST: "0.0.0.0"
+    
+    networks:
+      - agent-network
+    
+    profiles:
+      - with-ollama  # Only start with: docker compose --profile with-ollama up
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # --------------------------------------------------------------------------
+  # Redis - Caching Layer (Optional)
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: agent-redis
+    restart: unless-stopped
+    
+    ports:
+      - "6379:6379"
+    
+    command: 
+      - redis-server
+      - --appendonly yes
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+    
+    volumes:
+      - redis_data:/data
+    
+    networks:
+      - agent-network
+    
+    profiles:
+      - with-redis  # Only start with: docker compose --profile with-redis up
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # --------------------------------------------------------------------------
+  # API Server (Optional - can run locally instead)
+  # --------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent-api
+    restart: unless-stopped
+    
+    ports:
+      - "8000:8000"
+    
+    environment:
+      # Database
+      DATABASE_URL: postgresql://agent_user:agent_password@postgres:5432/agent_test
+      
+      # API Settings
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      DEBUG: "true"
+      
+      # CORS
+      CORS_ORIGINS: http://localhost:3000,http://localhost:8080
+      
+      # LLM Provider (if using Ollama in Docker)
+      LLM_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3.2
+      
+      # Sentiment
+      SENTIMENT_ANALYZER: vader
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    volumes:
+      # Mount code for hot reload during development
+      - .:/app
+      - /app/venv  # Don't mount venv
+    
+    networks:
+      - agent-network
+    
+    profiles:
+      - with-api  # Only start with: docker compose --profile with-api up
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    name: agent_test_postgres_data
+    driver: local
+  
+  pgadmin_data:
+    name: agent_test_pgadmin_data
+    driver: local
+  
+  ollama_data:
+    name: agent_test_ollama_data
+    driver: local
+  
+  redis_data:
+    name: agent_test_redis_data
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  agent-network:
+    name: agent_network
+    driver: bridge
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+#
+# NOTE: Use 'docker-compose' (with hyphen) for Docker Compose V1
+#       Or 'docker compose' (no hyphen) for Docker Compose V2
+#       Both versions work the same way!
+#
+# BASIC USAGE (PostgreSQL only):
+#   docker-compose -f docker-compose.test.yml up -d
+#   docker-compose -f docker-compose.test.yml down
+#
+# WITH PGADMIN (Database Web UI):
+#   docker-compose -f docker-compose.test.yml --profile with-admin up -d
+#   Open: http://localhost:5050
+#   Login: admin@agent.local / admin
+#
+# WITH OLLAMA (Local LLM):
+#   docker-compose -f docker-compose.test.yml --profile with-ollama up -d
+#   Pull model: docker exec agent-ollama ollama pull llama3.2
+#
+# WITH ALL SERVICES:
+#   docker-compose -f docker-compose.test.yml --profile with-admin --profile with-ollama --profile with-redis up -d
+#
+# WITH API SERVER:
+#   docker-compose -f docker-compose.test.yml --profile with-api up -d
+#   API will be available at http://localhost:8000
+#
+# VIEW LOGS:
+#   docker-compose -f docker-compose.test.yml logs -f
+#   docker-compose -f docker-compose.test.yml logs -f postgres
+#
+# STOP SERVICES:
+#   docker-compose -f docker-compose.test.yml down
+#
+# RESET DATABASE (delete all data):
+#   docker-compose -f docker-compose.test.yml down -v
+#
+# RESTART A SERVICE:
+#   docker-compose -f docker-compose.test.yml restart postgres
+#
+# CHECK STATUS:
+#   docker-compose -f docker-compose.test.yml ps
+#
+# ============================================================================
+# DATABASE CONNECTION STRINGS
+# ============================================================================
+#
+# From Host Machine (for setup_test_database.py):
+#   DATABASE_URL=postgresql://agent_user:agent_password@localhost:5432/agent_test
+#
+# From Docker Container:
+#   DATABASE_URL=postgresql://agent_user:agent_password@postgres:5432/agent_test
+#
+# psql Command:
+#   psql postgresql://agent_user:agent_password@localhost:5432/agent_test
+#
+# Docker exec:
+#   docker exec -it agent-test-db psql -U agent_user -d agent_test
+#
+# ============================================================================
+# PGADMIN CONFIGURATION
+# ============================================================================
+#
+# After starting pgAdmin, add server connection:
+#   1. Open http://localhost:5050
+#   2. Login: admin@agent.local / admin
+#   3. Add New Server:
+#      General > Name: Agent Test DB
+#      Connection > Host: postgres
+#      Connection > Port: 5432
+#      Connection > Database: agent_test
+#      Connection > Username: agent_user
+#      Connection > Password: agent_password
+#
+# Or use the pre-configured servers.json:
+#   Create file: docker/pgadmin-servers.json
+#   See example in documentation
+#
+# ============================================================================
+# OLLAMA USAGE
+# ============================================================================
+#
+# Start Ollama:
+#   docker compose -f docker-compose.test.yml --profile with-ollama up -d
+#
+# Pull a model:
+#   docker exec -it agent-ollama ollama pull llama3.2
+#   docker exec -it agent-ollama ollama pull mistral
+#
+# List models:
+#   docker exec -it agent-ollama ollama list
+#
+# Test Ollama:
+#   curl http://localhost:11434/api/generate -d '{
+#     "model": "llama3.2",
+#     "prompt": "Why is the sky blue?"
+#   }'
+#
+# Update .env to use Ollama:
+#   LLM_PROVIDER=ollama
+#   OLLAMA_BASE_URL=http://localhost:11434
+#   OLLAMA_MODEL=llama3.2
+#
+# ============================================================================
+# PERFORMANCE TUNING
+# ============================================================================
+#
+# For more RAM (4GB+ available):
+#   shared_buffers=512MB
+#   effective_cache_size=2GB
+#   work_mem=32MB
+#   maintenance_work_mem=256MB
+#
+# For less RAM (< 2GB):
+#   shared_buffers=128MB
+#   effective_cache_size=512MB
+#   work_mem=8MB
+#   maintenance_work_mem=64MB
+#
+# Edit the postgres command section above
+#
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+#
+# Issue: Port 5432 already in use
+# Solution: Stop local PostgreSQL or change port
+#   ports: - "5433:5432"  # Use 5433 on host
+#
+# Issue: Database won't start
+# Solution: Check logs
+#   docker-compose -f docker-compose.test.yml logs postgres
+#
+# Issue: Out of disk space
+# Solution: Clean up Docker
+#   docker system prune -a --volumes
+#
+# Issue: Slow performance
+# Solution: Allocate more RAM to Docker
+#   Docker Desktop > Settings > Resources > Memory
+#   Recommended: 4GB minimum, 8GB optimal
+#
+# Issue: Can't connect from host
+# Solution: Check if container is running
+#   docker-compose -f docker-compose.test.yml ps
+#   docker exec -it agent-test-db pg_isready
+#
+# Issue: 'docker-compose' command not found
+# Solution: Install Docker Compose or use V2 syntax
+#   V1 (older): docker-compose (requires separate installation)
+#   V2 (newer): docker compose (built into Docker Desktop)
+#   Check version: docker-compose --version
+#
+# ============================================================================
+# PRODUCTION NOTES
+# ============================================================================
+#
+# This docker-compose.test.yml is for DEVELOPMENT/TESTING only.
+#
+# For production:
+#   - Use separate docker-compose.prod.yml
+#   - Use secrets management (Docker Secrets, Vault)
+#   - Enable SSL/TLS for database connections
+#   - Use proper backup strategy
+#   - Enable monitoring (Prometheus, Grafana)
+#   - Use environment-specific configurations
+#   - Enable proper logging and log rotation
+#   - Use health checks and restart policies
+#   - Consider using managed database service
+#
+# ============================================================================
