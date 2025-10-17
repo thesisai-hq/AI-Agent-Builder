@@ -43,7 +43,7 @@ def dividend_agent(ticker, context):
     div_yield = context.get_metric("dividend_yield", default=0)
 
     if div_yield > 4.0:
-        return "strong_buy", 0.90
+        return "bullish", 0.90
     elif div_yield > 3.0:
         return "bullish", 0.75
     elif div_yield > 2.0:
@@ -73,7 +73,7 @@ def roe_agent(ticker, context):
     roe = context.get_metric("roe", default=0)
 
     if roe > 20:
-        return "strong_buy", 0.90
+        return "bullish", 0.90
     elif roe > 15:
         return "bullish", 0.75
     elif roe > 10:
@@ -146,7 +146,7 @@ def basic_fundamental_agent(ticker, context):
         score += 1
 
     if score >= 4:
-        return "strong_buy", 0.90
+        return "bullish", 0.90
     elif score >= 3:
         return "bullish", 0.75
     elif score >= 2:
@@ -179,7 +179,7 @@ def advanced_fundamental_agent(ticker, context):
     )
 
     if total_score >= 80:
-        return "strong_buy", 0.95
+        return "bullish", 0.95
     elif total_score >= 70:
         return "bullish", 0.85
     elif total_score >= 60:
@@ -232,7 +232,7 @@ def sector_fundamental_agent(ticker, context):
         score += 15
 
     if score >= 75:
-        return "strong_buy", 0.90
+        return "bullish", 0.90
     elif score >= 60:
         return "bullish", 0.80
     elif score >= 40:
@@ -299,7 +299,7 @@ def quality_score_agent(ticker, context):
     quality_pct = quality_score
 
     if quality_pct >= 80:
-        return "strong_buy", 0.95
+        return "bullish", 0.95
     elif quality_pct >= 70:
         return "bullish", 0.85
     elif quality_pct >= 60:

@@ -33,7 +33,7 @@ def dividend_agent(ticker, context_dict):
     div_yield = context.get_metric("dividend_yield", default=0)
 
     if div_yield > 4.0:
-        return "strong_buy", 0.90
+        return "bullish", 0.90
     elif div_yield > 3.0:
         return "bullish", 0.75
     elif div_yield > 2.0:
@@ -65,7 +65,7 @@ def roe_agent(ticker, context_dict):
     roe = context.get_metric("roe", default=0)
 
     if roe > 20:
-        return "strong_buy", 0.90
+        return "bullish", 0.90
     elif roe > 15:
         return "bullish", 0.75
     elif roe > 10:
