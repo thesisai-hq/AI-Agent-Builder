@@ -592,7 +592,7 @@ class MyLLMProvider(BaseLLMProvider):
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file
+MIT License - See [LICENSE](docs/LICENSE) file
 
 ---
 
