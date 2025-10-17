@@ -1,5 +1,5 @@
 """API module"""
 
-from agent_builder.api.main import app
+from agent_builder.api.app import create_app
 
-__all__ = ["app"]
+__all__ = ["create_app"]

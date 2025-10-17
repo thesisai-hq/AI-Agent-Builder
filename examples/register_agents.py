@@ -1,539 +1,214 @@
 """
-Register All Available Agents
+Simple Test Agents - Minimal Example for Testing Workflow
+Save as: examples/register_agents.py
 
-This file is imported at API startup and registers all agents.
-Add new agents here to make them available via API.
+This file contains 3 simple agents to test the system:
+1. PE Ratio Agent - Tests fundamental data access
+2. Price Trend Agent - Tests price data access
+3. News Agent - Tests news data access
 """
 
-import sys
-
-sys.path.insert(0, ".")
-
-from agent_builder.agents.builder import simple_agent
-from agent_builder.agents.registry import get_registry
-from agent_builder.agents.context import AgentContext
-import logging
-
-logger = logging.getLogger(__name__)
-
+from agent_builder import agent, get_registry
+from examples.my_agents import register_my_agents
 
 # ============================================================================
-# BASIC RULE-BASED AGENTS
+# AGENT 1: PE Ratio Check (Fundamental Data)
 # ============================================================================
 
 
-@simple_agent("PE Ratio Agent", weight=0.12)
+@agent("PE Ratio Agent", "Simple P/E ratio analyzer")
 def pe_ratio_agent(ticker, context):
-    """Analyze P/E ratio"""
-    pe_ratio = context.get_metric("pe_ratio", default=100)
+    """
+    Tests: Database connection, fundamental data access, basic logic
 
-    if pe_ratio < 15:
-        return "bullish", 0.85
-    elif pe_ratio < 20:
-        return "neutral", 0.65
-    elif pe_ratio < 30:
-        return "bearish", 0.45
-    else:
-        return "strong_sell", 0.70
+    Returns bullish if P/E < 20, bearish if P/E > 40, neutral otherwise
+    """
+    # Get P/E ratio from database
+    pe = context.get_fundamental("pe_ratio", default=25)
 
+    print(f"[PE Agent] Analyzing {ticker}: P/E = {pe}")
 
-@simple_agent("Dividend Yield Agent", weight=0.10)
-def dividend_agent(ticker, context):
-    """Check dividend yield"""
-    div_yield = context.get_metric("dividend_yield", default=0)
-
-    if div_yield > 4.0:
-        return "bullish", 0.90
-    elif div_yield > 3.0:
-        return "bullish", 0.75
-    elif div_yield > 2.0:
-        return "neutral", 0.55
-    else:
-        return "bearish", 0.40
-
-
-@simple_agent("Debt Ratio Agent", weight=0.08)
-def debt_agent(ticker, context):
-    """Analyze debt to equity"""
-    debt_ratio = context.get_metric("debt_to_equity", default=0)
-
-    if debt_ratio < 0.3:
-        return "bullish", 0.85
-    elif debt_ratio < 0.5:
-        return "neutral", 0.65
-    elif debt_ratio < 1.0:
-        return "bearish", 0.50
-    else:
-        return "strong_sell", 0.75
-
-
-@simple_agent("ROE Agent", weight=0.11)
-def roe_agent(ticker, context):
-    """Return on Equity analysis"""
-    roe = context.get_metric("roe", default=0)
-
-    if roe > 20:
-        return "bullish", 0.90
-    elif roe > 15:
-        return "bullish", 0.75
-    elif roe > 10:
-        return "neutral", 0.55
-    else:
-        return "bearish", 0.40
-
-
-@simple_agent("News Sentiment Agent", weight=0.09)
-def news_agent(ticker, context):
-    """Analyze news sentiment"""
-    news = context.get_news(limit=10)
-
-    if not news:
-        return "neutral", 0.40
-
-    avg_sentiment = sum(n["sentiment_score"] for n in news) / len(news)
-
-    if avg_sentiment > 0.3:
-        return "bullish", 0.70
-    elif avg_sentiment > 0:
-        return "neutral", 0.55
-    else:
-        return "bearish", 0.60
-
-
-@simple_agent("Insider Trading Agent", weight=0.08)
-def insider_agent(ticker, context):
-    """Analyze insider trading patterns"""
-    trades = context.get_insider_trades(limit=15)
-
-    if not trades:
-        return "neutral", 0.40
-
-    buys = sum(1 for t in trades if t["transaction_type"] == "buy")
-    buy_ratio = buys / len(trades)
-
-    if buy_ratio > 0.7:
-        return "bullish", 0.80
-    elif buy_ratio > 0.5:
-        return "neutral", 0.60
-    else:
-        return "bearish", 0.65
-
-
-# ============================================================================
-# COMPREHENSIVE FUNDAMENTAL AGENTS
-# ============================================================================
-
-
-@simple_agent("Basic Fundamental Agent", weight=0.20)
-def basic_fundamental_agent(ticker, context):
-    """Simple 5-factor fundamental check"""
-    pe = context.get_metric("pe_ratio", default=999)
-    roe = context.get_metric("roe", default=0)
-    debt = context.get_metric("debt_to_equity", default=999)
-    margin = context.get_metric("profit_margin", default=0)
-    dividend = context.get_metric("dividend_yield", default=0)
-
-    score = 0
+    # Simple logic
     if pe < 20:
-        score += 1
-    if roe > 15:
-        score += 1
-    if debt < 0.5:
-        score += 1
-    if margin > 15:
-        score += 1
-    if dividend > 2:
-        score += 1
-
-    if score >= 4:
-        return "bullish", 0.90
-    elif score >= 3:
-        return "bullish", 0.75
-    elif score >= 2:
-        return "neutral", 0.60
+        return "bullish", 0.8, f"Low P/E ratio of {pe:.1f} suggests good value"
+    elif pe > 40:
+        return "bearish", 0.7, f"High P/E ratio of {pe:.1f} suggests overvaluation"
     else:
-        return "bearish", 0.70
-
-
-@simple_agent("Advanced Fundamental Agent", weight=0.25)
-def advanced_fundamental_agent(ticker, context):
-    """Advanced multi-factor analysis with weighted scoring"""
-    from examples.fundamental_agents import (
-        _score_valuation,
-        _score_profitability,
-        _score_financial_health,
-        _score_growth_income,
-    )
-
-    fund = context.get_fundamentals()
-
-    if not fund:
-        return "neutral", 0.40
-
-    # Calculate weighted score
-    total_score = (
-        _score_valuation(fund) * 0.30
-        + _score_profitability(fund) * 0.30
-        + _score_financial_health(fund) * 0.25
-        + _score_growth_income(fund) * 0.15
-    )
-
-    if total_score >= 80:
-        return "bullish", 0.95
-    elif total_score >= 70:
-        return "bullish", 0.85
-    elif total_score >= 60:
-        return "bullish", 0.75
-    elif total_score >= 50:
-        return "neutral", 0.65
-    else:
-        return "bearish", 0.70
-
-
-@simple_agent("Sector-Specific Fundamental Agent", weight=0.18)
-def sector_fundamental_agent(ticker, context):
-    """Fundamental analysis adjusted for sector"""
-    from examples.fundamental_agents import _get_sector_thresholds
-
-    fund = context.get_fundamentals()
-
-    if not fund:
-        return "neutral", 0.40
-
-    sector = fund.get("sector", "Unknown")
-    thresholds = _get_sector_thresholds(sector)
-
-    score = 0
-    pe = fund.get("pe_ratio", 999)
-    roe = fund.get("roe", 0)
-    debt = fund.get("debt_to_equity", 999)
-    margin = fund.get("profit_margin", 0)
-
-    if pe < thresholds["pe_good"]:
-        score += 25
-    elif pe < thresholds["pe_fair"]:
-        score += 15
-    elif pe < thresholds["pe_high"]:
-        score += 5
-
-    if roe > thresholds["roe_excellent"]:
-        score += 25
-    elif roe > thresholds["roe_good"]:
-        score += 15
-
-    if debt < thresholds["debt_low"]:
-        score += 25
-    elif debt < thresholds["debt_acceptable"]:
-        score += 15
-
-    if margin > thresholds["margin_high"]:
-        score += 25
-    elif margin > thresholds["margin_good"]:
-        score += 15
-
-    if score >= 75:
-        return "bullish", 0.90
-    elif score >= 60:
-        return "bullish", 0.80
-    elif score >= 40:
-        return "neutral", 0.65
-    else:
-        return "bearish", 0.75
-
-
-@simple_agent("Quality Score Agent", weight=0.22)
-def quality_score_agent(ticker, context):
-    """Buffett-style quality investing"""
-    fund = context.get_fundamentals()
-
-    if not fund:
-        return "neutral", 0.40
-
-    quality_score = 0
-
-    # High ROE (30 points)
-    roe = fund.get("roe", 0)
-    if roe > 25:
-        quality_score += 30
-    elif roe > 20:
-        quality_score += 25
-    elif roe > 15:
-        quality_score += 18
-    elif roe > 10:
-        quality_score += 10
-
-    # Strong margins (25 points)
-    profit_margin = fund.get("profit_margin", 0)
-    operating_margin = fund.get("operating_margin", 0)
-    avg_margin = (profit_margin + operating_margin) / 2
-
-    if avg_margin > 25:
-        quality_score += 25
-    elif avg_margin > 20:
-        quality_score += 20
-    elif avg_margin > 15:
-        quality_score += 13
-
-    # Financial strength (25 points)
-    debt = fund.get("debt_to_equity", 999)
-    current_ratio = fund.get("current_ratio", 0)
-
-    if debt < 0.3 and current_ratio > 2.0:
-        quality_score += 25
-    elif debt < 0.5 and current_ratio > 1.5:
-        quality_score += 18
-    elif debt < 1.0 and current_ratio > 1.0:
-        quality_score += 10
-
-    # Fair valuation (20 points)
-    pe = fund.get("pe_ratio", 999)
-    if pe < 15:
-        quality_score += 20
-    elif pe < 20:
-        quality_score += 15
-    elif pe < 25:
-        quality_score += 10
-    elif pe < 30:
-        quality_score += 5
-
-    quality_pct = quality_score
-
-    if quality_pct >= 80:
-        return "bullish", 0.95
-    elif quality_pct >= 70:
-        return "bullish", 0.85
-    elif quality_pct >= 60:
-        return "bullish", 0.75
-    elif quality_pct >= 50:
-        return "neutral", 0.65
-    else:
-        return "bearish", 0.70
+        return "neutral", 0.5, f"Average P/E ratio of {pe:.1f}"
 
 
 # ============================================================================
-# REGISTER ALL AGENTS
+# AGENT 2: Price Trend Check (Technical Data)
+# ============================================================================
+
+
+@agent("Price Trend Agent", "Simple moving average trend analyzer")
+def price_trend_agent(ticker, context):
+    """
+    Tests: Price data access, technical indicators, list handling
+
+    Compares current price to 20-day moving average
+    """
+    # Get recent price data
+    prices = context.get_price_data(days=5)
+
+    if not prices or len(prices) == 0:
+        print(f"[Trend Agent] No price data for {ticker}")
+        return "neutral", 0.3, "No price data available"
+
+    # Get latest price and SMA
+    latest = prices[0]
+    current_price = latest.get("close", 0)
+    sma_20 = latest.get("sma_20", 0)
+
+    print(
+        f"[Trend Agent] Analyzing {ticker}: Price = ${current_price:.2f}, SMA20 = ${sma_20:.2f}"
+    )
+
+    # Simple logic
+    if current_price > sma_20:
+        diff_pct = ((current_price - sma_20) / sma_20) * 100
+        return (
+            "bullish",
+            0.7,
+            f"Price ${current_price:.2f} is {diff_pct:.1f}% above SMA20",
+        )
+    elif current_price < sma_20:
+        diff_pct = ((sma_20 - current_price) / sma_20) * 100
+        return (
+            "bearish",
+            0.6,
+            f"Price ${current_price:.2f} is {diff_pct:.1f}% below SMA20",
+        )
+    else:
+        return "neutral", 0.5, f"Price at SMA20: ${current_price:.2f}"
+
+
+# ============================================================================
+# AGENT 3: News Sentiment Check (Sentiment Data)
+# ============================================================================
+
+
+@agent("News Sentiment Agent", "Simple news sentiment analyzer")
+def news_sentiment_agent(ticker, context):
+    """
+    Tests: News data access, aggregation, sentiment scoring
+
+    Analyzes recent news sentiment
+    """
+    # Get recent news
+    news = context.get_news(limit=5)
+
+    if not news or len(news) == 0:
+        print(f"[News Agent] No news for {ticker}")
+        return "neutral", 0.3, "No recent news available"
+
+    # Calculate average sentiment
+    sentiments = [n.get("sentiment_score", 0) for n in news]
+    avg_sentiment = sum(sentiments) / len(sentiments)
+
+    print(
+        f"[News Agent] Analyzing {ticker}: {len(news)} articles, avg sentiment = {avg_sentiment:.2f}"
+    )
+
+    # Simple logic
+    if avg_sentiment > 0.3:
+        return (
+            "bullish",
+            0.75,
+            f"Positive news sentiment: {avg_sentiment:.2f} from {len(news)} articles",
+        )
+    elif avg_sentiment < -0.3:
+        return (
+            "bearish",
+            0.75,
+            f"Negative news sentiment: {avg_sentiment:.2f} from {len(news)} articles",
+        )
+    else:
+        return "neutral", 0.5, f"Mixed news sentiment: {avg_sentiment:.2f}"
+
+
+# ============================================================================
+# REGISTER AGENTS
 # ============================================================================
 
 
 def register_all_agents():
     """
-    Register all agents with the global registry
+    Register the test agents
 
-    This function is called at API startup
+    This function is called by the API on startup
     """
     registry = get_registry()
 
-    logger.info("Registering agents...")
+    print("\n" + "=" * 70)
+    print("REGISTERING TEST AGENTS")
+    print("=" * 70)
 
-    # Basic rule-based agents
-    registry.register(pe_ratio_agent.agent, weight=0.12, tags=["basic", "valuation"])
+    # Register each agent with weights
+    registry.register(pe_ratio_agent.agent, weight=1.0, tags=["fundamental", "test"])
+    print("✅ Registered: PE Ratio Agent")
 
-    registry.register(dividend_agent.agent, weight=0.10, tags=["basic", "income"])
-
-    registry.register(debt_agent.agent, weight=0.08, tags=["basic", "risk"])
-
-    registry.register(roe_agent.agent, weight=0.11, tags=["basic", "profitability"])
-
-    registry.register(news_agent.agent, weight=0.09, tags=["sentiment", "news"])
-
-    registry.register(insider_agent.agent, weight=0.08, tags=["sentiment", "insider"])
-
-    # Comprehensive fundamental agents
-    registry.register(
-        basic_fundamental_agent.agent, weight=0.20, tags=["fundamental", "multi-factor"]
-    )
+    registry.register(price_trend_agent.agent, weight=1.0, tags=["technical", "test"])
+    print("✅ Registered: Price Trend Agent")
 
     registry.register(
-        advanced_fundamental_agent.agent,
-        weight=0.25,
-        tags=["fundamental", "advanced", "multi-factor"],
+        news_sentiment_agent.agent, weight=1.0, tags=["sentiment", "test"]
     )
+    print("✅ Registered: News Sentiment Agent")
 
-    registry.register(
-        sector_fundamental_agent.agent,
-        weight=0.18,
-        tags=["fundamental", "sector-aware"],
-    )
-
-    registry.register(
-        quality_score_agent.agent, weight=0.22, tags=["fundamental", "quality", "value"]
-    )
-
-    # Optional: LLM agents (if available)
-    try:
-        from agent_builder.llm.factory import get_llm_provider
-
-        llm = get_llm_provider()
-        if llm:
-            # Import and register LLM agents
-            try:
-                from examples.llm_agents_with_personas import (
-                    fundamental_analyst_llm,
-                    value_investor_llm,
-                    risk_analyst_llm,
-                    dividend_investor_llm,
-                    growth_investor_llm,
-                )
-
-                registry.register(
-                    fundamental_analyst_llm.agent,
-                    weight=0.15,
-                    tags=["llm", "fundamental", "persona"],
-                )
-
-                registry.register(
-                    value_investor_llm.agent,
-                    weight=0.12,
-                    tags=["llm", "value", "persona"],
-                )
-
-                registry.register(
-                    risk_analyst_llm.agent, weight=0.11, tags=["llm", "risk", "persona"]
-                )
-
-                registry.register(
-                    dividend_investor_llm.agent,
-                    weight=0.10,
-                    tags=["llm", "income", "persona"],
-                )
-
-                registry.register(
-                    growth_investor_llm.agent,
-                    weight=0.13,
-                    tags=["llm", "growth", "persona"],
-                )
-
-                logger.info("✅ LLM agents registered")
-
-            except ImportError:
-                logger.info("ℹ️  LLM persona agents not available")
-
-    except ImportError:
-        logger.info("ℹ️  LLM not configured")
-
-    # Optional: Sentiment agents (if available)
-    try:
-        from examples.sentiment_agents import vader_news_agent, hybrid_sentiment_agent
-
-        registry.register(
-            vader_news_agent.agent, weight=0.09, tags=["sentiment", "vader", "news"]
-        )
-
-        registry.register(
-            hybrid_sentiment_agent.agent,
-            weight=0.11,
-            tags=["sentiment", "hybrid", "news"],
-        )
-
-        logger.info("✅ Sentiment agents registered")
-
-    except ImportError:
-        logger.info("ℹ️  Sentiment agents not available")
-
-    # Optional: FinBERT agent (if available)
-    try:
-        from examples.sentiment_agents import finbert_news_agent
-
-        registry.register(
-            finbert_news_agent.agent, weight=0.12, tags=["sentiment", "finbert", "news"]
-        )
-
-        logger.info("✅ FinBERT agent registered")
-
-    except ImportError:
-        logger.info("ℹ️  FinBERT not available")
-
-    # Get final stats
+    register_my_agents()
+    # Show summary
     stats = registry.stats()
-    logger.info(f"✅ Total agents registered: {stats['total_agents']}")
-    logger.info(f"   Enabled: {stats['enabled_agents']}")
-    logger.info(f"   Agent IDs: {', '.join(stats['agent_ids'][:5])}...")
-
-    return registry
+    agent_ids = registry.list_all()
+    print(f"\n📊 Total agents registered: {stats['total']}")
+    print(f"📊 Enabled agents: {stats['enabled']}")
+    print(f"📊 Agent IDs: {', '.join(agent_ids)}")
+    print("=" * 70 + "\n")
 
 
 # ============================================================================
-# TESTING
+# STANDALONE TEST (Optional - for debugging)
 # ============================================================================
 
 if __name__ == "__main__":
-    print("=" * 70)
-    print("Testing Complete Agent Registration")
-    print("=" * 70)
+    """
+    Test agents directly without API
+    Usage: python examples/register_agents.py
+    """
+    from agent_builder.core.config import Config
+    from agent_builder.core.database import DatabasePool, Database
+    from agent_builder.agents.context import AgentContext
 
-    # Register all agents
-    print("\n📝 Registering agents...")
-    registry = register_all_agents()
+    print("\n🧪 STANDALONE AGENT TEST\n")
 
-    # Show stats
-    print(f"\n📊 Registry Stats:")
-    stats = registry.stats()
-    print(f"   Total agents: {stats['total_agents']}")
-    print(f"   Enabled agents: {stats['enabled_agents']}")
+    # Setup
+    config = Config.from_env()
+    pool = DatabasePool(config.database)
+    db = Database(pool)
 
-    # List by category
-    print(f"\n🏷️  Agents by Category:")
+    # Test ticker
+    ticker = "AAPL"
+    context = AgentContext(ticker, db)
 
-    categories = {
-        "basic": "Basic Rule-Based",
-        "fundamental": "Comprehensive Fundamental",
-        "llm": "LLM-Powered",
-        "sentiment": "Sentiment Analysis",
-    }
+    # Test each agent
+    agents = [
+        ("PE Ratio Agent", pe_ratio_agent),
+        ("Price Trend Agent", price_trend_agent),
+        ("News Sentiment Agent", news_sentiment_agent),
+    ]
 
-    for tag, name in categories.items():
-        agents = registry.get_by_tag(tag)
-        if agents:
-            print(f"\n   {name} ({len(agents)} agents):")
-            for agent in agents:
-                meta = registry.get_metadata(agent.name.lower().replace(" ", "_"))
-                if meta:
-                    print(f"      - {agent.name} (weight: {meta['weight']})")
+    print(f"Testing agents for {ticker}:\n")
 
-    # Test execution on sample ticker
-    print(f"\n🧪 Testing agent execution on AAPL...")
-
-    test_ticker = "AAPL"
-    enabled_agents = registry.get_enabled_agents()
-
-    print(f"\n   Running {len(enabled_agents)} agents...")
-
-    signals = []
-    for i, agent in enumerate(enabled_agents[:5], 1):  # Test first 5
+    for name, agent_func in agents:
         try:
-            signal = agent.analyze(test_ticker)
-            signals.append(signal)
-            print(
-                f"   {i}. {signal.agent_name}: {signal.signal_type} ({signal.confidence:.2f})"
-            )
+            signal = agent_func.agent.analyze(ticker, context)
+            print(f"\n{name}:")
+            print(f"  Signal: {signal.signal_type}")
+            print(f"  Confidence: {signal.confidence:.0%}")
+            print(f"  Reasoning: {signal.reasoning}")
         except Exception as e:
-            print(f"   {i}. {agent.name}: ❌ {e}")
+            print(f"\n{name}: ❌ ERROR - {e}")
 
-    # Calculate consensus
-    if signals:
-        print(f"\n📊 Sample Consensus (first 5 agents):")
-
-        signal_counts = {}
-        total_conf = 0
-
-        for sig in signals:
-            signal_counts[sig.signal_type] = signal_counts.get(sig.signal_type, 0) + 1
-            total_conf += sig.confidence
-
-        majority = max(signal_counts.items(), key=lambda x: x[1])
-        avg_conf = total_conf / len(signals)
-
-        print(f"   Consensus: {majority[0]}")
-        print(f"   Confidence: {avg_conf:.2%}")
-        print(f"   Agreement: {majority[1]}/{len(signals)}")
-
-    print("\n" + "=" * 70)
-    print("✅ All agents registered and working!")
-    print("=" * 70)
-
-    print("\n💡 To use via API:")
-    print("   1. Start API: uvicorn agent_builder.api.main:app --reload")
-    print("   2. List agents: curl http://localhost:8000/agents")
-    print(
-        '   3. Analyze: curl -X POST http://localhost:8000/analyze -d \'{"ticker":"AAPL"}\''
-    )
+    pool.close()
+    print("\n✅ Test complete\n")

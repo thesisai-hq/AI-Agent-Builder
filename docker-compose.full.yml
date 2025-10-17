@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: agentbuilder_db
+    environment:
+      POSTGRES_DB: agentbuilder
+      POSTGRES_USER: agent_user
+      POSTGRES_PASSWORD: agent_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/mock_data.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_user -d agentbuilder"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentbuilder_network
+
+  # API Service
+  api:
+    build: .
+    container_name: agentbuilder_api
+    environment:
+      DATABASE_URL: postgresql://agent_user:agent_password@postgres:5432/agentbuilder
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      DEBUG: "true"
+      CORS_ORIGINS: http://localhost:3000,http://localhost:8080
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./examples:/app/examples
+    networks:
+      - agentbuilder_network
+    restart: unless-stopped
+
+  # pgAdmin (Optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: agentbuilder_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@agentbuilder.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - agentbuilder_network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  agentbuilder_network:
+    driver: bridge
