@@ -1,155 +1,99 @@
 # ============================================================================
-# AI Agent Builder - Complete Requirements
+# AI Agent Builder - Minimal Working Requirements
+# Only packages actually used in the system
+# Tested and verified on Python 3.11
 # ============================================================================
 
 # ============================================================================
-# CORE DEPENDENCIES (Required)
+# CORE DEPENDENCIES (Required for API)
 # ============================================================================
 
 # Web Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
 
 # Data Validation
-pydantic==2.5.0
+pydantic==2.5.3
 
 # Database
 psycopg2-binary==2.9.9
 
 # Configuration
-python-dotenv==1.0.0
+python-dotenv==1.0.1
 
-# HTTP Requests
+# HTTP Requests (used by LLM providers)
 requests==2.31.0
 
 # ============================================================================
-# RAG DEPENDENCIES (Optional - Choose Your Setup)
+# RAG DEPENDENCIES (Required for semantic search)
 # ============================================================================
 
-# ----------------------------------------------------------------------------
-# Option 1: Recommended Setup (Semantic Search + Persistence)
-# Best for: Production use, high quality results
-# ----------------------------------------------------------------------------
-sentence-transformers==2.2.2
-chromadb==0.4.18
+# Embeddings - Sentence Transformers
+sentence-transformers==2.3.1
 
-# ----------------------------------------------------------------------------
-# Option 2: High Performance Setup (Add to Option 1)
-# Best for: Large datasets (>100K documents), speed-critical applications
-# ----------------------------------------------------------------------------
+# PyTorch (CPU version - required by sentence-transformers)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.2
+
+# Vector Stores
+# ChromaDB - Latest version (auto-installs correct hnswlib)
+chromadb
+
+# FAISS - High performance search
 faiss-cpu==1.7.4
-numpy==1.24.3
 
-# Alternative for GPU systems (instead of faiss-cpu):
-# faiss-gpu==1.7.4
-
-# ----------------------------------------------------------------------------
-# Option 3: Zero Install (Already Works)
-# Best for: Testing, quick prototyping
-# Uses: SimpleHashEmbedding + InMemoryVectorStore (built-in)
-# ----------------------------------------------------------------------------
-# Nothing to install!
+# NumPy (required by FAISS and ML operations)
+numpy==1.26.3
 
 # ============================================================================
-# LLM DEPENDENCIES (Optional - Based on Provider)
+# OPTIONAL DEPENDENCIES
 # ============================================================================
 
-# Ollama (Local) - No Python dependencies
-# Setup: Install Ollama from https://ollama.ai
-#        ollama pull llama3.2
-
-# OpenAI (API) - Built-in with requests library
-# Setup: export OPENAI_API_KEY=sk-...
-
-# Anthropic (API) - Built-in with requests library  
-# Setup: export ANTHROPIC_API_KEY=sk-ant-...
-
-# ============================================================================
-# SENTIMENT ANALYSIS (Optional)
-# ============================================================================
-
-# VADER (Lightweight, rule-based)
+# Sentiment Analysis (used in news analysis agents)
 vaderSentiment==3.3.2
 
-# FinBERT (ML-based, financial-specific)
-# Uncomment if you want to use FinBERT instead of VADER
-# transformers==4.35.0
-# torch==2.1.0
-
 # ============================================================================
-# DEVELOPMENT DEPENDENCIES (Optional)
+# INSTALLATION
 # ============================================================================
 
-# Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-
-# Code Quality
-black==23.11.0
-flake8==6.1.0
-isort==5.12.0
-mypy==1.7.0
-
-# Debugging
-ipython==8.17.2
-ipdb==0.13.13
-
-# Documentation
-mkdocs==1.5.3
-mkdocs-material==9.4.14
-
-# Utilities
-python-multipart==0.0.6
-tabulate==0.9.0
-
-# ============================================================================
-# INSTALLATION GUIDE
-# ============================================================================
-
-# Minimal Installation (Core Only):
-# pip install -r requirements.txt --only-binary=:all:
-
-# Recommended Installation (Core + RAG):
-# pip install fastapi uvicorn pydantic psycopg2-binary python-dotenv requests
-# pip install sentence-transformers chromadb
-
-# Full Installation (Everything):
+# Install everything:
+# pip install --upgrade pip
 # pip install -r requirements.txt
 
-# Development Installation:
-# pip install -r requirements.txt
-# pip install -e .
+# Verify installation:
+# python -c "import fastapi, sentence_transformers, chromadb, faiss; print('✅ All working!')"
+
+# Test RAG system:
+# python examples/rag_agents.py
 
 # ============================================================================
-# VERSION NOTES
+# PACKAGE SUMMARY
 # ============================================================================
 
-# Python Version: 3.8+
-# Tested on: Python 3.8, 3.9, 3.10, 3.11
-
-# PostgreSQL: 12+
-# Tested with: PostgreSQL 15
-
-# Ollama: Latest
-# Recommended models: llama3.2, llama3.1, mistral
+# Core:                    ~150 MB
+# PyTorch (CPU):           ~800 MB
+# Sentence Transformers:   ~500 MB
+# ChromaDB + FAISS:        ~100 MB
+# Total:                   ~1.5 GB
 
 # ============================================================================
-# PLATFORM-SPECIFIC NOTES
+# WORKING CONFIGURATIONS
 # ============================================================================
 
-# macOS (Apple Silicon):
-# - faiss-cpu works fine
-# - sentence-transformers may need: pip install --pre torch
+# 1. Simple RAG (no extra dependencies needed):
+#    rag = RAGEngine(db=db, embedding="simple", vectorstore="memory")
 
-# Windows:
-# - Use psycopg2-binary (not psycopg2)
-# - FAISS installation: pip install faiss-cpu
+# 2. FAISS (high performance):
+#    rag = RAGEngine(db=db, embedding="sentence-transformers", vectorstore="faiss")
 
-# Linux:
-# - All packages work out of the box
-# - For GPU: pip install faiss-gpu torch
+# 3. ChromaDB (persistent storage):
+#    rag = RAGEngine(db=db, embedding="sentence-transformers", vectorstore="chroma")
 
-# Docker:
-# - All dependencies work in containers
-# - See Dockerfile for configuration
+# ============================================================================
+# NOTES
+# ============================================================================
+
+# - ChromaDB will auto-install compatible hnswlib version
+# - PyTorch CPU version used for smaller download size
+# - All LLM providers (Ollama, OpenAI, Anthropic) use requests library
+# - No development dependencies included (add separately if needed)

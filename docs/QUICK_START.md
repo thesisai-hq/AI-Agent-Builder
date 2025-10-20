@@ -42,7 +42,7 @@ pip install fastapi uvicorn pydantic psycopg2-binary python-dotenv requests
 pip install -r requirements.txt
 ```
 
-### **Step 3: Setup Database**
+### **Step 3: Setup Mock Database**
 
 ```bash
 # Copy environment template
@@ -79,15 +79,74 @@ make test
 
 ✅ Data loaded
 ```
+### **Step 4: View Mock Database with DBeaver**
+Make sure PostgreSQL is running
+```
+make start
+```
+Verify it's running
+```
+make status
+```
+Should see:
+```
+# CONTAINER ID   IMAGE                  STATUS
+# abc123def456   postgres:15-alpine     Up 2 minutes
+```
 
-### **Step 4: Install Package**
+Create Connection in DBeaver:
+
+1. **Open DBeaver**
+
+2. **Click "New Database Connection"** (or `Ctrl+N` / `Cmd+N`)
+
+3. **Select PostgreSQL**
+   - In the database list, find and click **PostgreSQL**
+   - Click **Next**
+
+4. **Enter Connection Details:**
+```
+   Host:     localhost
+   Port:     5432
+   Database: agentbuilder
+   Username: agent_user
+   Password: agent_password
+```
+
+5. **Test Connection**
+   - Click **Test Connection**
+   - First time: DBeaver will offer to download PostgreSQL driver
+   - Click **Download** and wait
+   - Should see: "Connected (PostgreSQL 15.x)"
+
+6. **Click Finish**
+
+View Tables in DBeaver:
+```
+Database Navigator (left sidebar)
+└── agentbuilder
+    └── Schemas
+        └── public
+            └── Tables
+                ├── analyses
+                ├── mock_analyst_ratings
+                ├── mock_fundamentals
+                ├── mock_insider_trades
+                ├── mock_macro_indicators
+                ├── mock_news
+                ├── mock_options
+                ├── mock_prices
+                └── mock_sec_filings
+```
+
+### **Step 5: Install Package**
 
 ```bash
 # Install in development mode
 pip install -e .
 ```
 
-### **Step 5: Run the API**
+### **Step 6: Run the API**
 
 ```bash
 python main.py
@@ -212,6 +271,7 @@ ollama serve
 
 # Pull model
 ollama pull llama3.2
+ollama pull nomic-embed-text
 
 # Test LLM agents
 python examples/llm_agent_example.py
@@ -421,6 +481,7 @@ ollama serve
 
 # In another terminal
 ollama pull llama3.2
+ollama pull nomic-embed-text
 ```
 
 ### **"No data returned from database"**

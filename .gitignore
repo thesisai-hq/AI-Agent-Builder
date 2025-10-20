@@ -42,6 +42,8 @@ ENV/
 *.db
 *.sqlite
 *.sqlite3
+chroma_db/
+test_chroma/
 
 # Logs
 *.log
