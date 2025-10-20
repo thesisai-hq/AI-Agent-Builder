@@ -8,6 +8,8 @@ from agent_builder.core.security import Validator, ValidationError
 from agent_builder.agents.base import BaseAgent, AgentSignal, agent
 from agent_builder.agents.registry import AgentRegistry, get_registry
 from agent_builder.agents.context import AgentContext
+from agent_builder.orchestration import AgentOrchestrator
+from agent_builder.utils import TechnicalIndicators
 
 __all__ = [
     "Config",
@@ -21,4 +23,6 @@ __all__ = [
     "AgentRegistry",
     "get_registry",
     "AgentContext",
+    "AgentOrchestrator",
+    "TechnicalIndicators",
 ]
