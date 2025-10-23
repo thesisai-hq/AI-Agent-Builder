@@ -1,645 +1,334 @@
-# AI Agent Builder
+# AI Agent Framework
 
-> Multi-agent stock analysis system with LLM and RAG capabilities
+> **Simple, maintainable framework for building AI financial analysis agents**
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**A flexible, production-ready framework for building AI-powered stock analysis agents with support for multiple LLM providers and RAG configurations.**
+## 🎯 What Is This?
 
----
+A lightweight, production-ready framework for building AI agents that analyze financial data. Designed to be:
 
-## 🎯 Features
+- **Simple**: Core framework is ~800 lines
+- **Self-contained**: Works immediately with built-in mock data
+- **Flexible**: Optional LLM and RAG capabilities
+- **Maintainable**: Clean architecture, minimal dependencies
+- **Production-ready**: FastAPI backend, type-safe
 
-### **Multi-Agent System**
-- ✅ Flexible agent framework with decorator-based creation
-- ✅ Agent registry for dynamic management
-- ✅ Consensus calculation from multiple signals
-- ✅ Built-in caching and performance optimization
-
-### **LLM Integration**
-- ✅ **Ollama** - Local inference (recommended for testing)
-- ✅ **OpenAI** - GPT models (production-ready)
-- ✅ **Anthropic** - Claude models (high quality)
-- ✅ Unified interface across all providers
-
-### **RAG (Retrieval-Augmented Generation)**
-- ✅ **3 Embedding Options**: Simple hash, Sentence Transformers, Ollama
-- ✅ **3 Vector Stores**: In-memory, ChromaDB, FAISS
-- ✅ Semantic search through SEC filings
-- ✅ Context-aware analysis with database integration
-
-### **Infrastructure**
-- ✅ PostgreSQL with connection pooling (50x faster)
-- ✅ Docker containerization
-- ✅ FastAPI with automatic OpenAPI docs
-- ✅ Comprehensive mock database for testing
-- ✅ Input validation and SQL injection prevention
-
----
-
-## 🚀 Quick Start
-
-See [QUICK_START.md](docs/QUICK_START.md) for detailed instructions.
+## ⚡ Quick Start
 
 ```bash
-# 1. Clone and setup
-git clone <your-repo>
-cd ai-agent-builder
-
-# 2. Install core dependencies
-pip install -r requirements.txt
-
-# 3. Start PostgreSQL (Docker)
-make start
-
-# 4. Load mock data
-make seed
-
-# 5. Run API
-python main.py
-```
-
-Visit: **http://localhost:8000/docs**
-
----
-
-## 📁 Project Structure
-
-```
-ai-agent-builder/
-├── agent_builder/           # Main package
-│   ├── core/               # Config, database, security
-│   │   ├── config.py       # Configuration management
-│   │   ├── database.py     # Connection pooling
-│   │   └── security.py     # Input validation
-│   ├── agents/             # Agent system
-│   │   ├── base.py         # Base classes
-│   │   ├── context.py      # Data access
-│   │   └── registry.py     # Agent management
-│   ├── llm/                # LLM providers
-│   │   ├── base.py         # Base interface
-│   │   ├── providers.py    # Ollama, OpenAI, Anthropic
-│   │   └── prompts.py      # Prompt templates
-│   ├── rag/                # RAG system
-│   │   ├── embeddings.py   # Embedding models
-│   │   ├── vectorstores.py # Vector databases
-│   │   ├── retriever.py    # Data retrieval
-│   │   └── rag_engine.py   # RAG orchestration
-│   └── api/                # FastAPI application
-│       ├── app.py          # Application setup
-│       └── routes.py       # API endpoints
-├── examples/               # Example agents
-│   ├── register_agents.py  # Simple test agents
-│   ├── llm_agent_example.py # LLM-powered agents
-│   └── rag_agents.py       # RAG-powered agents
-├── database/               # Database setup
-│   ├── mock_data.sql       # Mock data schema
-│   └── setup_mock_db.py    # Database initialization
-├── docker-compose.yml      # Docker configuration
-├── Makefile               # Convenient commands
-└── main.py                # Entry point
-```
-
----
-
-## 🤖 Creating Agents
-
-### **Simple Agent**
-```python
-from agent_builder import agent
-
-@agent("PE Ratio Analyzer", "Analyzes P/E ratios")
-def pe_agent(ticker, context):
-    pe = context.get_fundamental("pe_ratio")
-    
-    if pe < 15:
-        return "bullish", 0.8, "Low P/E indicates value"
-    elif pe > 30:
-        return "bearish", 0.7, "High P/E suggests overvaluation"
-    
-    return "neutral", 0.5, f"Average P/E: {pe}"
-
-# Register
-from agent_builder import get_registry
-registry = get_registry()
-registry.register(pe_agent.agent, weight=1.2, tags=["fundamental"])
-```
-
-### **LLM-Powered Agent**
-```python
-from agent_builder.llm import get_llm_provider, PromptTemplates
-
-@agent("LLM Analyzer", "Uses AI for analysis")
-def llm_agent(ticker, context):
-    llm = get_llm_provider("ollama")
-    
-    fundamentals = context.get_fundamentals()
-    prompt = PromptTemplates.fundamental_analysis(ticker, fundamentals)
-    
-    response = llm.generate(prompt, temperature=0.3)
-    parsed = PromptTemplates.parse_llm_response(response.content)
-    
-    return parsed["signal"], parsed["confidence"], parsed["reasoning"]
-```
-
-### **RAG-Powered Agent**
-```python
-from agent_builder.rag import RAGEngine
-
-@agent("RAG Analyzer", "Uses RAG for context-aware analysis")
-def rag_agent(ticker, context):
-    # Create RAG engine
-    rag = RAGEngine(
-        db=context.db,
-        embedding="sentence-transformers",
-        vectorstore="chroma"
-    )
-    
-    # Index and search SEC filings
-    rag.index_sec_filings(ticker)
-    rag_context = rag.get_relevant_context(ticker, "growth strategy")
-    
-    # Use context in LLM
-    llm = get_llm_provider("ollama")
-    response = llm.generate(f"{rag_context}\n\nAnalyze {ticker}.")
-    
-    # Parse and return
-    parsed = PromptTemplates.parse_llm_response(response.content)
-    return parsed["signal"], parsed["confidence"], parsed["reasoning"]
-```
-
----
-
-## 🌐 API Usage
-
-### **Run Analysis**
-```bash
-POST /analyze
-{
-  "ticker": "AAPL",
-  "agent_ids": ["pe_ratio_agent", "llm_analyzer"]  # optional
-}
-
-Response:
-{
-  "analysis_id": "abc-123",
-  "status": "pending"
-}
-```
-
-### **Get Results**
-```bash
-GET /analyze/{analysis_id}
-
-Response:
-{
-  "ticker": "AAPL",
-  "status": "completed",
-  "signals": [
-    {
-      "agent_name": "PE Ratio Analyzer",
-      "signal_type": "bullish",
-      "confidence": 0.8,
-      "reasoning": "Low P/E indicates value"
-    }
-  ],
-  "consensus": {
-    "signal": "bullish",
-    "confidence": 0.75,
-    "agreement": 0.88
-  }
-}
-```
-
-### **Manage Agents**
-```bash
-GET /agents                    # List all agents
-POST /agents/{id}/enable       # Enable agent
-POST /agents/{id}/disable      # Disable agent
-```
-
----
-
-## 🐳 Docker Commands
-
-```bash
-make start      # Start PostgreSQL
-make stop       # Stop database
-make shell      # Open database shell
-make logs       # View logs
-make seed       # Load mock data
-make test       # Test connection
-make backup     # Backup database
-make clean      # Remove containers
-```
-
----
-
-## 🎓 Configuration
-
-### **Environment Variables** (`.env`)
-```bash
-# Database
-DATABASE_URL=postgresql://agent_user:agent_password@localhost:5432/agentbuilder
-
-# API
-API_HOST=0.0.0.0
-API_PORT=8000
-DEBUG=true
-
-# LLM Provider (choose one)
-LLM_PROVIDER=ollama              # or "openai" or "anthropic"
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
-
-# OpenAI (if using)
-# OPENAI_API_KEY=sk-...
-# OPENAI_MODEL=gpt-4
-
-# Anthropic (if using)
-# ANTHROPIC_API_KEY=sk-ant-...
-# ANTHROPIC_MODEL=claude-3-sonnet-20240229
-```
-
-### **RAG Configuration**
-```python
-# In your agent code - choose embedding and vector store
-rag = RAGEngine(
-    db=context.db,
-    embedding="sentence-transformers",  # or "simple" or "ollama"
-    vectorstore="chroma"                # or "memory" or "faiss"
-)
-```
-
----
-
-## 📊 Mock Database
-
-Includes test data for **5 stocks**: AAPL, TSLA, MSFT, GOOGL, NVDA
-
-**Tables:**
-- `mock_fundamentals` - Financial metrics (P/E, ROE, margins, etc.)
-- `mock_prices` - Historical OHLCV + technical indicators
-- `mock_news` - News articles with sentiment scores
-- `mock_analyst_ratings` - Buy/sell ratings from major firms
-- `mock_insider_trades` - Insider buying/selling activity
-- `mock_sec_filings` - 10-K/10-Q filings with full text
-- `mock_options` - Options data for volatility analysis
-- `mock_macro_indicators` - Economic indicators (Fed rate, GDP, VIX)
-
----
-
-## 🧪 Testing
-
-```bash
-# Test database
-make test
-
-# Test agents directly
-python examples/register_agents.py
-
-# Test LLM agents
-python examples/llm_agent_example.py
-
-# Test RAG agents
-python examples/rag_agents.py
-
-# Test API
-python main.py
-curl http://localhost:8000/health
-```
-
----
-
-## 🎯 RAG Options Comparison
-
-| Configuration | Quality | Speed | Setup | Persistent |
-|---------------|---------|-------|-------|------------|
-| simple + memory | ⭐ | ⚡⚡⚡ | 0 min | ❌ |
-| ST + chroma | ⭐⭐⭐⭐⭐ | ⚡⚡ | 5 min | ✅ |
-| ST + faiss | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ | 5 min | Manual |
-| ollama + chroma | ⭐⭐⭐⭐ | ⚡ | 10 min | ✅ |
-
-*ST = sentence-transformers*
-
-**Recommended:** sentence-transformers + ChromaDB
-
----
-
-## 🔧 Troubleshooting
-
-### **Database won't start**
-```bash
-make clean
-make start
-```
-
-### **Port 5432 in use**
-```bash
-# Stop local PostgreSQL
-sudo systemctl stop postgresql
-# or change port in docker-compose.yml
-```
-
-### **Ollama not connecting**
-```bash
-# Start Ollama
-ollama serve
-
-# Pull model
-ollama pull llama3.2
-
-# Test
-ollama run llama3.2 "Hello"
-```
-
-### **Module not found errors**
-```bash
-# Install in development mode
+# Install
+git clone git@github.com:thesisai-hq/AI-Agent-Builder.git
+cd AI-Agent-Builder
 pip install -e .
 
-# Or add to PYTHONPATH
-export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+# Run examples (work immediately!)
+python examples/01_basic.py
+python examples/02_llm_agent.py  # Requires Ollama/OpenAI/Anthropic
+python examples/03_rag_agent.py  # Requires sentence-transformers
 ```
-
-### **RAG dependencies missing**
-```bash
-# Check what's installed
-pip list | grep -E "sentence|chroma|faiss"
-
-# Install recommended setup
-pip install sentence-transformers chromadb
-```
-
-See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for more.
-
----
-
-## 📚 Documentation
-
-- **API Docs**: http://localhost:8000/docs (when running)
-- **ReDoc**: http://localhost:8000/redoc
-- **Quick Start**: [QUICK_START.md](docs/QUICK_START.md)
-- **RAG Guide**: [RAG_USAGE.md](docs/RAG_USAGE.md)
-- **Docker Guide**: [DOCKER_README.md](docs/DOCKER_README.md)
-
----
 
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    FastAPI Application                    │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  POST /analyze  →  Background Task  →  Consensus  │  │
-│  └────────────────────────────────────────────────────┘  │
-└───────────────────────┬──────────────────────────────────┘
-                        │
-        ┌───────────────┼───────────────┐
-        ▼               ▼               ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│    Agent     │ │    Agent     │ │    Agent     │
-│   Registry   │ │   Context    │ │   Signals    │
-└──────┬───────┘ └──────┬───────┘ └──────────────┘
-       │                │
-       ▼                ▼
-┌──────────────────────────────────┐
-│      Database (PostgreSQL)        │
-│    Connection Pool (2-10 conns)   │
-│  ┌────────────────────────────┐  │
-│  │  Mock Data for 5 Stocks    │  │
-│  │  - Fundamentals            │  │
-│  │  - Prices + Indicators     │  │
-│  │  - News + Sentiment        │  │
-│  │  - SEC Filings             │  │
-│  │  - Options + Macro         │  │
-│  └────────────────────────────┘  │
-└──────────────────────────────────┘
-
-Optional Extensions:
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│     LLM      │  │     RAG      │  │  Sentiment   │
-│  - Ollama    │  │ - Embeddings │  │   - VADER    │
-│  - OpenAI    │  │ - VectorDB   │  │   - FinBERT  │
-│  - Claude    │  │ - Retrieval  │  │              │
-└──────────────┘  └──────────────┘  └──────────────┘
+agent_framework/
+├── models.py      # Data structures (Signal, Config)
+├── agent.py       # Agent base class
+├── llm.py         # LLM client with system prompts
+├── rag.py         # RAG system for documents
+├── database.py    # Mock database with realistic data
+└── api.py         # FastAPI REST endpoints
 ```
 
----
+## 📊 Built-in Mock Data
 
-## 💻 Development
+Framework includes realistic data for **4 tickers** (AAPL, MSFT, TSLA, JPM):
+- Fundamentals (PE, ROE, margins, growth)
+- 90 days price history
+- News headlines
+- SEC filing excerpts (2000+ words for RAG testing)
 
-### **Running Locally**
+**No external data needed for development!**
+
+## 🚀 Usage
+
+### Simple Agent (No LLM)
+
+```python
+from agent_framework import Agent, Signal, MockDatabase
+
+class ValueAgent(Agent):
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        pe = data.get('pe_ratio', 0)
+        if pe < 15:
+            return Signal('bullish', 0.8, f"PE {pe:.1f} undervalued")
+        return Signal('neutral', 0.5, "Fair value")
+
+# Use immediately!
+db = MockDatabase()
+agent = ValueAgent()
+signal = agent.analyze('AAPL', db.get_fundamentals('AAPL'))
+print(f"{signal.direction} ({signal.confidence:.0%}): {signal.reasoning}")
+```
+
+### LLM Agent with Persona
+
+```python
+from agent_framework import Agent, Signal, AgentConfig, LLMConfig
+
+class ConservativeInvestor(Agent):
+    def __init__(self):
+        config = AgentConfig(
+            name="Conservative Investor",
+            llm=LLMConfig(
+                provider='ollama',
+                model='llama3',
+                system_prompt="""You are a conservative value investor.
+                Focus on: low PE ratios, high dividends, stable businesses.
+                Be skeptical of high-growth narratives."""
+            )
+        )
+        super().__init__(config)
+    
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        prompt = f"Analyze {ticker}: PE={data['pe_ratio']}, Growth={data['revenue_growth']}%"
+        response = self.llm.chat(prompt)  # Uses system prompt automatically
+        # Parse and return signal...
+```
+
+### RAG for SEC Filings
+
+```python
+from agent_framework import Agent, AgentConfig, RAGConfig
+
+class SECAnalyst(Agent):
+    def __init__(self):
+        config = AgentConfig(
+            name="SEC Analyst",
+            rag=RAGConfig(chunk_size=300, top_k=3)
+        )
+        super().__init__(config)
+    
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        # Add SEC filing to RAG
+        self.rag.add_document(filing_text)
+        
+        # Query specific sections
+        context = self.rag.query("What are the key risk factors?")
+        
+        # Analyze context...
+```
+
+## 🎨 Design Principles
+
+### 1. **Dataclasses with Slots**
+```python
+@dataclass(frozen=True, slots=True)
+class Signal:
+    direction: str
+    confidence: float
+    reasoning: str
+```
+- 76% memory reduction vs regular classes
+- Immutable by default (frozen=True)
+- Built-in `__repr__`, `__eq__`
+
+### 2. **Lazy Initialization**
+```python
+class Agent:
+    @property
+    def llm(self):
+        if self._llm is None and self.config.llm:
+            self._llm = LLMClient(self.config.llm)
+        return self._llm
+```
+- LLM/RAG only created when accessed
+- Simple agents stay simple
+- No overhead for unused features
+
+### 3. **System Prompts for Personas**
+```python
+LLMConfig(
+    provider='anthropic',
+    model='claude-3-sonnet',
+    system_prompt="You are a conservative investor..."  # Agent persona!
+)
+```
+- Each agent can have unique personality
+- Consistent behavior across queries
+- Works with OpenAI, Anthropic, Ollama
+
+### 4. **Self-Contained Testing**
+```python
+db = MockDatabase()  # Pre-loaded with 4 tickers
+data = db.get_fundamentals('AAPL')  # Works immediately!
+```
+- No external APIs needed
+- Realistic test data
+- Fast development cycle
+
+## 📡 REST API
+
+Start the API server:
+
 ```bash
-# Start database
-make start
-
-# Install dependencies
-pip install -e .
-
-# Run API (hot reload)
-uvicorn agent_builder.api.app:app --reload
-
-# Or
-python main.py
+python -m uvicorn agent_framework.api:app --reload
 ```
 
-### **Running in Docker**
+Endpoints:
+
 ```bash
-# Full stack (API + DB)
-docker-compose -f docker-compose.full.yml up
-
-# Database only
-docker-compose up -d postgres
+GET  /                      # Health check
+GET  /tickers               # List available tickers
+GET  /tickers/{ticker}      # Get ticker data
+POST /analyze               # Run agent analysis
 ```
 
-### **Code Quality**
+Example:
+
 ```bash
-# Format code
-black .
-
-# Lint
-flake8 agent_builder/
-
-# Type check
-mypy agent_builder/
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_name": "value_agent",
+    "ticker": "AAPL"
+  }'
 ```
 
----
+Alternative:
+* Open your browser and type: http://localhost:8000/docs
+* You can click tabs for each endpoints and click **Try it out** to try them instead of using CURL in CLI.
 
 ## 🧪 Testing
 
+```python
+import pytest
+from agent_framework import Agent, Signal, MockDatabase
+
+def test_value_agent():
+    db = MockDatabase()
+    agent = ValueAgent()
+    signal = agent.analyze('AAPL', db.get_fundamentals('AAPL'))
+    
+    assert signal.direction in ('bullish', 'bearish', 'neutral')
+    assert 0 <= signal.confidence <= 1
+    assert len(signal.reasoning) > 0
+```
+
+Run tests:
+
 ```bash
-# Install test dependencies
-pip install pytest pytest-asyncio
-
-# Run tests
 pytest tests/
-
-# With coverage
-pytest --cov=agent_builder tests/
 ```
 
----
+## 🔌 LLM Provider Setup
 
-## 📈 Performance
+### Ollama (Local)
+```bash
+# Install Ollama
+curl https://ollama.ai/install.sh | sh
 
-- **Connection Pooling**: 50x faster than creating new connections
-- **Agent Caching**: Caches fundamental data per analysis
-- **Background Processing**: Non-blocking analysis execution
-- **Optimized Queries**: Indexed tables for fast retrieval
-
-**Benchmarks** (5 agents analyzing AAPL):
-- Cold start: ~2 seconds
-- Warm (cached): ~500ms
-- Database query: ~5ms (with pooling)
-
----
-
-## 🔐 Security
-
-- ✅ Input validation (ticker, agent IDs)
-- ✅ SQL injection prevention (table whitelist)
-- ✅ Parameterized queries
-- ✅ CORS configuration
-- ✅ Environment-based secrets
-
----
-
-## 📦 Dependencies
-
-### **Core** (Required)
-```
-fastapi, uvicorn, pydantic, psycopg2-binary, python-dotenv, requests
+# Pull model
+ollama pull llama3.2
 ```
 
-### **RAG** (Optional - Recommended)
-```
-sentence-transformers, chromadb
-```
-
-### **Performance** (Optional)
-```
-faiss-cpu, numpy
-```
-
-See [requirements.txt](requirements.txt) for complete list.
-
----
-
-## 🛠️ Extending the System
-
-### **Add a Custom Agent**
+### OpenAI
 ```python
-from agent_builder import agent, get_registry
-
-@agent("My Custom Agent", "Description")
-def my_agent(ticker, context):
-    # Your analysis logic
-    data = context.get_fundamental("pe_ratio")
-    return "bullish", 0.8, "Your reasoning"
-
-registry = get_registry()
-registry.register(my_agent.agent, weight=1.0)
+LLMConfig(
+    provider='openai',
+    model='gpt-4',
+    api_key='sk-...',
+    system_prompt="Your agent persona"
+)
 ```
 
-### **Add a Custom Data Source**
+### Anthropic
 ```python
-# In agent_builder/agents/context.py
-class AgentContext:
-    def get_custom_data(self, ticker):
-        return self.db.execute(
-            "SELECT * FROM my_custom_table WHERE ticker = %s",
-            (ticker,)
-        )
+LLMConfig(
+    provider='anthropic',
+    model='claude-3-sonnet-20240229',
+    api_key='sk-ant-...',
+    system_prompt="Your agent persona"
+)
 ```
 
-### **Add a Custom LLM Provider**
-```python
-# In agent_builder/llm/providers.py
-class MyLLMProvider(BaseLLMProvider):
-    def generate(self, prompt, **kwargs):
-        # Your implementation
-        pass
+## 🎯 Use Cases
+
+### 1. **Open Source Framework** (This Repo)
+- Core framework code
+- Examples with mock data
+- Documentation
+- Anyone can clone and run
+
+### 2. **Your Investment Backend**
+- Use framework as foundation
+- Add proprietary agents
+- Connect real data sources
+- Deploy with your frontend
+
+## 📦 Project Structure
+
 ```
-
----
-
-## 🌍 Production Deployment
-
-### **Environment Setup**
-1. Set production DATABASE_URL
-2. Configure CORS origins
-3. Set DEBUG=false
-4. Use production-grade secrets management
-
-### **Scaling**
-- Increase database connection pool size
-- Use Redis for caching (future enhancement)
-- Deploy multiple API instances behind load balancer
-- Use managed vector database (Pinecone, Weaviate)
-
-### **Monitoring**
-- Enable logging to file
-- Add metrics endpoint
-- Monitor database connection pool
-- Track LLM token usage
-
----
-
-## 📄 License
-
-MIT License - See [LICENSE](docs/LICENSE) file
-
----
+AI-Agent-Builder/
+├── agent_framework/         # Core package
+│   ├── __init__.py         # Public API
+│   ├── models.py           # Data structures
+│   ├── agent.py            # Agent base
+│   ├── llm.py              # LLM client
+│   ├── rag.py              # RAG system
+│   ├── database.py         # Mock database
+│   └── api.py              # FastAPI backend
+│
+├── examples/               # Working examples
+│   ├── 01_basic.py        # Simple agents
+│   ├── 02_llm_agent.py    # LLM + personas
+│   └── 03_rag_agent.py    # RAG analysis
+│
+├── tests/
+│   └── test_framework.py
+│
+├── requirements.txt
+├── setup.py
+└── README.md
+```
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-agent`)
-3. Commit changes (`git commit -m 'Add amazing agent'`)
-4. Push to branch (`git push origin feature/amazing-agent`)
-5. Open Pull Request
+Contributions welcome! This is an open-source framework designed to be simple and maintainable.
 
----
+## 📄 License
 
-## 🆘 Support
+MIT License - see LICENSE file
 
-- **Issues**: GitHub Issues
-- **Discussions**: GitHub Discussions
-- **Documentation**: [docs/](docs/)
+## 🚀 Roadmap
 
----
-
-## 🙏 Acknowledgments
-
-- FastAPI for the excellent web framework
-- Sentence Transformers for semantic embeddings
-- ChromaDB for easy vector storage
-- Ollama for local LLM inference
-- PostgreSQL for reliable data storage
-
----
-
-## 📊 Roadmap
-
-- [x] Multi-agent framework
-- [x] LLM integration (Ollama, OpenAI, Claude)
-- [x] RAG system with multiple backends
-- [x] Docker containerization
-- [x] Mock database for testing
-- [ ] Real-time data integration
+- [ ] PostgreSQL integration
+- [ ] Real-time data connectors
+- [ ] Agent composition (ensemble agents)
 - [ ] Backtesting framework
-- [ ] Portfolio optimization
 - [ ] Web dashboard
-- [ ] Agent performance metrics
-- [ ] A/B testing for agents
+
+## 💡 Philosophy
+
+**Keep It Simple**
+- Framework core: ~800 lines
+- No unnecessary abstractions
+- Clear, readable code
+- Minimal dependencies
+
+**Make It Work**
+- Self-contained examples
+- Built-in mock data
+- Works in 30 seconds
+- Production-ready patterns
+
+**Stay Maintainable**
+- Type hints everywhere
+- Dataclasses for data
+- Lazy initialization
+- Clean separation of concerns
 
 ---
 
-**Built with ❤️ for intelligent stock analysis**
-
----
+**Built with ❤️ for simplicity and maintainability**

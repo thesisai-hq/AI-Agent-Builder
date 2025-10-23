@@ -24,7 +24,7 @@ wheels/
 venv/
 env/
 ENV/
-.venv/
+.venv
 
 # IDE
 .vscode/
@@ -32,36 +32,20 @@ ENV/
 *.swp
 *.swo
 *~
-.DS_Store
-
-# Environment variables
-.env
-.env.local
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-chroma_db/
-test_chroma/
-
-# Logs
-*.log
-logs/
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-*.bak
+# Environment
+.env
+.env.local
 
-# Application specific
-data/
-uploads/
-downloads/
-cache/
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
