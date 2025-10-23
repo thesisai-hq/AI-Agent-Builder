@@ -20,8 +20,8 @@ A lightweight, production-ready framework for building AI agents that analyze fi
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/yourusername/ai-agent-framework.git
-cd ai-agent-framework
+git clone git@github.com:thesisai-hq/AI-Agent-Builder.git
+cd AI-Agent-Builder
 pip install -e .
 
 # 2. Start PostgreSQL with Docker

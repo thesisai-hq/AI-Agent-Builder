@@ -11,7 +11,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/ai-agent-framework.git
+git clone git@github.com:thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
 
 # Install framework

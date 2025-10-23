@@ -13,7 +13,7 @@ Complete setup instructions for the AI Agent Framework with PostgreSQL.
 ### Step 1: Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/ai-agent-builder.git
+git clone git@github.com:thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
 pip install -e .
 ```
