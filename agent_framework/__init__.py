@@ -1,7 +1,7 @@
-"""AI Agent Framework - Simple, maintainable AI agent builder.
+"""AI Agent Framework - Simple, maintainable AI agent builder with PostgreSQL.
 
 Public API exports for clean imports:
-    from agent_framework import Agent, Signal, LLMConfig, MockDatabase
+    from agent_framework import Agent, Signal, LLMConfig, Database
 """
 
 __version__ = "1.0.0"

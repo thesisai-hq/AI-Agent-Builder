@@ -18,49 +18,60 @@ def check_imports():
         return True
     except ImportError as e:
         print(f"❌ Import error: {e}")
+        print("\n💡 Run: pip install -e .")
         return False
 
 
 async def test_database():
     """Test database connection."""
-    print("\n🗄️  Testing database...")
+    print("\n🗄️  Testing PostgreSQL database...")
+    
+    # Get connection string from environment
+    connection_string = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+    )
+    
     try:
         from agent_framework.database import get_database
-        
-        # Get connection string from environment
-        connection_string = os.getenv(
-            'DATABASE_URL',
-            'postgresql://postgres:postgres@localhost:5432/agent_framework'
-        )
         
         db = get_database(connection_string)
         await db.connect()
         
         tickers = await db.list_tickers()
-        print(f"✅ Connected to database with {len(tickers)} tickers")
         
         if tickers:
+            print(f"✅ Connected to database with {len(tickers)} tickers")
             print(f"   Available: {', '.join(tickers)}")
             
             # Test data retrieval
             data = await db.get_fundamentals(tickers[0])
             print(f"✅ Retrieved data for {tickers[0]}: PE={data.get('pe_ratio', 'N/A')}")
+            
+            await db.disconnect()
+            return True
         else:
             print("⚠️  Database is empty. Run: python seed_data.py")
-        
-        await db.disconnect()
-        return True
+            await db.disconnect()
+            return None  # Database works but needs seeding
+            
     except Exception as e:
         print(f"❌ Database error: {e}")
-        print("\n💡 Make sure PostgreSQL is running and seeded:")
-        print("   docker-compose up -d postgres")
-        print("   python seed_data.py")
+        print("\n💡 PostgreSQL not running or not seeded. Setup:")
+        print("   1. Start PostgreSQL: docker-compose up -d postgres")
+        print("   2. Seed database: python seed_data.py")
         return False
 
 
 async def test_simple_agent():
     """Test simple agent."""
     print("\n🤖 Testing simple agent...")
+    
+    connection_string = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+    )
+    
     try:
         from agent_framework import Agent, Signal
         from agent_framework.database import get_database
@@ -73,11 +84,6 @@ async def test_simple_agent():
                     0.7,
                     f"PE ratio: {pe:.1f}"
                 )
-        
-        connection_string = os.getenv(
-            'DATABASE_URL',
-            'postgresql://postgres:postgres@localhost:5432/agent_framework'
-        )
         
         db = get_database(connection_string)
         await db.connect()
@@ -97,6 +103,7 @@ async def test_simple_agent():
         
         await db.disconnect()
         return True
+        
     except Exception as e:
         print(f"❌ Agent error: {e}")
         return False
@@ -144,12 +151,12 @@ def test_api():
 async def main():
     """Run all checks."""
     print("=" * 60)
-    print("AI Agent Framework - Quick Start")
+    print("AI Agent Framework - Quick Start Verification")
     print("=" * 60)
     
     checks = [
         ("Imports", check_imports, False),
-        ("Database", test_database, True),
+        ("PostgreSQL Database", test_database, True),
         ("Simple Agent", test_simple_agent, True),
         ("RAG System", test_rag_system, False),
         ("API", test_api, False),
@@ -180,7 +187,7 @@ async def main():
         if result is True:
             print(f"✅ {name}")
         elif result is None:
-            print(f"⚠️  {name} (optional)")
+            print(f"⚠️  {name} (optional or needs seeding)")
         else:
             print(f"❌ {name}")
     

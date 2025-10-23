@@ -1,7 +1,7 @@
 """PostgreSQL database with connection pooling for financial data."""
 
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncpg
 from contextlib import asynccontextmanager
 
@@ -26,12 +26,18 @@ class Database:
     async def connect(self):
         """Create connection pool."""
         if self._pool is None:
-            self._pool = await asyncpg.create_pool(
-                self.connection_string,
-                min_size=2,
-                max_size=10,
-                command_timeout=60
-            )
+            try:
+                self._pool = await asyncpg.create_pool(
+                    self.connection_string,
+                    min_size=2,
+                    max_size=10,
+                    command_timeout=60
+                )
+            except Exception as e:
+                raise ConnectionError(
+                    f"Failed to connect to PostgreSQL: {e}\n"
+                    f"Make sure PostgreSQL is running: docker-compose up -d postgres"
+                )
     
     async def disconnect(self):
         """Close connection pool."""
@@ -111,7 +117,7 @@ class Database:
         async with self.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT date, headline, sentiment, source
+                SELECT id, date, headline, sentiment, source
                 FROM news
                 WHERE ticker = $1
                 ORDER BY date DESC
@@ -234,20 +240,29 @@ class Database:
 _db_instance: Optional[Database] = None
 
 
-def get_database(connection_string: Optional[str] = None) -> Database:
+def get_database(connection_string: Optional[str] = None, force_new: bool = False) -> Database:
     """Get database singleton instance.
     
     Args:
-        connection_string: PostgreSQL connection string (only needed first time)
+        connection_string: PostgreSQL connection string (required for first call or with force_new)
+        force_new: Force creation of new instance with new connection string
         
     Returns:
         Database instance
+        
+    Raises:
+        ValueError: If connection string not provided on first call
     """
     global _db_instance
     
-    if _db_instance is None:
+    if force_new or _db_instance is None:
         if connection_string is None:
-            raise ValueError("Connection string required for first database initialization")
+            if _db_instance is not None:
+                return _db_instance
+            raise ValueError(
+                "Connection string required for first database initialization.\n"
+                "Example: postgresql://postgres:postgres@localhost:5432/agent_framework"
+            )
         _db_instance = Database(connection_string)
     
     return _db_instance

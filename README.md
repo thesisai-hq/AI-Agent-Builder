@@ -1,6 +1,6 @@
 # AI Agent Framework
 
-> **Simple, maintainable framework for building AI financial analysis agents**
+> **Simple, maintainable framework for building AI financial analysis agents with PostgreSQL**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,36 +10,32 @@
 A lightweight, production-ready framework for building AI agents that analyze financial data. Designed to be:
 
 - **Simple**: Core framework is ~800 lines
-- **Self-contained**: Works immediately with built-in mock data
+- **Production-ready**: PostgreSQL with connection pooling, FastAPI backend
 - **Flexible**: Optional LLM and RAG capabilities
 - **Maintainable**: Clean architecture, minimal dependencies
-- **Production-ready**: FastAPI backend, type-safe
+- **Type-safe**: Full type hints throughout
 
-## ⚡ Quick Start
+## ⚡ Quick Start (3 Steps)
 
 ```bash
-# Install
+# 1. Clone and install
 git clone https://github.com/yourusername/ai-agent-builder.git
 cd AI-Agent-Builder
 pip install -e .
 
-# Setup PostgreSQL database (If using Docker)
+# 2. Start PostgreSQL with Docker
 docker-compose up -d postgres
-docker exec -i agent_framework_db psql -U postgres agent_framework < schema.sql
-python seed_data.py
 
-# Setup PostgreSQL database (If using local psql)
-createdb agent_framework
-psql agent_framework < schema.sql
+# 3. Seed sample data (AAPL, MSFT, TSLA, JPM)
 python seed_data.py
 
 # Run examples
 python examples/01_basic.py
-python examples/02_llm_agent.py  # Requires Ollama/OpenAI/Anthropic
-python examples/03_rag_agent.py  # Requires sentence-transformers
 ```
 
-## 🏗️ Architecture
+That's it! You now have a working framework with 4 sample stocks.
+
+## 🗂️ Architecture
 
 ```
 agent_framework/
@@ -47,7 +43,7 @@ agent_framework/
 ├── agent.py       # Agent base class
 ├── llm.py         # LLM client with system prompts
 ├── rag.py         # RAG system for documents
-├── database.py    # PostgreSQL database with connection pooling
+├── database.py    # PostgreSQL with connection pooling
 └── api.py         # FastAPI REST endpoints
 ```
 
@@ -55,47 +51,41 @@ agent_framework/
 
 Framework uses PostgreSQL with asyncpg for high-performance async database access.
 
-**Connection pooling** (2-10 connections) provides **9x faster queries** compared to creating new connections.
+**Connection pooling** (2-10 connections) provides **9x faster queries**.
 
-Recommand using **Docker**.
+### Quick Setup (Docker - Recommended)
 
-### Setup Docker Database
 ```bash
-# Create database
+# Start PostgreSQL
 docker-compose up -d postgres
 
-# Run schema
-docker exec -i agent_framework_db psql -U postgres agent_framework < schema.sql
-
-# Seed with sample data (AAPL, MSFT, TSLA, JPM)
+# Seed with sample data
 python seed_data.py
-```
 
-### Setup Local Database
-
-```bash
-# Create database
-createdb agent_framework
-
-# Run schema
-psql agent_framework < schema.sql
-
-# Seed with sample data (AAPL, MSFT, TSLA, JPM)
-python seed_data.py
+# Verify
+python quickstart.py
 ```
 
 ### Database Schema
 
-- **fundamentals** - Company fundamental metrics
-- **prices** - Historical price data
+- **fundamentals** - Company fundamental metrics (PE ratio, ROE, etc.)
+- **prices** - Historical price data (OHLCV)
 - **news** - News headlines and sentiment
 - **sec_filings** - SEC 10-K filing excerpts
 
 Sample data includes 4 tickers with 90 days of prices, news, and SEC filings.
 
-## 🚀 Usage
+### Connection String
 
-### Simple Agent (No LLM)
+Set in `.env` file:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/agent_framework
+```
+
+## 🚀 Usage Examples
+
+### 1. Simple Value Investing Agent
 
 ```python
 import asyncio
@@ -125,7 +115,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### LLM Agent with Persona
+### 2. LLM Agent with Persona
 
 ```python
 from agent_framework import Agent, Signal, AgentConfig, LLMConfig
@@ -146,11 +136,11 @@ class ConservativeInvestor(Agent):
     
     def analyze(self, ticker: str, data: dict) -> Signal:
         prompt = f"Analyze {ticker}: PE={data['pe_ratio']}, Growth={data['revenue_growth']}%"
-        response = self.llm.chat(prompt)  # Uses system prompt automatically
+        response = self.llm.chat(prompt)
         # Parse and return signal...
 ```
 
-### RAG for SEC Filings
+### 3. RAG for SEC Filings
 
 ```python
 from agent_framework import Agent, AgentConfig, RAGConfig
@@ -163,14 +153,14 @@ class SECAnalyst(Agent):
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze_filing(self, ticker: str, filing_text: str):
         # Add SEC filing to RAG
         self.rag.add_document(filing_text)
         
         # Query specific sections
         context = self.rag.query("What are the key risk factors?")
         
-        # Analyze context...
+        # Analyze context and return signal...
 ```
 
 ## 🎨 Design Principles
@@ -184,7 +174,7 @@ class Signal:
     reasoning: str
 ```
 - 76% memory reduction vs regular classes
-- Immutable by default (frozen=True)
+- Immutable by default
 - Built-in `__repr__`, `__eq__`
 
 ### 2. **Lazy Initialization**
@@ -198,35 +188,22 @@ class Agent:
 ```
 - LLM/RAG only created when accessed
 - Simple agents stay simple
-- No overhead for unused features
 
-### 3. **System Prompts for Personas**
+### 3. **Async Database with Connection Pooling**
 ```python
-LLMConfig(
-    provider='anthropic',
-    model='claude-3-sonnet',
-    system_prompt="You are a conservative investor..."  # Agent persona!
-)
+async with db.acquire() as conn:
+    result = await conn.fetch("SELECT * FROM fundamentals WHERE ticker = $1", ticker)
 ```
-- Each agent can have unique personality
-- Consistent behavior across queries
-- Works with OpenAI, Anthropic, Ollama
-
-### 4. **Self-Contained Testing**
-```python
-db = MockDatabase()  # Pre-loaded with 4 tickers
-data = db.get_fundamentals('AAPL')  # Works immediately!
-```
-- No external APIs needed
-- Realistic test data
-- Fast development cycle
+- 9x faster than creating new connections
+- Automatic resource management
+- Production-ready performance
 
 ## 📡 REST API
 
 Start the API server:
 
 ```bash
-python -m uvicorn agent_framework.api:app --reload
+uvicorn agent_framework.api:app --reload
 ```
 
 Endpoints:
@@ -253,83 +230,84 @@ curl -X POST http://localhost:8000/analyze \
 
 ```python
 import pytest
-from agent_framework import Agent, Signal, MockDatabase
+import asyncio
+from agent_framework import Agent, Signal
+from agent_framework.database import get_database
 
-def test_value_agent():
-    db = MockDatabase()
+@pytest.mark.asyncio
+async def test_value_agent():
+    db = get_database('postgresql://postgres:postgres@localhost:5432/agent_framework')
+    await db.connect()
+    
     agent = ValueAgent()
-    signal = agent.analyze('AAPL', db.get_fundamentals('AAPL'))
+    data = await db.get_fundamentals('AAPL')
+    signal = agent.analyze('AAPL', data)
     
     assert signal.direction in ('bullish', 'bearish', 'neutral')
     assert 0 <= signal.confidence <= 1
-    assert len(signal.reasoning) > 0
+    
+    await db.disconnect()
 ```
 
 Run tests:
 
 ```bash
-pytest tests/
+pytest tests/ -v
 ```
 
-## 🔌 LLM Provider Setup
+## 📌 LLM Provider Setup
 
-### Ollama (Local)
+### Ollama (Local, Recommended)
 ```bash
 # Install Ollama
 curl https://ollama.ai/install.sh | sh
 
-# Start Ollama if not automatically started
-ollama serve
-
 # Pull model
 ollama pull llama3.2
+
+# Install Python client (optional - already in setup.py)
+pip install ollama
 ```
 
 ### OpenAI
+```bash
+# Add to .env
+echo "OPENAI_API_KEY=sk-..." >> .env
+```
+
 ```python
 LLMConfig(
     provider='openai',
     model='gpt-4',
-    api_key='sk-...',
-    system_prompt="Your agent persona"
+    api_key=os.getenv('OPENAI_API_KEY')
 )
 ```
 
 ### Anthropic
+```bash
+# Add to .env
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
+```
+
 ```python
 LLMConfig(
     provider='anthropic',
     model='claude-3-sonnet-20240229',
-    api_key='sk-ant-...',
-    system_prompt="Your agent persona"
+    api_key=os.getenv('ANTHROPIC_API_KEY')
 )
 ```
-
-## 🎯 Use Cases
-
-### 1. **Open Source Framework** (This Repo)
-- Core framework code
-- Examples with mock data
-- Documentation
-- Anyone can clone and run
-
-### 2. **Your Investment Backend**
-- Use framework as foundation
-- Add proprietary agents
-- Connect real data sources
-- Deploy with your frontend
 
 ## 📦 Project Structure
 
 ```
 AI-Agent-Builder/
-├── agent_framework/         # Core package
+├── agent_framework/         # Core package (~800 lines)
 │   ├── __init__.py         # Public API
 │   ├── models.py           # Data structures
 │   ├── agent.py            # Agent base
 │   ├── llm.py              # LLM client
 │   ├── rag.py              # RAG system
-│   ├── database.py         # Mock database
+│   ├── database.py         # PostgreSQL
 │   └── api.py              # FastAPI backend
 │
 ├── examples/               # Working examples
@@ -340,8 +318,11 @@ AI-Agent-Builder/
 ├── tests/
 │   └── test_framework.py
 │
+├── docker-compose.yml      # PostgreSQL setup
+├── schema.sql              # Database schema
+├── seed_data.py            # Sample data loader
+├── quickstart.py           # Verification script
 ├── requirements.txt
-├── setup.py
 └── README.md
 ```
 
@@ -351,11 +332,11 @@ Contributions welcome! This is an open-source framework designed to be simple an
 
 ## 📄 License
 
-MIT License - see [LICENSE file](LICENSE)
+MIT License - see [LICENSE](LICENSE)
 
 ## 🚀 Roadmap
 
-- [ ] Real-time data connectors
+- [ ] Real-time data connectors (Alpha Vantage, Yahoo Finance)
 - [ ] Agent composition (ensemble agents)
 - [ ] Backtesting framework
 - [ ] Web dashboard
@@ -368,16 +349,18 @@ MIT License - see [LICENSE file](LICENSE)
 - Clear, readable code
 - Minimal dependencies
 
-**Make It Work**
-- Self-contained examples
-- Built-in mock data
-- Works in 30 seconds
-- Production-ready patterns
+**Production Ready**
+- PostgreSQL with connection pooling
+- FastAPI with proper lifecycle management
+- Type hints everywhere
+- Comprehensive error handling
 
 **Stay Maintainable**
-- Type hints everywhere
 - Dataclasses for data
 - Lazy initialization
 - Clean separation of concerns
+- Async/await throughout
 
 ---
+
+**Built with ❤️ for financial AI agents**

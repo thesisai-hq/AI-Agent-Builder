@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: agent_framework
     ports:
-      - "5433:5432"  # Map to host port 5433 instead
+      - "5432:5432"  # Standard PostgreSQL port
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
