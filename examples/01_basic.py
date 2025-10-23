@@ -1,9 +1,9 @@
-"""Example 1: Simple agent with PostgreSQL database."""
+"""Example 1: Simple agent with PostgreSQL database and dependency injection."""
 
 import asyncio
 import os
-from agent_framework import Agent, Signal
-from agent_framework.database import get_database
+from agent_framework import Agent, Signal, Config
+from agent_framework.database import Database
 
 
 class ValueAgent(Agent):
@@ -67,31 +67,35 @@ async def main():
     print("AI Agent Framework - Basic Example")
     print("=" * 60)
     
-    # Connect to database
-    connection_string = os.getenv(
-        'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5432/agent_framework'
-    )
+    # Connect to database using config helper
+    connection_string = Config.get_database_url()
     
-    print("\n🔌 Connecting to database...")
-    db = get_database(connection_string)
-    await db.connect()
-    print("✅ Connected!")
-    
-    # Create agents
-    value_agent = ValueAgent()
-    growth_agent = GrowthAgent()
+    print("\n📌 Connecting to database...")
+    db = Database(connection_string)
     
     try:
+        await db.connect()
+        print("✅ Connected!")
+        
+        # Create agents
+        value_agent = ValueAgent()
+        growth_agent = GrowthAgent()
+        
         # Analyze all tickers
         tickers = await db.list_tickers()
+        print(f"\n📊 Found {len(tickers)} tickers: {', '.join(tickers)}\n")
         
         for ticker in tickers:
-            print(f"\n📊 Analyzing {ticker}")
-            print("-" * 60)
+            print(f"\n{'='*60}")
+            print(f"📊 Analyzing {ticker}")
+            print("=" * 60)
             
             # Get data
             data = await db.get_fundamentals(ticker)
+            if not data:
+                print(f"⚠️  No data available for {ticker}")
+                continue
+            
             print(f"Company: {data['name']}")
             print(f"PE Ratio: {data['pe_ratio']:.1f}")
             print(f"Revenue Growth: {data['revenue_growth']:.1f}%")
@@ -115,6 +119,9 @@ async def main():
         print("✅ Example completed successfully!")
         print("=" * 60)
         
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        raise
     finally:
         await db.disconnect()
 

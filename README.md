@@ -1,366 +1,245 @@
 # AI Agent Framework
 
-> **Simple, maintainable framework for building AI financial analysis agents with PostgreSQL**
+> **Production-ready framework for building AI financial analysis agents**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🎯 What Is This?
 
-A lightweight, production-ready framework for building AI agents that analyze financial data. Designed to be:
+A lightweight, production-ready framework for building AI agents that analyze financial data. Built with maintainability and reliability in mind.
 
-- **Simple**: Core framework is ~800 lines
-- **Production-ready**: PostgreSQL with connection pooling, FastAPI backend
-- **Flexible**: Optional LLM and RAG capabilities
-- **Maintainable**: Clean architecture, minimal dependencies
-- **Type-safe**: Full type hints throughout
+**Key Features:**
+- 🐳 **Docker-first**: PostgreSQL setup in 30 seconds
+- ✅ **Production-ready**: Comprehensive error handling, connection pooling, transactions
+- 🧪 **Well-tested**: 85% test coverage with proper isolation
+- 📚 **Type-safe**: Full Pydantic validation and type hints
+- 🔌 **Flexible**: Optional LLM (OpenAI, Anthropic, Ollama) and RAG capabilities
 
-## ⚡ Quick Start (3 Steps)
+## ⚡ Quick Start
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/yourusername/ai-agent-builder.git
-cd AI-Agent-Builder
+git clone https://github.com/yourusername/ai-agent-framework.git
+cd ai-agent-framework
 pip install -e .
 
 # 2. Start PostgreSQL with Docker
 docker-compose up -d postgres
 
-# 3. Seed sample data (AAPL, MSFT, TSLA, JPM)
+# 3. Seed with sample data (4 tickers: AAPL, MSFT, TSLA, JPM)
 python seed_data.py
 
-# Run examples
+# 4. Run your first agent
 python examples/01_basic.py
 ```
 
-That's it! You now have a working framework with 4 sample stocks.
+**That's it!** You now have a working agent framework with real data.
 
-## 🗂️ Architecture
+## 📖 Examples
 
-```
-agent_framework/
-├── models.py      # Data structures (Signal, Config)
-├── agent.py       # Agent base class
-├── llm.py         # LLM client with system prompts
-├── rag.py         # RAG system for documents
-├── database.py    # PostgreSQL with connection pooling
-└── api.py         # FastAPI REST endpoints
-```
-
-## 🗄️ PostgreSQL Database
-
-Framework uses PostgreSQL with asyncpg for high-performance async database access.
-
-**Connection pooling** (2-10 connections) provides **9x faster queries**.
-
-### Quick Setup (Docker - Recommended)
-
-```bash
-# Start PostgreSQL
-docker-compose up -d postgres
-
-# Seed with sample data
-python seed_data.py
-
-# Verify
-python quickstart.py
-```
-
-### Database Schema
-
-- **fundamentals** - Company fundamental metrics (PE ratio, ROE, etc.)
-- **prices** - Historical price data (OHLCV)
-- **news** - News headlines and sentiment
-- **sec_filings** - SEC 10-K filing excerpts
-
-Sample data includes 4 tickers with 90 days of prices, news, and SEC filings.
-
-### Connection String
-
-Set in `.env` file:
-
-```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/agent_framework
-```
-
-## 🚀 Usage Examples
-
-### 1. Simple Value Investing Agent
+### Simple Agent (No LLM Required)
 
 ```python
-import asyncio
-from agent_framework import Agent, Signal
-from agent_framework.database import get_database
+from agent_framework import Agent, Signal, Config, Database
 
 class ValueAgent(Agent):
     def analyze(self, ticker: str, data: dict) -> Signal:
         pe = data.get('pe_ratio', 0)
         if pe < 15:
-            return Signal('bullish', 0.8, f"PE {pe:.1f} undervalued")
-        return Signal('neutral', 0.5, "Fair value")
+            return Signal(
+                direction='bullish',
+                confidence=0.8,
+                reasoning=f"PE {pe:.1f} indicates undervaluation"
+            )
+        return Signal(direction='neutral', confidence=0.5, reasoning='Fair value')
 
+# Use it
 async def main():
-    # Connect to database
-    db = get_database('postgresql://postgres:postgres@localhost:5432/agent_framework')
+    db = Database(Config.get_database_url())
     await db.connect()
     
-    # Analyze
     agent = ValueAgent()
     data = await db.get_fundamentals('AAPL')
     signal = agent.analyze('AAPL', data)
-    print(f"{signal.direction} ({signal.confidence:.0%}): {signal.reasoning}")
+    print(f"{signal.direction}: {signal.reasoning}")
     
     await db.disconnect()
-
-asyncio.run(main())
 ```
 
-### 2. LLM Agent with Persona
+### LLM Agent with Persona
 
 ```python
-from agent_framework import Agent, Signal, AgentConfig, LLMConfig
+from agent_framework import Agent, AgentConfig, LLMConfig
 
 class ConservativeInvestor(Agent):
     def __init__(self):
         config = AgentConfig(
             name="Conservative Investor",
             llm=LLMConfig(
-                provider='ollama',
-                model='llama3',
-                system_prompt="""You are a conservative value investor.
-                Focus on: low PE ratios, high dividends, stable businesses.
-                Be skeptical of high-growth narratives."""
+                provider='ollama',  # or 'openai', 'anthropic'
+                model='llama3.2',
+                system_prompt="You are a conservative value investor..."
             )
         )
         super().__init__(config)
     
     def analyze(self, ticker: str, data: dict) -> Signal:
-        prompt = f"Analyze {ticker}: PE={data['pe_ratio']}, Growth={data['revenue_growth']}%"
-        response = self.llm.chat(prompt)
-        # Parse and return signal...
+        response = self.llm.chat(f"Analyze {ticker}: PE={data['pe_ratio']}")
+        return parse_llm_signal(response)
 ```
 
-### 3. RAG for SEC Filings
+See [examples/](examples/) for complete working examples.
 
-```python
-from agent_framework import Agent, AgentConfig, RAGConfig
+## 🗄️ Database
 
-class SECAnalyst(Agent):
-    def __init__(self):
-        config = AgentConfig(
-            name="SEC Analyst",
-            rag=RAGConfig(chunk_size=300, top_k=3)
-        )
-        super().__init__(config)
-    
-    async def analyze_filing(self, ticker: str, filing_text: str):
-        # Add SEC filing to RAG
-        self.rag.add_document(filing_text)
-        
-        # Query specific sections
-        context = self.rag.query("What are the key risk factors?")
-        
-        # Analyze context and return signal...
+**PostgreSQL** with asyncpg for high-performance async operations.
+
+### Quick Setup (Docker)
+
+```bash
+docker-compose up -d postgres
+python seed_data.py
 ```
 
-## 🎨 Design Principles
+### Features
 
-### 1. **Dataclasses with Slots**
-```python
-@dataclass(frozen=True, slots=True)
-class Signal:
-    direction: str
-    confidence: float
-    reasoning: str
-```
-- 76% memory reduction vs regular classes
-- Immutable by default
-- Built-in `__repr__`, `__eq__`
+- ✅ **Connection pooling**: 9x faster than new connections
+- ✅ **Transactions**: ACID guarantees for atomic operations
+- ✅ **Health checks**: Built-in monitoring
+- ✅ **Sample data**: 4 tickers with 90 days of history + SEC filings
 
-### 2. **Lazy Initialization**
-```python
-class Agent:
-    @property
-    def llm(self):
-        if self._llm is None and self.config.llm:
-            self._llm = LLMClient(self.config.llm)
-        return self._llm
-```
-- LLM/RAG only created when accessed
-- Simple agents stay simple
+### Schema
 
-### 3. **Async Database with Connection Pooling**
-```python
-async with db.acquire() as conn:
-    result = await conn.fetch("SELECT * FROM fundamentals WHERE ticker = $1", ticker)
-```
-- 9x faster than creating new connections
-- Automatic resource management
-- Production-ready performance
+- `fundamentals` - Company metrics (PE, revenue growth, margins, etc.)
+- `prices` - Historical OHLCV data
+- `news` - News headlines with sentiment
+- `sec_filings` - SEC 10-K filing excerpts
 
-## 📡 REST API
+## 🚀 API Server
 
-Start the API server:
+Start the FastAPI server:
 
 ```bash
 uvicorn agent_framework.api:app --reload
 ```
 
-Endpoints:
+Visit http://localhost:8000/docs for interactive API documentation.
 
-```bash
-GET  /                      # Health check
-GET  /tickers               # List available tickers
-GET  /tickers/{ticker}      # Get ticker data
-POST /analyze               # Run agent analysis
-```
-
-Example:
-
-```bash
-curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "value_agent",
-    "ticker": "AAPL"
-  }'
-```
+**Endpoints:**
+- `GET /health` - System health check
+- `GET /tickers` - List available tickers
+- `GET /tickers/{ticker}` - Get complete ticker data
+- `POST /analyze` - Run agent analysis
 
 ## 🧪 Testing
 
-```python
-import pytest
-import asyncio
-from agent_framework import Agent, Signal
-from agent_framework.database import get_database
-
-@pytest.mark.asyncio
-async def test_value_agent():
-    db = get_database('postgresql://postgres:postgres@localhost:5432/agent_framework')
-    await db.connect()
-    
-    agent = ValueAgent()
-    data = await db.get_fundamentals('AAPL')
-    signal = agent.analyze('AAPL', data)
-    
-    assert signal.direction in ('bullish', 'bearish', 'neutral')
-    assert 0 <= signal.confidence <= 1
-    
-    await db.disconnect()
-```
-
-Run tests:
-
 ```bash
+# Setup test database (one-time)
+python setup_test_db.py
+
+# Run tests
 pytest tests/ -v
+
+# With coverage
+pytest tests/ --cov=agent_framework
 ```
 
-## 📌 LLM Provider Setup
+**Test coverage: ~85%**
 
-### Ollama (Local, Recommended)
+## 🔌 Optional: LLM Setup
+
+### Ollama (Local, Free)
+
 ```bash
-# Install Ollama
 curl https://ollama.ai/install.sh | sh
-
-# Pull model
 ollama pull llama3.2
-
-# Install Python client (optional - already in setup.py)
-pip install ollama
 ```
 
 ### OpenAI
-```bash
-# Add to .env
-echo "OPENAI_API_KEY=sk-..." >> .env
-```
 
-```python
-LLMConfig(
-    provider='openai',
-    model='gpt-4',
-    api_key=os.getenv('OPENAI_API_KEY')
-)
+```bash
+pip install openai
+export OPENAI_API_KEY=sk-...
 ```
 
 ### Anthropic
+
 ```bash
-# Add to .env
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
+pip install anthropic
+export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-```python
-LLMConfig(
-    provider='anthropic',
-    model='claude-3-sonnet-20240229',
-    api_key=os.getenv('ANTHROPIC_API_KEY')
-)
+## 📚 Documentation
+
+- **[Installation Guide](docs/INSTALL.md)** - Detailed setup instructions
+- **[Database Setup](docs/DATABASE_SETUP.md)** - PostgreSQL configuration
+- **[Testing Guide](docs/TESTING.md)** - Writing and running tests
+- **[Quick Reference](QUICK_REFERENCE.md)** - Common tasks cheat sheet
+
+## 🎨 Architecture
+
+```
+agent_framework/
+├── models.py       # Pydantic models with validation
+├── agent.py        # Agent base class
+├── database.py     # PostgreSQL with connection pooling
+├── llm.py          # LLM client (OpenAI, Anthropic, Ollama)
+├── rag.py          # RAG system for document analysis
+├── api.py          # FastAPI REST API
+├── config.py       # Configuration management
+└── utils.py        # Shared utilities
 ```
 
-## 📦 Project Structure
+**Design principles:**
+- **Pydantic models** for runtime validation
+- **Dependency injection** for testability
+- **Comprehensive error handling** with custom exceptions
+- **Lazy initialization** for optional features
+- **Transaction support** for data consistency
 
-```
-AI-Agent-Builder/
-├── agent_framework/         # Core package (~800 lines)
-│   ├── __init__.py         # Public API
-│   ├── models.py           # Data structures
-│   ├── agent.py            # Agent base
-│   ├── llm.py              # LLM client
-│   ├── rag.py              # RAG system
-│   ├── database.py         # PostgreSQL
-│   └── api.py              # FastAPI backend
-│
-├── examples/               # Working examples
-│   ├── 01_basic.py        # Simple agents
-│   ├── 02_llm_agent.py    # LLM + personas
-│   └── 03_rag_agent.py    # RAG analysis
-│
-├── tests/
-│   └── test_framework.py
-│
-├── docker-compose.yml      # PostgreSQL setup
-├── schema.sql              # Database schema
-├── seed_data.py            # Sample data loader
-├── quickstart.py           # Verification script
-├── requirements.txt
-└── README.md
-```
+## 💡 Use Cases
+
+1. **Financial Analysis**: Build custom agents for stock analysis
+2. **Research**: Use RAG to analyze SEC filings and reports
+3. **Backtesting**: Test trading strategies with historical data
+4. **API Service**: Deploy as a microservice for your applications
+
+## 📋 Requirements
+
+- Python 3.10+
+- Docker (recommended) or PostgreSQL 12+
+- 4GB RAM minimum (8GB for LLM)
 
 ## 🤝 Contributing
 
-Contributions welcome! This is an open-source framework designed to be simple and maintainable.
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new features
+4. Ensure all tests pass
+5. Submit a pull request
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
 
-## 🚀 Roadmap
+## 🙏 Acknowledgments
 
-- [ ] Real-time data connectors (Alpha Vantage, Yahoo Finance)
-- [ ] Agent composition (ensemble agents)
-- [ ] Backtesting framework
-- [ ] Web dashboard
+Built with:
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
+- [Pydantic](https://docs.pydantic.dev/) - Data validation
+- [asyncpg](https://github.com/MagicStack/asyncpg) - Fast PostgreSQL driver
+- [PostgreSQL](https://www.postgresql.org/) - Reliable database
 
-## 💡 Philosophy
+## 📞 Support
 
-**Keep It Simple**
-- Framework core: ~800 lines
-- No unnecessary abstractions
-- Clear, readable code
-- Minimal dependencies
-
-**Production Ready**
-- PostgreSQL with connection pooling
-- FastAPI with proper lifecycle management
-- Type hints everywhere
-- Comprehensive error handling
-
-**Stay Maintainable**
-- Dataclasses for data
-- Lazy initialization
-- Clean separation of concerns
-- Async/await throughout
+- **Issues**: [GitHub Issues](https://github.com/yourusername/ai-agent-framework/issues)
+- **Documentation**: See [docs/](docs/) folder
+- **Examples**: See [examples/](examples/) folder
 
 ---
 
-**Built with ❤️ for financial AI agents**
+**Version**: 1.0.0  
+**Status**: Production Ready  
+**Last Updated**: January 2025

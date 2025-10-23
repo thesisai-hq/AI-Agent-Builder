@@ -19,11 +19,13 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
 env/
 ENV/
+.venv
 
 # IDE
 .vscode/
@@ -31,16 +33,20 @@ ENV/
 *.swp
 *.swo
 *~
+.DS_Store
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+*.cover
+.hypothesis/
 
 # Environment
 .env
 .env.local
+.env.*.local
 
 # Database
 *.db
@@ -50,10 +56,34 @@ pg_dump_*.sql
 
 # Logs
 *.log
+logs/
 
 # OS
 .DS_Store
 Thumbs.db
+*.bak
 
 # Docker
 docker-compose.override.yml
+
+# Development/Internal files (remove before publishing)
+CLEANUP_CHECKLIST.md
+IMPROVEMENTS_SUMMARY.md
+IMPLEMENTATION_REPORT.md
+TEST_FIXES.md
+diagnose_postgres.py
+setup_test_db.sh
+
+# Jupyter Notebooks (if any)
+.ipynb_checkpoints/
+*.ipynb
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Backup files
+*~
+*.swp
+*.swo

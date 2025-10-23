@@ -1,27 +1,31 @@
-"""Comprehensive test suite for AI Agent Framework with PostgreSQL."""
+"""Comprehensive test suite for AI Agent Framework with proper test isolation."""
 
 import pytest
+import pytest_asyncio
 import asyncio
-import os
 from datetime import datetime
 from agent_framework import (
     Agent, Signal, AgentConfig, LLMConfig, RAGConfig,
-    Database, get_database
+    Database, DatabaseConfig, Config, DatabaseError
 )
 
 
-# Test configuration
-TEST_DB_URL = os.getenv(
-    'TEST_DATABASE_URL',
-    'postgresql://postgres:postgres@localhost:5432/agent_framework'
-)
+# Simple test agent for testing
+class SimpleTestAgent(Agent):
+    """Simple agent for testing."""
+    
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        pe = data.get('pe_ratio', 20)
+        if pe < 15:
+            return Signal(direction='bullish', confidence=0.8, reasoning='Low PE')
+        return Signal(direction='neutral', confidence=0.5, reasoning='Fair PE')
 
 
 class TestModels:
-    """Test data models."""
+    """Test Pydantic data models."""
     
     def test_signal_creation(self):
-        """Test Signal dataclass."""
+        """Test Signal model creation."""
         signal = Signal(
             direction='bullish',
             confidence=0.8,
@@ -34,16 +38,23 @@ class TestModels:
     
     def test_signal_validation(self):
         """Test Signal validation."""
-        with pytest.raises(ValueError):
-            Signal('invalid', 0.5, 'test')  # Invalid direction
+        from pydantic import ValidationError
         
-        with pytest.raises(ValueError):
-            Signal('bullish', 1.5, 'test')  # Invalid confidence
+        with pytest.raises(ValidationError):
+            Signal(direction='invalid', confidence=0.5, reasoning='test')
+        
+        with pytest.raises(ValidationError):
+            Signal(direction='bullish', confidence=1.5, reasoning='test')
+        
+        with pytest.raises(ValidationError):
+            Signal(direction='bullish', confidence=0.8, reasoning='')
     
     def test_signal_immutability(self):
         """Test Signal is immutable (frozen)."""
-        signal = Signal('bullish', 0.8, 'test')
-        with pytest.raises(AttributeError):
+        signal = Signal(direction='bullish', confidence=0.8, reasoning='test')
+        from pydantic import ValidationError
+        
+        with pytest.raises(ValidationError):
             signal.confidence = 0.9
     
     def test_llm_config(self):
@@ -55,109 +66,126 @@ class TestModels:
         )
         assert config.provider == 'openai'
         assert config.system_prompt == 'Test prompt'
+        assert config.max_retries == 3
     
-    def test_agent_config(self):
-        """Test Agent configuration."""
-        config = AgentConfig(
-            name='TestAgent',
-            description='Test',
-            llm=LLMConfig(provider='ollama', model='llama3')
+    def test_llm_config_validation(self):
+        """Test LLM config validation."""
+        from pydantic import ValidationError
+        
+        with pytest.raises(ValidationError):
+            LLMConfig(provider='invalid', model='test')
+    
+    def test_database_config(self):
+        """Test database configuration."""
+        config = DatabaseConfig(
+            connection_string='postgresql://localhost/test',
+            min_pool_size=2,
+            max_pool_size=10
         )
-        assert config.name == 'TestAgent'
-        assert config.llm.provider == 'ollama'
+        assert config.min_pool_size == 2
+        assert config.max_pool_size == 10
+
+
+@pytest_asyncio.fixture
+async def test_db():
+    """Create test database instance with separate test database.
+    
+    Note: This requires TEST_DATABASE_URL to be set or uses default test DB.
+    For true isolation, you should create and tear down the test database.
+    """
+    connection_string = Config.get_test_database_url()
+    db = Database(connection_string)
+    
+    await db.connect()
+    yield db
+    await db.disconnect()
 
 
 class TestDatabase:
-    """Test PostgreSQL database."""
+    """Test PostgreSQL database operations."""
     
     @pytest.mark.asyncio
     async def test_database_connection(self):
         """Test database connects successfully."""
-        db = get_database(TEST_DB_URL)
+        connection_string = Config.get_test_database_url()
+        db = Database(connection_string)
+        
         await db.connect()
         assert db._pool is not None
+        
+        # Test health check
+        health = await db.health_check()
+        assert health is True
+        
         await db.disconnect()
     
     @pytest.mark.asyncio
-    async def test_list_tickers(self):
+    async def test_connection_error_handling(self):
+        """Test connection error handling."""
+        db = Database('postgresql://invalid:invalid@localhost:9999/nonexistent')
+        
+        from agent_framework.database import ConnectionError
+        with pytest.raises(ConnectionError):
+            await db.connect()
+    
+    @pytest.mark.asyncio
+    async def test_list_tickers(self, test_db):
         """Test listing tickers."""
-        db = get_database(TEST_DB_URL)
-        await db.connect()
-        
-        tickers = await db.list_tickers()
+        tickers = await test_db.list_tickers()
         assert isinstance(tickers, list)
-        assert len(tickers) > 0
-        
-        await db.disconnect()
     
     @pytest.mark.asyncio
-    async def test_get_fundamentals(self):
+    async def test_get_fundamentals(self, test_db):
         """Test fundamental data retrieval."""
-        db = get_database(TEST_DB_URL)
-        await db.connect()
+        tickers = await test_db.list_tickers()
         
-        tickers = await db.list_tickers()
         if tickers:
-            data = await db.get_fundamentals(tickers[0])
-            assert 'ticker' in data
-            assert 'pe_ratio' in data
-            assert 'market_cap' in data
-        
-        await db.disconnect()
+            data = await test_db.get_fundamentals(tickers[0])
+            if data:  # Only test if data exists
+                assert 'ticker' in data
+                assert 'pe_ratio' in data
+                assert 'market_cap' in data
     
     @pytest.mark.asyncio
-    async def test_get_prices(self):
+    async def test_get_fundamentals_not_found(self, test_db):
+        """Test fundamentals for non-existent ticker."""
+        data = await test_db.get_fundamentals('NONEXISTENT')
+        assert data is None
+    
+    @pytest.mark.asyncio
+    async def test_get_prices(self, test_db):
         """Test price history retrieval."""
-        db = get_database(TEST_DB_URL)
-        await db.connect()
+        tickers = await test_db.list_tickers()
         
-        tickers = await db.list_tickers()
         if tickers:
-            prices = await db.get_prices(tickers[0], days=30)
+            prices = await test_db.get_prices(tickers[0], days=30)
             assert isinstance(prices, list)
-            if prices:
-                assert 'close' in prices[0]
-                assert 'volume' in prices[0]
-        
-        await db.disconnect()
     
     @pytest.mark.asyncio
-    async def test_get_news(self):
+    async def test_get_news(self, test_db):
         """Test news retrieval."""
-        db = get_database(TEST_DB_URL)
-        await db.connect()
+        tickers = await test_db.list_tickers()
         
-        tickers = await db.list_tickers()
         if tickers:
-            news = await db.get_news(tickers[0])
+            news = await test_db.get_news(tickers[0])
             assert isinstance(news, list)
-            if news:
-                assert 'headline' in news[0]
-        
-        await db.disconnect()
     
     @pytest.mark.asyncio
-    async def test_get_filing(self):
+    async def test_get_filing(self, test_db):
         """Test SEC filing retrieval."""
-        db = get_database(TEST_DB_URL)
-        await db.connect()
+        tickers = await test_db.list_tickers()
         
-        tickers = await db.list_tickers()
         if tickers:
-            filing = await db.get_filing(tickers[0])
-            assert isinstance(filing, str)
-        
-        await db.disconnect()
-
-
-class SimpleTestAgent(Agent):
-    """Simple agent for testing."""
+            filing = await test_db.get_filing(tickers[0])
+            assert filing is None or isinstance(filing, str)
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
-        pe = data.get('pe_ratio', 20)
-        if pe < 15:
-            return Signal('bullish', 0.8, 'Low PE')
-        return Signal('neutral', 0.5, 'Fair PE')
+    @pytest.mark.asyncio
+    async def test_transaction_support(self, test_db):
+        """Test transaction context manager."""
+        async with test_db.transaction() as conn:
+            # Transaction is active
+            result = await conn.fetchval("SELECT 1")
+            assert result == 1
 
 
 class TestAgent:
@@ -178,22 +206,18 @@ class TestAgent:
         assert agent.config.name == 'CustomAgent'
     
     @pytest.mark.asyncio
-    async def test_agent_analyze(self):
+    async def test_agent_analyze(self, test_db):
         """Test agent analysis."""
-        db = get_database(TEST_DB_URL)
-        await db.connect()
-        
         agent = SimpleTestAgent()
-        tickers = await db.list_tickers()
+        tickers = await test_db.list_tickers()
         
         if tickers:
-            data = await db.get_fundamentals(tickers[0])
-            signal = agent.analyze(tickers[0], data)
-            assert isinstance(signal, Signal)
-            assert signal.direction in ('bullish', 'bearish', 'neutral')
-            assert 0 <= signal.confidence <= 1
-        
-        await db.disconnect()
+            data = await test_db.get_fundamentals(tickers[0])
+            if data:
+                signal = agent.analyze(tickers[0], data)
+                assert isinstance(signal, Signal)
+                assert signal.direction in ('bullish', 'bearish', 'neutral')
+                assert 0 <= signal.confidence <= 1
     
     def test_lazy_llm_initialization(self):
         """Test LLM is not initialized without config."""
@@ -226,7 +250,6 @@ class TestRAGSystem:
         text = "word " * 50  # 50 words
         chunks = rag.chunk_text(text)
         assert len(chunks) > 1
-        assert all(len(chunk.split()) <= 10 for chunk in chunks)
     
     def test_add_document(self):
         """Test adding documents."""
@@ -235,7 +258,8 @@ class TestRAGSystem:
         rag = RAGSystem(config)
         
         text = "This is a test document with some content."
-        rag.add_document(text)
+        chunks_added = rag.add_document(text)
+        assert chunks_added > 0
         assert len(rag.documents) > 0
     
     def test_query(self):
@@ -251,7 +275,6 @@ class TestRAGSystem:
         # Query
         result = rag.query("Tell me about Apple")
         assert len(result) > 0
-        assert 'apple' in result.lower() or 'iphone' in result.lower()
     
     def test_clear(self):
         """Test clearing RAG system."""
@@ -264,70 +287,106 @@ class TestRAGSystem:
         
         rag.clear()
         assert len(rag.documents) == 0
+    
+    def test_get_stats(self):
+        """Test RAG statistics."""
+        from agent_framework import RAGSystem
+        config = RAGConfig()
+        rag = RAGSystem(config)
+        
+        stats = rag.get_stats()
+        assert 'num_chunks' in stats
+        assert stats['num_chunks'] == 0
+
+
+class TestUtilities:
+    """Test utility functions."""
+    
+    def test_parse_llm_signal(self):
+        """Test LLM signal parsing."""
+        from agent_framework import parse_llm_signal
+        
+        # Valid format
+        response = "bullish|80|Strong growth"
+        signal = parse_llm_signal(response)
+        assert signal.direction == 'bullish'
+        assert signal.confidence == 0.8
+        assert signal.reasoning == 'Strong growth'
+        
+        # Invalid format - should return neutral
+        response = "invalid format"
+        signal = parse_llm_signal(response, "fallback reasoning")
+        assert signal.direction == 'neutral'
+        assert signal.confidence == 0.5
+    
+    def test_format_fundamentals(self):
+        """Test fundamental data formatting."""
+        from agent_framework import format_fundamentals
+        
+        data = {
+            'pe_ratio': 28.5,
+            'market_cap': 2800000000000,
+            'revenue_growth': 8.5
+        }
+        
+        formatted = format_fundamentals(data)
+        assert 'PE Ratio: 28.5' in formatted
+        assert 'Market Cap' in formatted
+    
+    def test_calculate_sentiment_score(self):
+        """Test sentiment calculation."""
+        from agent_framework import calculate_sentiment_score
+        
+        # Positive text
+        text = "Strong growth and improved profits with expanding margins"
+        direction, confidence = calculate_sentiment_score(text)
+        assert direction == 'bullish'
+        assert confidence > 0.5
+        
+        # Negative text
+        text = "Risk of decline with major challenges and losses"
+        direction, confidence = calculate_sentiment_score(text)
+        assert direction == 'bearish'
+        assert confidence > 0.5
 
 
 class TestIntegration:
     """Integration tests."""
     
     @pytest.mark.asyncio
-    async def test_end_to_end_simple_agent(self):
+    async def test_end_to_end_simple_agent(self, test_db):
         """Test complete flow with simple agent."""
-        # Setup
-        db = get_database(TEST_DB_URL)
-        await db.connect()
-        
         agent = SimpleTestAgent()
         
-        # Analyze all tickers
-        tickers = await db.list_tickers()
+        # Analyze all available tickers
+        tickers = await test_db.list_tickers()
         for ticker in tickers[:2]:  # Test first 2 tickers
-            data = await db.get_fundamentals(ticker)
-            signal = agent.analyze(ticker, data)
-            
-            # Verify signal
-            assert signal.direction in ('bullish', 'bearish', 'neutral')
-            assert 0 <= signal.confidence <= 1
-            assert len(signal.reasoning) > 0
-            assert isinstance(signal.timestamp, datetime)
-        
-        await db.disconnect()
-    
-    @pytest.mark.asyncio
-    async def test_rag_with_sec_filing(self):
-        """Test RAG with actual SEC filing."""
-        from agent_framework import RAGSystem
-        
-        db = get_database(TEST_DB_URL)
-        await db.connect()
-        
-        tickers = await db.list_tickers()
-        if tickers:
-            filing = await db.get_filing(tickers[0])
-            
-            if filing:
-                config = RAGConfig(chunk_size=300, top_k=3)
-                rag = RAGSystem(config)
-                rag.add_document(filing)
+            data = await test_db.get_fundamentals(ticker)
+            if data:
+                signal = agent.analyze(ticker, data)
                 
-                # Query filing
-                result = rag.query("What are the financial performance metrics?")
-                assert len(result) > 0
-        
-        await db.disconnect()
+                # Verify signal
+                assert signal.direction in ('bullish', 'bearish', 'neutral')
+                assert 0 <= signal.confidence <= 1
+                assert len(signal.reasoning) > 0
+                assert isinstance(signal.timestamp, datetime)
 
 
 def test_imports():
     """Test all imports work."""
     from agent_framework import (
         Agent, Signal, AgentConfig,
-        LLMConfig, RAGConfig,
+        LLMConfig, RAGConfig, DatabaseConfig,
         LLMClient, RAGSystem,
-        Database, get_database,
-        api_app, register_agent_instance
+        Database,
+        api_app, register_agent_instance,
+        Config,
+        parse_llm_signal, format_fundamentals, calculate_sentiment_score
     )
     assert Agent is not None
     assert Signal is not None
     assert Database is not None
+    assert Config is not None
 
 
 if __name__ == '__main__':

@@ -1,14 +1,22 @@
-"""FastAPI REST API for frontend integration with async PostgreSQL."""
+"""FastAPI REST API with dependency injection and proper error handling."""
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import logging
 
-from .database import get_database  # Only import needed
+from fastapi import FastAPI, HTTPException, Depends, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+
+from .database import Database, DatabaseError, ConnectionError as DBConnectionError
+from .models import Signal
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # Pydantic models for API
@@ -18,52 +26,100 @@ class SignalResponse(BaseModel):
     confidence: float
     reasoning: str
     timestamp: datetime
-    metadata: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class AnalysisRequest(BaseModel):
     """API request for analysis."""
-    agent_name: str
-    ticker: str
-    parameters: Dict[str, Any] = {}
+    agent_name: str = Field(min_length=1)
+    ticker: str = Field(min_length=1, max_length=10)
+    parameters: Dict[str, Any] = Field(default_factory=dict)
 
 
 class TickerData(BaseModel):
     """Complete ticker data response."""
     ticker: str
-    fundamentals: Dict[str, Any]
+    fundamentals: Optional[Dict[str, Any]]
     prices: List[Dict[str, Any]]
     news: List[Dict[str, str]]
 
 
-# Global agent registry
+class HealthResponse(BaseModel):
+    """Health check response."""
+    status: str
+    database: str
+    agents: int
+    tickers: int
+
+
+class ErrorResponse(BaseModel):
+    """Error response."""
+    detail: str
+    error_type: str
+
+
+# Global agent registry (agents registered at startup)
 _agents: Dict[str, Any] = {}
+
+
+# Database dependency injection
+async def get_db(request: Request) -> Database:
+    """Dependency injection for database.
+    
+    Args:
+        request: FastAPI request object
+        
+    Returns:
+        Database instance from app state
+        
+    Raises:
+        HTTPException: If database not available
+    """
+    db = getattr(request.app.state, 'db', None)
+    if db is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database not available"
+        )
+    return db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage database connection lifecycle."""
-    # Startup: Connect to database
+    """Manage application lifecycle.
+    
+    Startup: Connect to database
+    Shutdown: Disconnect from database
+    """
+    # Startup
     connection_string = os.getenv(
         'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+        'postgresql://postgres:postgres@localhost:5433/agent_framework'
     )
-    db = get_database(connection_string)
-    await db.connect()
-    print("✅ Database connected")
     
-    yield
+    logger.info("Starting application...")
+    db = Database(connection_string)
     
-    # Shutdown: Disconnect from database
-    await db.disconnect()
-    print("✅ Database disconnected")
+    try:
+        await db.connect()
+        app.state.db = db
+        logger.info("✅ Database connected successfully")
+        
+        yield
+        
+    finally:
+        # Shutdown
+        logger.info("Shutting down application...")
+        if hasattr(app.state, 'db'):
+            await app.state.db.disconnect()
+            logger.info("✅ Database disconnected")
 
 
 # Create FastAPI app with lifespan
 app = FastAPI(
     title="AI Agent Framework API",
-    description="REST API for AI agent financial analysis",
-    version="1.0.0",
+    description="REST API for AI agent financial analysis with PostgreSQL",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -77,102 +133,193 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+# Exception handlers
+@app.exception_handler(DatabaseError)
+async def database_exception_handler(request: Request, exc: DatabaseError):
+    """Handle database errors."""
+    logger.error(f"Database error: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=ErrorResponse(
+            detail=str(exc),
+            error_type="database_error"
+        ).model_dump()
+    )
+
+
+@app.exception_handler(DBConnectionError)
+async def connection_exception_handler(request: Request, exc: DBConnectionError):
+    """Handle connection errors."""
+    logger.error(f"Connection error: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content=ErrorResponse(
+            detail=str(exc),
+            error_type="connection_error"
+        ).model_dump()
+    )
+
+
+# Routes
+@app.get("/", tags=["health"])
 def root():
     """API health check."""
     return {
         "status": "online",
         "framework": "AI Agent Framework",
-        "version": "1.0.0"
+        "version": "2.0.0",
+        "database": "PostgreSQL with asyncpg"
     }
 
 
-@app.get("/tickers", response_model=List[str])
-async def list_tickers():
-    """List all available tickers."""
-    db = get_database()
-    return await db.list_tickers()
+@app.get("/health", response_model=HealthResponse, tags=["health"])
+async def health_check(db: Database = Depends(get_db)):
+    """Detailed health check with database status.
+    
+    Args:
+        db: Database instance (injected)
+        
+    Returns:
+        Health status
+    """
+    try:
+        db_healthy = await db.health_check()
+        tickers = await db.list_tickers()
+        
+        return HealthResponse(
+            status="healthy" if db_healthy else "degraded",
+            database="connected" if db_healthy else "disconnected",
+            agents=len(_agents),
+            tickers=len(tickers)
+        )
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service unhealthy"
+        )
 
 
-@app.get("/tickers/{ticker}", response_model=TickerData)
-async def get_ticker_data(ticker: str, days: int = 30):
+@app.get("/tickers", response_model=List[str], tags=["data"])
+async def list_tickers(db: Database = Depends(get_db)):
+    """List all available tickers.
+    
+    Args:
+        db: Database instance (injected)
+        
+    Returns:
+        List of ticker symbols
+    """
+    try:
+        return await db.list_tickers()
+    except DatabaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve tickers: {str(e)}"
+        )
+
+
+@app.get("/tickers/{ticker}", response_model=TickerData, tags=["data"])
+async def get_ticker_data(
+    ticker: str,
+    days: int = 30,
+    db: Database = Depends(get_db)
+):
     """Get complete data for a ticker.
     
     Args:
         ticker: Stock ticker symbol
         days: Number of days of price history
+        db: Database instance (injected)
+        
+    Returns:
+        Complete ticker data
+        
+    Raises:
+        HTTPException: If ticker not found
     """
-    db = get_database()
-    
-    # Check if ticker exists
-    tickers = await db.list_tickers()
-    if ticker not in tickers:
-        raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
-    
-    # Get all data
-    fundamentals = await db.get_fundamentals(ticker)
-    prices = await db.get_prices(ticker, days)
-    news = await db.get_news(ticker)
-    
-    return TickerData(
-        ticker=ticker,
-        fundamentals=fundamentals,
-        prices=prices,
-        news=news
-    )
+    try:
+        # Check if ticker exists
+        tickers = await db.list_tickers()
+        if ticker not in tickers:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Ticker {ticker} not found"
+            )
+        
+        # Get all data
+        fundamentals = await db.get_fundamentals(ticker)
+        prices = await db.get_prices(ticker, days)
+        news = await db.get_news(ticker)
+        
+        return TickerData(
+            ticker=ticker,
+            fundamentals=fundamentals,
+            prices=prices,
+            news=news
+        )
+    except DatabaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve ticker data: {str(e)}"
+        )
 
 
-@app.get("/agents", response_model=List[str])
+@app.get("/agents", response_model=List[str], tags=["agents"])
 def list_agents():
-    """List all registered agents."""
+    """List all registered agents.
+    
+    Returns:
+        List of agent names
+    """
     return list(_agents.keys())
 
 
-@app.post("/agents/register")
-def register_agent(name: str, agent_class: str):
-    """Register an agent dynamically.
-    
-    Args:
-        name: Agent name
-        agent_class: Python path to agent class
-    """
-    # This would import and instantiate the agent
-    # Simplified for framework demonstration
-    return {"status": "registered", "agent": name}
-
-
-@app.post("/analyze", response_model=SignalResponse)
-async def analyze(request: AnalysisRequest):
+@app.post("/analyze", response_model=SignalResponse, tags=["analysis"])
+async def analyze(
+    request: AnalysisRequest,
+    db: Database = Depends(get_db)
+):
     """Run agent analysis on ticker.
     
     Args:
         request: Analysis request with agent name and ticker
+        db: Database instance (injected)
+        
+    Returns:
+        Analysis signal
+        
+    Raises:
+        HTTPException: If agent not found or analysis fails
     """
     # Get agent
     agent = _agents.get(request.agent_name)
     if not agent:
         raise HTTPException(
-            status_code=404,
-            detail=f"Agent {request.agent_name} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent {request.agent_name} not found. Available: {list(_agents.keys())}"
         )
     
-    # Get database
-    db = get_database()
-    
-    # Check ticker exists
-    tickers = await db.list_tickers()
-    if request.ticker not in tickers:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Ticker {request.ticker} not found"
-        )
-    
-    # Get data
-    data = await db.get_fundamentals(request.ticker)
-    
-    # Run analysis
     try:
+        # Check ticker exists
+        tickers = await db.list_tickers()
+        if request.ticker not in tickers:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Ticker {request.ticker} not found"
+            )
+        
+        # Get data
+        data = await db.get_fundamentals(request.ticker)
+        if not data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No data available for {request.ticker}"
+            )
+        
+        # Run analysis
         signal = agent.analyze(request.ticker, data)
+        
         return SignalResponse(
             direction=signal.direction,
             confidence=signal.confidence,
@@ -180,32 +327,37 @@ async def analyze(request: AnalysisRequest):
             timestamp=signal.timestamp,
             metadata=signal.metadata
         )
-    except Exception as e:
+    except DatabaseError as e:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Analysis failed: {str(e)}"
         )
-
-
-@app.get("/health")
-async def health_check():
-    """Detailed health check."""
-    db = get_database()
-    tickers = await db.list_tickers()
-    
-    return {
-        "status": "healthy",
-        "database": "connected",
-        "agents": len(_agents),
-        "tickers": len(tickers)
-    }
 
 
 def register_agent_instance(name: str, agent):
     """Register an agent instance for API access.
     
     Args:
-        name: Agent name
+        name: Agent name (must be unique)
         agent: Agent instance
+        
+    Raises:
+        ValueError: If agent name already exists
     """
+    if name in _agents:
+        raise ValueError(f"Agent {name} already registered")
     _agents[name] = agent
+    logger.info(f"Registered agent: {name}")
+
+
+def clear_agents():
+    """Clear all registered agents (useful for testing)."""
+    global _agents
+    _agents = {}
+    logger.info("Cleared all agents")

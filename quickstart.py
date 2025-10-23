@@ -2,7 +2,7 @@
 
 import sys
 import asyncio
-import os
+from agent_framework import Config
 
 
 def check_imports():
@@ -11,81 +11,78 @@ def check_imports():
     try:
         from agent_framework import (
             Agent, Signal, AgentConfig,
-            LLMConfig, RAGConfig,
-            Database, get_database
+            LLMConfig, RAGConfig, DatabaseConfig,
+            Database, Config
         )
         print("✅ Core imports successful")
         return True
     except ImportError as e:
         print(f"❌ Import error: {e}")
-        print("\n💡 Run: pip install -e .")
         return False
 
 
 async def test_database():
     """Test database connection."""
-    print("\n🗄️  Testing PostgreSQL database...")
-    
-    # Get connection string from environment
-    connection_string = os.getenv(
-        'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5432/agent_framework'
-    )
-    
+    print("\n🗄️  Testing database...")
     try:
-        from agent_framework.database import get_database
+        from agent_framework.database import Database
         
-        db = get_database(connection_string)
+        # Get connection string from config
+        connection_string = Config.get_database_url()
+        print(f"   Connecting to: {connection_string}")
+        
+        db = Database(connection_string)
         await db.connect()
         
+        # Test health check
+        health = await db.health_check()
+        if not health:
+            print("⚠️  Database health check failed")
+            await db.disconnect()
+            return False
+        
         tickers = await db.list_tickers()
+        print(f"✅ Connected to database with {len(tickers)} tickers")
         
         if tickers:
-            print(f"✅ Connected to database with {len(tickers)} tickers")
             print(f"   Available: {', '.join(tickers)}")
             
             # Test data retrieval
             data = await db.get_fundamentals(tickers[0])
-            print(f"✅ Retrieved data for {tickers[0]}: PE={data.get('pe_ratio', 'N/A')}")
-            
-            await db.disconnect()
-            return True
+            if data:
+                print(f"✅ Retrieved data for {tickers[0]}: PE={data.get('pe_ratio', 'N/A')}")
         else:
             print("⚠️  Database is empty. Run: python seed_data.py")
-            await db.disconnect()
-            return None  # Database works but needs seeding
-            
+        
+        await db.disconnect()
+        return True
     except Exception as e:
         print(f"❌ Database error: {e}")
-        print("\n💡 PostgreSQL not running or not seeded. Setup:")
-        print("   1. Start PostgreSQL: docker-compose up -d postgres")
-        print("   2. Seed database: python seed_data.py")
+        print("\n💡 Make sure PostgreSQL is running and seeded:")
+        print("   docker-compose up -d postgres")
+        print("   python seed_data.py")
         return False
 
 
 async def test_simple_agent():
     """Test simple agent."""
     print("\n🤖 Testing simple agent...")
-    
-    connection_string = os.getenv(
-        'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5432/agent_framework'
-    )
-    
     try:
         from agent_framework import Agent, Signal
-        from agent_framework.database import get_database
+        from agent_framework.database import Database
         
         class QuickAgent(Agent):
             def analyze(self, ticker: str, data: dict) -> Signal:
                 pe = data.get('pe_ratio', 20)
                 return Signal(
-                    'bullish' if pe < 20 else 'neutral',
-                    0.7,
-                    f"PE ratio: {pe:.1f}"
+                    direction='bullish' if pe < 20 else 'neutral',
+                    confidence=0.7,
+                    reasoning=f"PE ratio: {pe:.1f}"
                 )
         
-        db = get_database(connection_string)
+        connection_string = Config.get_database_url()
+        
+        db = Database(connection_string)
         await db.connect()
         
         tickers = await db.list_tickers()
@@ -96,6 +93,12 @@ async def test_simple_agent():
         
         agent = QuickAgent()
         data = await db.get_fundamentals(tickers[0])
+        
+        if not data:
+            print("⚠️  No data for ticker")
+            await db.disconnect()
+            return None
+        
         signal = agent.analyze(tickers[0], data)
         
         print(f"✅ Agent analysis: {signal.direction.upper()} ({signal.confidence:.0%})")
@@ -103,9 +106,10 @@ async def test_simple_agent():
         
         await db.disconnect()
         return True
-        
     except Exception as e:
         print(f"❌ Agent error: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -120,7 +124,11 @@ def test_rag_system():
         
         # Add document
         doc = "Apple Inc. is a technology company. They make iPhones and computers."
-        rag.add_document(doc)
+        chunks = rag.add_document(doc)
+        
+        if chunks == 0:
+            print("⚠️  No chunks created from document")
+            return False
         
         # Query
         result = rag.query("What does Apple make?")
@@ -148,15 +156,35 @@ def test_api():
         return False
 
 
+def test_config():
+    """Test configuration helpers."""
+    print("\n⚙️  Testing configuration...")
+    try:
+        from agent_framework import Config
+        
+        db_url = Config.get_database_url()
+        test_db_url = Config.get_test_database_url()
+        
+        print(f"✅ Config helpers working")
+        print(f"   Database URL: {db_url}")
+        print(f"   Test DB URL: {test_db_url}")
+        return True
+    except Exception as e:
+        print(f"❌ Config error: {e}")
+        return False
+
+
 async def main():
     """Run all checks."""
     print("=" * 60)
-    print("AI Agent Framework - Quick Start Verification")
+    print("AI Agent Framework - Quick Start")
+    print("Version 1.0.0")
     print("=" * 60)
     
     checks = [
         ("Imports", check_imports, False),
-        ("PostgreSQL Database", test_database, True),
+        ("Configuration", test_config, False),
+        ("Database", test_database, True),
         ("Simple Agent", test_simple_agent, True),
         ("RAG System", test_rag_system, False),
         ("API", test_api, False),
@@ -187,7 +215,7 @@ async def main():
         if result is True:
             print(f"✅ {name}")
         elif result is None:
-            print(f"⚠️  {name} (optional or needs seeding)")
+            print(f"⚠️  {name} (optional)")
         else:
             print(f"❌ {name}")
     
@@ -205,7 +233,7 @@ async def main():
         print("\n💡 Setup steps:")
         print("  1. Start PostgreSQL: docker-compose up -d postgres")
         print("  2. Seed database: python seed_data.py")
-        print("  3. Install dependencies: pip install -e .[all]")
+        print("  3. Install dependencies: pip install -e .")
         return 1
 
 

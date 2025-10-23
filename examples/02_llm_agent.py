@@ -1,9 +1,12 @@
-"""Example 2: LLM-powered agent with system prompt persona and PostgreSQL."""
+"""Example 2: LLM-powered agent with system prompt persona and error handling."""
 
 import asyncio
 import os
-from agent_framework import Agent, Signal, AgentConfig, LLMConfig
-from agent_framework.database import get_database
+from agent_framework import (
+    Agent, Signal, AgentConfig, LLMConfig, 
+    Config, parse_llm_signal, format_fundamentals
+)
+from agent_framework.database import Database
 
 
 class ConservativeInvestorAgent(Agent):
@@ -34,14 +37,12 @@ Analyze companies critically and conservatively. If in doubt, recommend caution.
     
     def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using LLM with conservative persona."""
-        # Build analysis prompt
+        # Build analysis prompt using utility function
+        fundamentals_text = format_fundamentals(data)
+        
         prompt = f"""Analyze {ticker} with the following data:
         
-PE Ratio: {data.get('pe_ratio', 0):.1f}
-Dividend Yield: {data.get('dividend_yield', 0):.1f}%
-Debt-to-Equity: {data.get('debt_to_equity', 0):.1f}
-Profit Margin: {data.get('profit_margin', 0):.1f}%
-ROE: {data.get('roe', 0):.1f}%
+{fundamentals_text}
 
 Provide your investment recommendation as:
 1. Direction (bullish/bearish/neutral)
@@ -50,20 +51,22 @@ Provide your investment recommendation as:
 
 Format: DIRECTION|CONFIDENCE|REASONING"""
         
-        # Query LLM (uses system prompt automatically)
-        response = self.llm.chat(prompt)
-        
-        # Parse response
         try:
-            parts = response.split('|')
-            direction = parts[0].strip().lower()
-            confidence = float(parts[1].strip()) / 100
-            reasoning = parts[2].strip()
+            # Query LLM (uses system prompt automatically)
+            response = self.llm.chat(prompt)
             
-            return Signal(direction, confidence, reasoning)
-        except:
-            # Fallback if parsing fails
-            return Signal('neutral', 0.5, response[:200])
+            # Parse response using utility function
+            return parse_llm_signal(response, f"Conservative analysis of {ticker}")
+        
+        except Exception as e:
+            print(f"⚠️  LLM error: {e}")
+            # Fallback to rule-based analysis
+            pe = data.get('pe_ratio', 0)
+            div_yield = data.get('dividend_yield', 0)
+            
+            if pe < 15 and div_yield > 2:
+                return Signal('bullish', 0.7, 'Low PE with good dividend (rule-based fallback)')
+            return Signal('neutral', 0.5, f'LLM unavailable, rule-based fallback: PE={pe:.1f}')
 
 
 class AggressiveTraderAgent(Agent):
@@ -94,25 +97,26 @@ Be bold and opportunistic. Look for explosive growth potential."""
     
     def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using LLM with aggressive persona."""
+        fundamentals_text = format_fundamentals(data)
+        
         prompt = f"""Analyze {ticker}:
         
-Revenue Growth: {data.get('revenue_growth', 0):.1f}%
-PE Ratio: {data.get('pe_ratio', 0):.1f}
-Profit Margin: {data.get('profit_margin', 0):.1f}%
-Market Cap: ${data.get('market_cap', 0)/1e9:.1f}B
+{fundamentals_text}
 
 What's your aggressive take? Format: DIRECTION|CONFIDENCE|REASONING"""
         
-        response = self.llm.chat(prompt)
-        
         try:
-            parts = response.split('|')
-            direction = parts[0].strip().lower()
-            confidence = float(parts[1].strip()) / 100
-            reasoning = parts[2].strip()
-            return Signal(direction, confidence, reasoning)
-        except:
-            return Signal('neutral', 0.5, response[:200])
+            response = self.llm.chat(prompt)
+            return parse_llm_signal(response, f"Aggressive analysis of {ticker}")
+        
+        except Exception as e:
+            print(f"⚠️  LLM error: {e}")
+            # Fallback
+            growth = data.get('revenue_growth', 0)
+            
+            if growth > 30:
+                return Signal('bullish', 0.8, 'High growth (rule-based fallback)')
+            return Signal('neutral', 0.5, f'LLM unavailable, rule-based fallback: growth={growth:.1f}%')
 
 
 async def main():
@@ -131,24 +135,27 @@ async def main():
         return
     
     # Connect to database
-    connection_string = os.getenv(
-        'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5432/agent_framework'
-    )
+    connection_string = Config.get_database_url()
     
-    print("\n🔌 Connecting to database...")
-    db = get_database(connection_string)
-    await db.connect()
-    print("✅ Connected!")
-    
-    # Initialize agents
-    conservative = ConservativeInvestorAgent()
-    aggressive = AggressiveTraderAgent()
+    print("\n📌 Connecting to database...")
+    db = Database(connection_string)
     
     try:
+        await db.connect()
+        print("✅ Connected!")
+        
+        # Initialize agents
+        print("\n🤖 Initializing agents...")
+        conservative = ConservativeInvestorAgent()
+        aggressive = AggressiveTraderAgent()
+        print("✅ Agents ready!")
+        
         # Analyze TSLA (high growth) and JPM (value)
         for ticker in ['TSLA', 'JPM']:
             data = await db.get_fundamentals(ticker)
+            if not data:
+                print(f"\n⚠️  No data for {ticker}")
+                continue
             
             print(f"\n{'='*60}")
             print(f"📊 Analyzing {ticker} - {data['name']}")
@@ -172,6 +179,9 @@ async def main():
         print("✅ LLM personas demonstrate different investment styles!")
         print("=" * 60)
         
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        raise
     finally:
         await db.disconnect()
 

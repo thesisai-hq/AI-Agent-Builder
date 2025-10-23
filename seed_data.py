@@ -1,10 +1,10 @@
 """Seed PostgreSQL database with sample financial data."""
 
 import asyncio
-import os
 from datetime import datetime, timedelta
 import random
-from agent_framework.database import get_database
+from agent_framework import Config
+from agent_framework.database import Database
 
 
 async def seed_fundamentals(db):
@@ -255,18 +255,18 @@ async def main():
     print("AI Agent Framework - Database Seeding")
     print("=" * 60)
     
-    # Get connection string from environment
-    connection_string = os.getenv(
-        'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5432/agent_framework'
-    )
+    # Get connection string from config
+    connection_string = Config.get_database_url()
     
-    print(f"\n🔌 Connecting to database...")
-    db = get_database(connection_string)
-    await db.connect()
-    print("✅ Connected!")
+    print(f"\n📌 Connecting to database...")
+    print(f"   URL: {connection_string}")
+    
+    db = Database(connection_string)
     
     try:
+        await db.connect()
+        print("✅ Connected!")
+        
         await seed_fundamentals(db)
         await seed_prices(db)
         await seed_news(db)
@@ -280,6 +280,15 @@ async def main():
         tickers = await db.list_tickers()
         print(f"\n📋 Available tickers: {', '.join(tickers)}")
         
+        # Show sample data
+        for ticker in tickers:
+            data = await db.get_fundamentals(ticker)
+            print(f"\n{ticker}: PE={data['pe_ratio']:.1f}, Growth={data['revenue_growth']:.1f}%")
+    
+    except Exception as e:
+        print(f"\n❌ Seeding failed: {e}")
+        raise
+    
     finally:
         await db.disconnect()
 
