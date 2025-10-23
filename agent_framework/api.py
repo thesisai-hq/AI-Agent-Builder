@@ -1,12 +1,14 @@
-"""FastAPI REST API for frontend integration."""
+"""FastAPI REST API for frontend integration with async PostgreSQL."""
 
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-from .database import MockDatabase
+from .database import get_database  # Only import needed
 
 
 # Pydantic models for API
@@ -34,11 +36,35 @@ class TickerData(BaseModel):
     news: List[Dict[str, str]]
 
 
-# Create FastAPI app
+# Global agent registry
+_agents: Dict[str, Any] = {}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage database connection lifecycle."""
+    # Startup: Connect to database
+    connection_string = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+    )
+    db = get_database(connection_string)
+    await db.connect()
+    print("✅ Database connected")
+    
+    yield
+    
+    # Shutdown: Disconnect from database
+    await db.disconnect()
+    print("✅ Database disconnected")
+
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="AI Agent Framework API",
     description="REST API for AI agent financial analysis",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -49,12 +75,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Global database instance
-db = MockDatabase()
-
-# Global agent registry
-_agents: Dict[str, Any] = {}
 
 
 @app.get("/")
@@ -68,27 +88,37 @@ def root():
 
 
 @app.get("/tickers", response_model=List[str])
-def list_tickers():
+async def list_tickers():
     """List all available tickers."""
-    return db.list_tickers()
+    db = get_database()
+    return await db.list_tickers()
 
 
 @app.get("/tickers/{ticker}", response_model=TickerData)
-def get_ticker_data(ticker: str, days: int = 30):
+async def get_ticker_data(ticker: str, days: int = 30):
     """Get complete data for a ticker.
     
     Args:
         ticker: Stock ticker symbol
         days: Number of days of price history
     """
-    if ticker not in db.list_tickers():
+    db = get_database()
+    
+    # Check if ticker exists
+    tickers = await db.list_tickers()
+    if ticker not in tickers:
         raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
+    
+    # Get all data
+    fundamentals = await db.get_fundamentals(ticker)
+    prices = await db.get_prices(ticker, days)
+    news = await db.get_news(ticker)
     
     return TickerData(
         ticker=ticker,
-        fundamentals=db.get_fundamentals(ticker),
-        prices=db.get_prices(ticker, days),
-        news=db.get_news(ticker)
+        fundamentals=fundamentals,
+        prices=prices,
+        news=news
     )
 
 
@@ -112,7 +142,7 @@ def register_agent(name: str, agent_class: str):
 
 
 @app.post("/analyze", response_model=SignalResponse)
-def analyze(request: AnalysisRequest):
+async def analyze(request: AnalysisRequest):
     """Run agent analysis on ticker.
     
     Args:
@@ -126,14 +156,19 @@ def analyze(request: AnalysisRequest):
             detail=f"Agent {request.agent_name} not found"
         )
     
-    # Get data
-    if request.ticker not in db.list_tickers():
+    # Get database
+    db = get_database()
+    
+    # Check ticker exists
+    tickers = await db.list_tickers()
+    if request.ticker not in tickers:
         raise HTTPException(
             status_code=404,
             detail=f"Ticker {request.ticker} not found"
         )
     
-    data = db.get_fundamentals(request.ticker)
+    # Get data
+    data = await db.get_fundamentals(request.ticker)
     
     # Run analysis
     try:
@@ -153,13 +188,16 @@ def analyze(request: AnalysisRequest):
 
 
 @app.get("/health")
-def health_check():
+async def health_check():
     """Detailed health check."""
+    db = get_database()
+    tickers = await db.list_tickers()
+    
     return {
         "status": "healthy",
         "database": "connected",
         "agents": len(_agents),
-        "tickers": len(db.list_tickers())
+        "tickers": len(tickers)
     }
 
 

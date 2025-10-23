@@ -15,7 +15,7 @@ from .llm import LLMClient
 from .rag import RAGSystem
 
 # Database
-from .database import MockDatabase
+from .database import Database, get_database
 
 # API
 from .api import app as api_app, register_agent_instance
@@ -33,7 +33,8 @@ __all__ = [
     # Components
     'LLMClient',
     'RAGSystem',
-    'MockDatabase',
+    'Database',
+    'get_database',
     
     # API
     'api_app',

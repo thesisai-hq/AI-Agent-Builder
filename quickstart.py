@@ -1,6 +1,8 @@
 """Quick start script to verify framework installation."""
 
 import sys
+import asyncio
+import os
 
 
 def check_imports():
@@ -10,7 +12,7 @@ def check_imports():
         from agent_framework import (
             Agent, Signal, AgentConfig,
             LLMConfig, RAGConfig,
-            MockDatabase
+            Database, get_database
         )
         print("✅ Core imports successful")
         return True
@@ -19,34 +21,49 @@ def check_imports():
         return False
 
 
-def test_mock_database():
-    """Test mock database."""
-    print("\n🗄️  Testing mock database...")
+async def test_database():
+    """Test database connection."""
+    print("\n🗄️  Testing database...")
     try:
-        from agent_framework import MockDatabase
+        from agent_framework.database import get_database
         
-        db = MockDatabase()
-        tickers = db.list_tickers()
-        print(f"✅ Loaded {len(tickers)} tickers: {', '.join(tickers)}")
+        # Get connection string from environment
+        connection_string = os.getenv(
+            'DATABASE_URL',
+            'postgresql://postgres:postgres@localhost:5432/agent_framework'
+        )
         
-        # Test data retrieval
-        data = db.get_fundamentals('AAPL')
-        print(f"✅ AAPL PE Ratio: {data['pe_ratio']:.1f}")
+        db = get_database(connection_string)
+        await db.connect()
         
-        prices = db.get_prices('AAPL', days=5)
-        print(f"✅ Retrieved {len(prices)} days of price data")
+        tickers = await db.list_tickers()
+        print(f"✅ Connected to database with {len(tickers)} tickers")
         
+        if tickers:
+            print(f"   Available: {', '.join(tickers)}")
+            
+            # Test data retrieval
+            data = await db.get_fundamentals(tickers[0])
+            print(f"✅ Retrieved data for {tickers[0]}: PE={data.get('pe_ratio', 'N/A')}")
+        else:
+            print("⚠️  Database is empty. Run: python seed_data.py")
+        
+        await db.disconnect()
         return True
     except Exception as e:
         print(f"❌ Database error: {e}")
+        print("\n💡 Make sure PostgreSQL is running and seeded:")
+        print("   docker-compose up -d postgres")
+        print("   python seed_data.py")
         return False
 
 
-def test_simple_agent():
+async def test_simple_agent():
     """Test simple agent."""
     print("\n🤖 Testing simple agent...")
     try:
-        from agent_framework import Agent, Signal, MockDatabase
+        from agent_framework import Agent, Signal
+        from agent_framework.database import get_database
         
         class QuickAgent(Agent):
             def analyze(self, ticker: str, data: dict) -> Signal:
@@ -57,13 +74,28 @@ def test_simple_agent():
                     f"PE ratio: {pe:.1f}"
                 )
         
-        db = MockDatabase()
+        connection_string = os.getenv(
+            'DATABASE_URL',
+            'postgresql://postgres:postgres@localhost:5432/agent_framework'
+        )
+        
+        db = get_database(connection_string)
+        await db.connect()
+        
+        tickers = await db.list_tickers()
+        if not tickers:
+            print("⚠️  No tickers in database. Run: python seed_data.py")
+            await db.disconnect()
+            return None
+        
         agent = QuickAgent()
-        signal = agent.analyze('AAPL', db.get_fundamentals('AAPL'))
+        data = await db.get_fundamentals(tickers[0])
+        signal = agent.analyze(tickers[0], data)
         
         print(f"✅ Agent analysis: {signal.direction.upper()} ({signal.confidence:.0%})")
         print(f"   Reasoning: {signal.reasoning}")
         
+        await db.disconnect()
         return True
     except Exception as e:
         print(f"❌ Agent error: {e}")
@@ -109,24 +141,31 @@ def test_api():
         return False
 
 
-def main():
+async def main():
     """Run all checks."""
     print("=" * 60)
     print("AI Agent Framework - Quick Start")
     print("=" * 60)
     
     checks = [
-        ("Imports", check_imports),
-        ("Mock Database", test_mock_database),
-        ("Simple Agent", test_simple_agent),
-        ("RAG System", test_rag_system),
-        ("API", test_api),
+        ("Imports", check_imports, False),
+        ("Database", test_database, True),
+        ("Simple Agent", test_simple_agent, True),
+        ("RAG System", test_rag_system, False),
+        ("API", test_api, False),
     ]
     
     results = {}
-    for name, check in checks:
-        result = check()
-        results[name] = result
+    for name, check_func, is_async in checks:
+        try:
+            if is_async:
+                result = await check_func()
+            else:
+                result = check_func()
+            results[name] = result
+        except Exception as e:
+            print(f"❌ {name} failed: {e}")
+            results[name] = False
     
     # Summary
     print("\n" + "=" * 60)
@@ -155,10 +194,13 @@ def main():
         print("  3. Run tests: pytest tests/")
         return 0
     else:
-        print("\n⚠️  Some checks failed. Please install missing dependencies:")
-        print("  pip install -e .[all]")
+        print("\n⚠️  Some checks failed.")
+        print("\n💡 Setup steps:")
+        print("  1. Start PostgreSQL: docker-compose up -d postgres")
+        print("  2. Seed database: python seed_data.py")
+        print("  3. Install dependencies: pip install -e .[all]")
         return 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

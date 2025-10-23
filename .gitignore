@@ -24,7 +24,6 @@ wheels/
 venv/
 env/
 ENV/
-.venv
 
 # IDE
 .vscode/
@@ -43,9 +42,18 @@ htmlcov/
 .env
 .env.local
 
+# Database
+*.db
+*.sqlite
+*.sql.backup
+pg_dump_*.sql
+
+# Logs
+*.log
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Project specific
-*.log
+# Docker
+docker-compose.override.yml

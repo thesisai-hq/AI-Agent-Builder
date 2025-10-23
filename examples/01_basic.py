@@ -1,6 +1,9 @@
-"""Example 1: Simple agent without LLM (works immediately!)"""
+"""Example 1: Simple agent with PostgreSQL database."""
 
-from agent_framework import Agent, Signal, MockDatabase
+import asyncio
+import os
+from agent_framework import Agent, Signal
+from agent_framework.database import get_database
 
 
 class ValueAgent(Agent):
@@ -58,49 +61,63 @@ class GrowthAgent(Agent):
             )
 
 
-def main():
-    """Run example agents on mock data."""
+async def main():
+    """Run example agents on PostgreSQL data."""
     print("=" * 60)
     print("AI Agent Framework - Basic Example")
     print("=" * 60)
     
-    # Initialize mock database (pre-loaded with AAPL, MSFT, TSLA, JPM)
-    db = MockDatabase()
+    # Connect to database
+    connection_string = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+    )
+    
+    print("\n🔌 Connecting to database...")
+    db = get_database(connection_string)
+    await db.connect()
+    print("✅ Connected!")
     
     # Create agents
     value_agent = ValueAgent()
     growth_agent = GrowthAgent()
     
-    # Analyze all tickers
-    for ticker in db.list_tickers():
-        print(f"\n📊 Analyzing {ticker}")
-        print("-" * 60)
+    try:
+        # Analyze all tickers
+        tickers = await db.list_tickers()
         
-        # Get data
-        data = db.get_fundamentals(ticker)
-        print(f"Company: {data['name']}")
-        print(f"PE Ratio: {data['pe_ratio']:.1f}")
-        print(f"Revenue Growth: {data['revenue_growth']:.1f}%")
-        print(f"Profit Margin: {data['profit_margin']:.1f}%")
+        for ticker in tickers:
+            print(f"\n📊 Analyzing {ticker}")
+            print("-" * 60)
+            
+            # Get data
+            data = await db.get_fundamentals(ticker)
+            print(f"Company: {data['name']}")
+            print(f"PE Ratio: {data['pe_ratio']:.1f}")
+            print(f"Revenue Growth: {data['revenue_growth']:.1f}%")
+            print(f"Profit Margin: {data['profit_margin']:.1f}%")
+            
+            # Value agent analysis
+            value_signal = value_agent.analyze(ticker, data)
+            print(f"\n💡 Value Agent:")
+            print(f"   Direction: {value_signal.direction.upper()}")
+            print(f"   Confidence: {value_signal.confidence:.1%}")
+            print(f"   Reasoning: {value_signal.reasoning}")
+            
+            # Growth agent analysis
+            growth_signal = growth_agent.analyze(ticker, data)
+            print(f"\n🚀 Growth Agent:")
+            print(f"   Direction: {growth_signal.direction.upper()}")
+            print(f"   Confidence: {growth_signal.confidence:.1%}")
+            print(f"   Reasoning: {growth_signal.reasoning}")
         
-        # Value agent analysis
-        value_signal = value_agent.analyze(ticker, data)
-        print(f"\n💡 Value Agent:")
-        print(f"   Direction: {value_signal.direction.upper()}")
-        print(f"   Confidence: {value_signal.confidence:.1%}")
-        print(f"   Reasoning: {value_signal.reasoning}")
+        print("\n" + "=" * 60)
+        print("✅ Example completed successfully!")
+        print("=" * 60)
         
-        # Growth agent analysis
-        growth_signal = growth_agent.analyze(ticker, data)
-        print(f"\n🚀 Growth Agent:")
-        print(f"   Direction: {growth_signal.direction.upper()}")
-        print(f"   Confidence: {growth_signal.confidence:.1%}")
-        print(f"   Reasoning: {growth_signal.reasoning}")
-    
-    print("\n" + "=" * 60)
-    print("✅ Example completed successfully!")
-    print("=" * 60)
+    finally:
+        await db.disconnect()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

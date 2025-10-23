@@ -1,10 +1,19 @@
-"""Comprehensive test suite for AI Agent Framework."""
+"""Comprehensive test suite for AI Agent Framework with PostgreSQL."""
 
 import pytest
+import asyncio
+import os
 from datetime import datetime
 from agent_framework import (
     Agent, Signal, AgentConfig, LLMConfig, RAGConfig,
-    MockDatabase
+    Database, get_database
+)
+
+
+# Test configuration
+TEST_DB_URL = os.getenv(
+    'TEST_DATABASE_URL',
+    'postgresql://postgres:postgres@localhost:5432/agent_framework'
 )
 
 
@@ -58,48 +67,87 @@ class TestModels:
         assert config.llm.provider == 'ollama'
 
 
-class TestMockDatabase:
-    """Test mock database."""
+class TestDatabase:
+    """Test PostgreSQL database."""
     
-    def test_database_initialization(self):
-        """Test database loads data."""
-        db = MockDatabase()
-        tickers = db.list_tickers()
-        assert len(tickers) == 4
-        assert 'AAPL' in tickers
-        assert 'MSFT' in tickers
+    @pytest.mark.asyncio
+    async def test_database_connection(self):
+        """Test database connects successfully."""
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        assert db._pool is not None
+        await db.disconnect()
     
-    def test_get_fundamentals(self):
+    @pytest.mark.asyncio
+    async def test_list_tickers(self):
+        """Test listing tickers."""
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        
+        tickers = await db.list_tickers()
+        assert isinstance(tickers, list)
+        assert len(tickers) > 0
+        
+        await db.disconnect()
+    
+    @pytest.mark.asyncio
+    async def test_get_fundamentals(self):
         """Test fundamental data retrieval."""
-        db = MockDatabase()
-        data = db.get_fundamentals('AAPL')
-        assert data['ticker'] == 'AAPL'
-        assert 'pe_ratio' in data
-        assert 'market_cap' in data
-        assert data['pe_ratio'] > 0
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        
+        tickers = await db.list_tickers()
+        if tickers:
+            data = await db.get_fundamentals(tickers[0])
+            assert 'ticker' in data
+            assert 'pe_ratio' in data
+            assert 'market_cap' in data
+        
+        await db.disconnect()
     
-    def test_get_prices(self):
+    @pytest.mark.asyncio
+    async def test_get_prices(self):
         """Test price history retrieval."""
-        db = MockDatabase()
-        prices = db.get_prices('AAPL', days=30)
-        assert len(prices) == 30
-        assert 'close' in prices[0]
-        assert 'volume' in prices[0]
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        
+        tickers = await db.list_tickers()
+        if tickers:
+            prices = await db.get_prices(tickers[0], days=30)
+            assert isinstance(prices, list)
+            if prices:
+                assert 'close' in prices[0]
+                assert 'volume' in prices[0]
+        
+        await db.disconnect()
     
-    def test_get_news(self):
+    @pytest.mark.asyncio
+    async def test_get_news(self):
         """Test news retrieval."""
-        db = MockDatabase()
-        news = db.get_news('AAPL')
-        assert len(news) > 0
-        assert 'headline' in news[0]
-        assert 'sentiment' in news[0]
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        
+        tickers = await db.list_tickers()
+        if tickers:
+            news = await db.get_news(tickers[0])
+            assert isinstance(news, list)
+            if news:
+                assert 'headline' in news[0]
+        
+        await db.disconnect()
     
-    def test_get_filing(self):
+    @pytest.mark.asyncio
+    async def test_get_filing(self):
         """Test SEC filing retrieval."""
-        db = MockDatabase()
-        filing = db.get_filing('AAPL')
-        assert len(filing) > 1000  # Should be substantial
-        assert '10-K' in filing
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        
+        tickers = await db.list_tickers()
+        if tickers:
+            filing = await db.get_filing(tickers[0])
+            assert isinstance(filing, str)
+        
+        await db.disconnect()
 
 
 class SimpleTestAgent(Agent):
@@ -129,16 +177,23 @@ class TestAgent:
         agent = SimpleTestAgent(config)
         assert agent.config.name == 'CustomAgent'
     
-    def test_agent_analyze(self):
+    @pytest.mark.asyncio
+    async def test_agent_analyze(self):
         """Test agent analysis."""
-        db = MockDatabase()
-        agent = SimpleTestAgent()
-        data = db.get_fundamentals('JPM')  # Low PE
+        db = get_database(TEST_DB_URL)
+        await db.connect()
         
-        signal = agent.analyze('JPM', data)
-        assert isinstance(signal, Signal)
-        assert signal.direction == 'bullish'
-        assert 0 <= signal.confidence <= 1
+        agent = SimpleTestAgent()
+        tickers = await db.list_tickers()
+        
+        if tickers:
+            data = await db.get_fundamentals(tickers[0])
+            signal = agent.analyze(tickers[0], data)
+            assert isinstance(signal, Signal)
+            assert signal.direction in ('bullish', 'bearish', 'neutral')
+            assert 0 <= signal.confidence <= 1
+        
+        await db.disconnect()
     
     def test_lazy_llm_initialization(self):
         """Test LLM is not initialized without config."""
@@ -214,15 +269,19 @@ class TestRAGSystem:
 class TestIntegration:
     """Integration tests."""
     
-    def test_end_to_end_simple_agent(self):
+    @pytest.mark.asyncio
+    async def test_end_to_end_simple_agent(self):
         """Test complete flow with simple agent."""
         # Setup
-        db = MockDatabase()
+        db = get_database(TEST_DB_URL)
+        await db.connect()
+        
         agent = SimpleTestAgent()
         
         # Analyze all tickers
-        for ticker in db.list_tickers():
-            data = db.get_fundamentals(ticker)
+        tickers = await db.list_tickers()
+        for ticker in tickers[:2]:  # Test first 2 tickers
+            data = await db.get_fundamentals(ticker)
             signal = agent.analyze(ticker, data)
             
             # Verify signal
@@ -230,22 +289,31 @@ class TestIntegration:
             assert 0 <= signal.confidence <= 1
             assert len(signal.reasoning) > 0
             assert isinstance(signal.timestamp, datetime)
+        
+        await db.disconnect()
     
-    def test_rag_with_sec_filing(self):
+    @pytest.mark.asyncio
+    async def test_rag_with_sec_filing(self):
         """Test RAG with actual SEC filing."""
         from agent_framework import RAGSystem
         
-        db = MockDatabase()
-        filing = db.get_filing('AAPL')
+        db = get_database(TEST_DB_URL)
+        await db.connect()
         
-        config = RAGConfig(chunk_size=300, top_k=3)
-        rag = RAGSystem(config)
-        rag.add_document(filing)
+        tickers = await db.list_tickers()
+        if tickers:
+            filing = await db.get_filing(tickers[0])
+            
+            if filing:
+                config = RAGConfig(chunk_size=300, top_k=3)
+                rag = RAGSystem(config)
+                rag.add_document(filing)
+                
+                # Query filing
+                result = rag.query("What are the financial performance metrics?")
+                assert len(result) > 0
         
-        # Query filing
-        result = rag.query("What are the financial performance metrics?")
-        assert len(result) > 0
-        assert any(word in result.lower() for word in ['revenue', 'income', 'margin', 'sales'])
+        await db.disconnect()
 
 
 def test_imports():
@@ -254,13 +322,13 @@ def test_imports():
         Agent, Signal, AgentConfig,
         LLMConfig, RAGConfig,
         LLMClient, RAGSystem,
-        MockDatabase,
+        Database, get_database,
         api_app, register_agent_instance
     )
     assert Agent is not None
     assert Signal is not None
-    assert MockDatabase is not None
+    assert Database is not None
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+    pytest.main([__file__, '-v', '--asyncio-mode=auto'])

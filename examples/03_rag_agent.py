@@ -1,6 +1,9 @@
-"""Example 3: RAG-powered agent analyzing SEC filings."""
+"""Example 3: RAG-powered agent analyzing SEC filings from PostgreSQL."""
 
-from agent_framework import Agent, Signal, AgentConfig, RAGConfig, LLMConfig, MockDatabase
+import asyncio
+import os
+from agent_framework import Agent, Signal, AgentConfig, RAGConfig, LLMConfig
+from agent_framework.database import get_database
 
 
 class SECAnalystAgent(Agent):
@@ -33,12 +36,12 @@ Provide clear, actionable analysis."""
         super().__init__(config)
     
     def analyze(self, ticker: str, data: dict) -> Signal:
-        """Analyze SEC filing using RAG."""
-        # Get SEC filing from database
-        from agent_framework import MockDatabase
-        db = MockDatabase()
-        filing_text = db.get_filing(ticker)
-        
+        """Analyze method required by Agent base class."""
+        # This is a sync wrapper - not used in this example
+        return Signal('neutral', 0.5, 'Use analyze_async instead')
+    
+    async def analyze_async(self, ticker: str, filing_text: str) -> Signal:
+        """Analyze SEC filing using RAG (async version)."""
         if not filing_text:
             return Signal('neutral', 0.3, 'No SEC filing available')
         
@@ -106,15 +109,16 @@ class RiskAnalystAgent(Agent):
         super().__init__(config)
     
     def analyze(self, ticker: str, data: dict) -> Signal:
-        """Extract and analyze risk factors."""
-        from agent_framework import MockDatabase
-        db = MockDatabase()
-        filing = db.get_filing(ticker)
-        
-        if not filing:
+        """Analyze method required by Agent base class."""
+        # This is a sync wrapper - not used in this example
+        return Signal('neutral', 0.5, 'Use analyze_async instead')
+    
+    async def analyze_async(self, ticker: str, filing_text: str) -> Signal:
+        """Extract and analyze risk factors (async version)."""
+        if not filing_text:
             return Signal('neutral', 0.3, 'No filing data')
         
-        self.rag.add_document(filing)
+        self.rag.add_document(filing_text)
         
         # Query risk-related content
         risk_context = self.rag.query(
@@ -143,42 +147,57 @@ class RiskAnalystAgent(Agent):
         return Signal(direction, confidence, reasoning)
 
 
-def main():
+async def main():
     """Demonstrate RAG-powered SEC filing analysis."""
     print("=" * 60)
     print("AI Agent Framework - RAG Example")
     print("SEC Filing Analysis with Document Retrieval")
     print("=" * 60)
     
-    # Initialize
-    db = MockDatabase()
+    # Connect to database
+    connection_string = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+    )
+    
+    print("\n🔌 Connecting to database...")
+    db = get_database(connection_string)
+    await db.connect()
+    print("✅ Connected!")
+    
+    # Initialize agents
     sec_analyst = SECAnalystAgent()
     risk_analyst = RiskAnalystAgent()
     
-    # Analyze filings
-    for ticker in ['AAPL', 'TSLA']:
-        data = db.get_fundamentals(ticker)
+    try:
+        # Analyze filings
+        for ticker in ['AAPL', 'TSLA']:
+            data = await db.get_fundamentals(ticker)
+            filing = await db.get_filing(ticker)
+            
+            print(f"\n{'='*60}")
+            print(f"📄 Analyzing {ticker} - {data['name']} SEC 10-K Filing")
+            print(f"{'='*60}")
+            
+            # SEC analyst
+            print(f"\n📊 SEC Filing Analyst:")
+            sec_signal = await sec_analyst.analyze_async(ticker, filing)
+            print(f"   {sec_signal.direction.upper()} ({sec_signal.confidence:.0%})")
+            print(f"   {sec_signal.reasoning}")
+            
+            # Risk analyst
+            print(f"\n⚠️  Risk Analyst:")
+            risk_signal = await risk_analyst.analyze_async(ticker, filing)
+            print(f"   {risk_signal.direction.upper()} ({risk_signal.confidence:.0%})")
+            print(f"   {risk_signal.reasoning}")
         
-        print(f"\n{'='*60}")
-        print(f"📄 Analyzing {ticker} - {data['name']} SEC 10-K Filing")
-        print(f"{'='*60}")
+        print("\n" + "=" * 60)
+        print("✅ RAG enables deep analysis of long documents!")
+        print("=" * 60)
         
-        # SEC analyst
-        print(f"\n📊 SEC Filing Analyst:")
-        sec_signal = sec_analyst.analyze(ticker, data)
-        print(f"   {sec_signal.direction.upper()} ({sec_signal.confidence:.0%})")
-        print(f"   {sec_signal.reasoning}")
-        
-        # Risk analyst
-        print(f"\n⚠️  Risk Analyst:")
-        risk_signal = risk_analyst.analyze(ticker, data)
-        print(f"   {risk_signal.direction.upper()} ({risk_signal.confidence:.0%})")
-        print(f"   {risk_signal.reasoning}")
-    
-    print("\n" + "=" * 60)
-    print("✅ RAG enables deep analysis of long documents!")
-    print("=" * 60)
+    finally:
+        await db.disconnect()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

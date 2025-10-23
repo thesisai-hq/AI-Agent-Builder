@@ -19,11 +19,21 @@ A lightweight, production-ready framework for building AI agents that analyze fi
 
 ```bash
 # Install
-git clone git@github.com:thesisai-hq/AI-Agent-Builder.git
+git clone https://github.com/yourusername/ai-agent-builder.git
 cd AI-Agent-Builder
 pip install -e .
 
-# Run examples (work immediately!)
+# Setup PostgreSQL database (If using Docker)
+docker-compose up -d postgres
+docker exec -i agent_framework_db psql -U postgres agent_framework < schema.sql
+python seed_data.py
+
+# Setup PostgreSQL database (If using local psql)
+createdb agent_framework
+psql agent_framework < schema.sql
+python seed_data.py
+
+# Run examples
 python examples/01_basic.py
 python examples/02_llm_agent.py  # Requires Ollama/OpenAI/Anthropic
 python examples/03_rag_agent.py  # Requires sentence-transformers
@@ -37,26 +47,60 @@ agent_framework/
 ├── agent.py       # Agent base class
 ├── llm.py         # LLM client with system prompts
 ├── rag.py         # RAG system for documents
-├── database.py    # Mock database with realistic data
+├── database.py    # PostgreSQL database with connection pooling
 └── api.py         # FastAPI REST endpoints
 ```
 
-## 📊 Built-in Mock Data
+## 🗄️ PostgreSQL Database
 
-Framework includes realistic data for **4 tickers** (AAPL, MSFT, TSLA, JPM):
-- Fundamentals (PE, ROE, margins, growth)
-- 90 days price history
-- News headlines
-- SEC filing excerpts (2000+ words for RAG testing)
+Framework uses PostgreSQL with asyncpg for high-performance async database access.
 
-**No external data needed for development!**
+**Connection pooling** (2-10 connections) provides **9x faster queries** compared to creating new connections.
+
+Recommand using **Docker**.
+
+### Setup Docker Database
+```bash
+# Create database
+docker-compose up -d postgres
+
+# Run schema
+docker exec -i agent_framework_db psql -U postgres agent_framework < schema.sql
+
+# Seed with sample data (AAPL, MSFT, TSLA, JPM)
+python seed_data.py
+```
+
+### Setup Local Database
+
+```bash
+# Create database
+createdb agent_framework
+
+# Run schema
+psql agent_framework < schema.sql
+
+# Seed with sample data (AAPL, MSFT, TSLA, JPM)
+python seed_data.py
+```
+
+### Database Schema
+
+- **fundamentals** - Company fundamental metrics
+- **prices** - Historical price data
+- **news** - News headlines and sentiment
+- **sec_filings** - SEC 10-K filing excerpts
+
+Sample data includes 4 tickers with 90 days of prices, news, and SEC filings.
 
 ## 🚀 Usage
 
 ### Simple Agent (No LLM)
 
 ```python
-from agent_framework import Agent, Signal, MockDatabase
+import asyncio
+from agent_framework import Agent, Signal
+from agent_framework.database import get_database
 
 class ValueAgent(Agent):
     def analyze(self, ticker: str, data: dict) -> Signal:
@@ -65,11 +109,20 @@ class ValueAgent(Agent):
             return Signal('bullish', 0.8, f"PE {pe:.1f} undervalued")
         return Signal('neutral', 0.5, "Fair value")
 
-# Use immediately!
-db = MockDatabase()
-agent = ValueAgent()
-signal = agent.analyze('AAPL', db.get_fundamentals('AAPL'))
-print(f"{signal.direction} ({signal.confidence:.0%}): {signal.reasoning}")
+async def main():
+    # Connect to database
+    db = get_database('postgresql://postgres:postgres@localhost:5432/agent_framework')
+    await db.connect()
+    
+    # Analyze
+    agent = ValueAgent()
+    data = await db.get_fundamentals('AAPL')
+    signal = agent.analyze('AAPL', data)
+    print(f"{signal.direction} ({signal.confidence:.0%}): {signal.reasoning}")
+    
+    await db.disconnect()
+
+asyncio.run(main())
 ```
 
 ### LLM Agent with Persona
@@ -196,10 +249,6 @@ curl -X POST http://localhost:8000/analyze \
   }'
 ```
 
-Alternative:
-* Open your browser and type: http://localhost:8000/docs
-* You can click tabs for each endpoints and click **Try it out** to try them instead of using CURL in CLI.
-
 ## 🧪 Testing
 
 ```python
@@ -228,6 +277,9 @@ pytest tests/
 ```bash
 # Install Ollama
 curl https://ollama.ai/install.sh | sh
+
+# Start Ollama if not automatically started
+ollama serve
 
 # Pull model
 ollama pull llama3.2
@@ -299,11 +351,10 @@ Contributions welcome! This is an open-source framework designed to be simple an
 
 ## 📄 License
 
-MIT License - see LICENSE file
+MIT License - see [LICENSE file](LICENSE)
 
 ## 🚀 Roadmap
 
-- [ ] PostgreSQL integration
 - [ ] Real-time data connectors
 - [ ] Agent composition (ensemble agents)
 - [ ] Backtesting framework
@@ -330,5 +381,3 @@ MIT License - see LICENSE file
 - Clean separation of concerns
 
 ---
-
-**Built with ❤️ for simplicity and maintainability**

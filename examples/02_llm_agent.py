@@ -1,7 +1,9 @@
-"""Example 2: LLM-powered agent with system prompt persona."""
+"""Example 2: LLM-powered agent with system prompt persona and PostgreSQL."""
 
+import asyncio
 import os
-from agent_framework import Agent, Signal, AgentConfig, LLMConfig, MockDatabase
+from agent_framework import Agent, Signal, AgentConfig, LLMConfig
+from agent_framework.database import get_database
 
 
 class ConservativeInvestorAgent(Agent):
@@ -113,7 +115,7 @@ What's your aggressive take? Format: DIRECTION|CONFIDENCE|REASONING"""
             return Signal('neutral', 0.5, response[:200])
 
 
-def main():
+async def main():
     """Compare conservative vs aggressive personas."""
     print("=" * 60)
     print("AI Agent Framework - LLM Agent Example")
@@ -121,44 +123,58 @@ def main():
     print("=" * 60)
     
     # Check for Ollama
-    if not os.path.exists('/usr/local/bin/ollama'):
+    if not os.path.exists('/usr/local/bin/ollama') and not os.path.exists('/usr/bin/ollama'):
         print("\n⚠️  This example requires Ollama installed locally.")
         print("Install: https://ollama.ai")
         print("\nAlternatively, change provider to 'openai' or 'anthropic'")
         print("and set API keys in .env file")
         return
     
-    # Initialize
-    db = MockDatabase()
+    # Connect to database
+    connection_string = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/agent_framework'
+    )
+    
+    print("\n🔌 Connecting to database...")
+    db = get_database(connection_string)
+    await db.connect()
+    print("✅ Connected!")
+    
+    # Initialize agents
     conservative = ConservativeInvestorAgent()
     aggressive = AggressiveTraderAgent()
     
-    # Analyze TSLA (high growth) and JPM (value)
-    for ticker in ['TSLA', 'JPM']:
-        data = db.get_fundamentals(ticker)
+    try:
+        # Analyze TSLA (high growth) and JPM (value)
+        for ticker in ['TSLA', 'JPM']:
+            data = await db.get_fundamentals(ticker)
+            
+            print(f"\n{'='*60}")
+            print(f"📊 Analyzing {ticker} - {data['name']}")
+            print(f"{'='*60}")
+            print(f"PE: {data['pe_ratio']:.1f} | Growth: {data['revenue_growth']:.1f}% | "
+                  f"Div Yield: {data['dividend_yield']:.1f}%")
+            
+            # Conservative analysis
+            print(f"\n🛡️  Conservative Investor:")
+            cons_signal = conservative.analyze(ticker, data)
+            print(f"   {cons_signal.direction.upper()} ({cons_signal.confidence:.0%})")
+            print(f"   {cons_signal.reasoning}")
+            
+            # Aggressive analysis
+            print(f"\n🚀 Aggressive Trader:")
+            agg_signal = aggressive.analyze(ticker, data)
+            print(f"   {agg_signal.direction.upper()} ({agg_signal.confidence:.0%})")
+            print(f"   {agg_signal.reasoning}")
         
-        print(f"\n{'='*60}")
-        print(f"📊 Analyzing {ticker} - {data['name']}")
-        print(f"{'='*60}")
-        print(f"PE: {data['pe_ratio']:.1f} | Growth: {data['revenue_growth']:.1f}% | "
-              f"Div Yield: {data['dividend_yield']:.1f}%")
+        print("\n" + "=" * 60)
+        print("✅ LLM personas demonstrate different investment styles!")
+        print("=" * 60)
         
-        # Conservative analysis
-        print(f"\n🛡️  Conservative Investor:")
-        cons_signal = conservative.analyze(ticker, data)
-        print(f"   {cons_signal.direction.upper()} ({cons_signal.confidence:.0%})")
-        print(f"   {cons_signal.reasoning}")
-        
-        # Aggressive analysis
-        print(f"\n🚀 Aggressive Trader:")
-        agg_signal = aggressive.analyze(ticker, data)
-        print(f"   {agg_signal.direction.upper()} ({agg_signal.confidence:.0%})")
-        print(f"   {agg_signal.reasoning}")
-    
-    print("\n" + "=" * 60)
-    print("✅ LLM personas demonstrate different investment styles!")
-    print("=" * 60)
+    finally:
+        await db.disconnect()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

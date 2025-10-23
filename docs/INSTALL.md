@@ -11,7 +11,7 @@
 ```bash
 # Clone repository
 git clone https://github.com/yourusername/ai-agent-framework.git
-cd ai-agent-framework
+cd AI-Agent-Builder
 
 # Install in development mode
 pip install -e .
@@ -31,8 +31,11 @@ That's it! The framework works immediately with built-in mock data.
 # Install Ollama
 curl https://ollama.ai/install.sh | sh
 
+# Start Ollama if not automatically started
+ollama serve
+
 # Pull a model
-ollama pull llama3
+ollama pull llama3.2
 
 # Install Python client
 pip install ollama
@@ -187,7 +190,7 @@ For Ollama:
 ollama list
 
 # Pull a model if needed
-ollama pull llama3
+ollama pull llama3.2
 ```
 
 ### RAG Slow on First Use
