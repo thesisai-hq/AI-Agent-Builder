@@ -1,330 +1,541 @@
-# Testing Guide
+# Testing Your Agents - Making Sure They Work
 
-## Quick Setup
+**What is testing?** Writing code that automatically checks if your agents work correctly. Like having a robot assistant that tests your code for you!
 
-### 1. Set Up Test Database
+**Why test?** Catch bugs before they cause problems. Make sure changes don't break things.
+
+## Simple Testing (For Beginners)
+
+Don't want to write formal tests? Just run your agent and check the output:
+
+```python
+# test_my_agent.py
+import asyncio
+from agent_framework import Database, Config
+from my_agent import MyAgent
+
+async def test_manually():
+    """Quick test of your agent."""
+    db = Database(Config.get_database_url())
+    await db.connect()
+    
+    # Create agent
+    agent = MyAgent()
+    
+    # Test on known stock
+    data = await db.get_fundamentals('AAPL')
+    signal = agent.analyze('AAPL', data)
+    
+    # Check results
+    print(f"Testing MyAgent on AAPL...")
+    print(f"  Direction: {signal.direction}")
+    print(f"  Confidence: {signal.confidence}")
+    print(f"  Reasoning: {signal.reasoning}")
+    
+    # Verify it looks right
+    if signal.direction in ['bullish', 'bearish', 'neutral']:
+        print("✅ Direction is valid")
+    else:
+        print("❌ Direction is invalid!")
+    
+    if 0.0 <= signal.confidence <= 1.0:
+        print("✅ Confidence in valid range")
+    else:
+        print("❌ Confidence out of range!")
+    
+    await db.disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(test_manually())
+```
+
+Run it:
+```bash
+python test_my_agent.py
+```
+
+**Pros:** Simple, easy to understand  
+**Cons:** You have to check manually, not automated
+
+## Formal Testing (Recommended)
+
+**What is pytest?** A tool that automatically runs your tests and tells you if they pass or fail.
+
+### One-Time Setup
 
 ```bash
-# Run the setup script
+# Install pytest if you haven't
+pip install pytest pytest-asyncio
+
+# Create test database (one time only)
 python setup_test_db.py
 ```
 
-Or manually:
+**What this does:** Creates a separate database for testing (so you don't mess up your real data).
 
-```bash
-# Create test database
-docker exec agent_framework_db createdb -U postgres agent_framework_test
+### Write a Test
 
-# Run schema
-docker exec -i agent_framework_db psql -U postgres agent_framework_test < schema.sql
+Create `test_my_agent.py`:
 
-# Seed test database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/agent_framework_test python seed_data.py
+```python
+import pytest
+from agent_framework import Database, Config
+from my_agent import MyAgent
+
+@pytest.fixture
+async def test_db():
+    """
+    Set up test database.
+    This runs before each test.
+    """
+    db = Database(Config.get_test_database_url())
+    await db.connect()
+    yield db  # Test runs here
+    await db.disconnect()
+
+@pytest.mark.asyncio
+async def test_agent_on_aapl(test_db):
+    """
+    Test that agent works on Apple stock.
+    """
+    agent = MyAgent()
+    
+    # Get Apple's data
+    data = await test_db.get_fundamentals('AAPL')
+    
+    # Analyze it
+    signal = agent.analyze('AAPL', data)
+    
+    # Check results
+    assert signal.direction in ['bullish', 'bearish', 'neutral']
+    assert 0.0 <= signal.confidence <= 1.0
+    assert len(signal.reasoning) > 0
+
+@pytest.mark.asyncio
+async def test_low_pe_is_bullish(test_db):
+    """
+    Test that agent recommends buying low PE stocks.
+    """
+    agent = MyAgent()
+    
+    # Create fake data with low PE
+    fake_data = {
+        'ticker': 'TEST',
+        'pe_ratio': 10.0,  # Very low PE
+        'revenue_growth': 15.0,
+        'profit_margin': 20.0
+    }
+    
+    signal = agent.analyze('TEST', fake_data)
+    
+    # Should recommend buying
+    assert signal.direction == 'bullish'
+    assert signal.confidence > 0.5
 ```
 
-### 2. Run Tests
+**What this does:**
+- `@pytest.fixture` - Sets up test database automatically
+- `@pytest.mark.asyncio` - Tells pytest this test is async
+- `assert` - Check if something is true (test fails if not)
+
+### Run Tests
 
 ```bash
 # Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=agent_framework --cov-report=html
-
-# Run specific test file
-pytest tests/test_framework.py -v
-
-# Run specific test class
-pytest tests/test_framework.py::TestDatabase -v
+pytest test_my_agent.py -v
 
 # Run specific test
-pytest tests/test_framework.py::TestDatabase::test_database_connection -v
+pytest test_my_agent.py::test_agent_on_aapl -v
+
+# See detailed output
+pytest test_my_agent.py -v -s
 ```
 
-## Test Database
-
-The framework uses a **separate test database** (`agent_framework_test`) to ensure:
-- ✅ Test isolation
-- ✅ No interference with development data
-- ✅ Parallel test execution (future)
-- ✅ Safe cleanup
-
-### Configuration
-
-Test database URL is configured via:
-1. Environment variable: `TEST_DATABASE_URL`
-2. Default: `postgresql://postgres:postgres@localhost:5433/agent_framework_test`
-
-## Test Structure
-
+**What you'll see:**
 ```
-tests/
-└── test_framework.py          # All tests
-    ├── TestModels             # Pydantic model tests
-    ├── TestDatabase           # Database operation tests
-    ├── TestAgent              # Agent functionality tests
-    ├── TestRAGSystem          # RAG system tests
-    ├── TestUtilities          # Utility function tests
-    └── TestIntegration        # Integration tests
+test_my_agent.py::test_agent_on_aapl PASSED        [50%]
+test_my_agent.py::test_low_pe_is_bullish PASSED    [100%]
+
+✅ 2 passed in 0.54s
 ```
 
-## Writing Tests
+## Understanding Test Output
 
-### Test Fixtures
+**PASSED** ✅ - Test worked! Everything is correct.
 
-Use the `test_db` fixture for database tests:
+**FAILED** ❌ - Test found a problem. Look at the error message.
+
+Example failure:
+```
+test_my_agent.py::test_agent_on_aapl FAILED
+
+    assert signal.direction in ['bullish', 'bearish', 'neutral']
+    AssertionError: assert 'BULLISH' in ['bullish', 'bearish', 'neutral']
+```
+
+**What this means:** Your agent returned "BULLISH" (uppercase) but test expected lowercase. Fix your code!
+
+## What to Test
+
+### Test 1: Agent Works on Real Data
 
 ```python
 @pytest.mark.asyncio
-async def test_my_feature(test_db):
-    """Test with database access."""
-    data = await test_db.get_fundamentals('AAPL')
-    assert data is not None
-```
-
-### Async Tests
-
-All async tests must use `@pytest.mark.asyncio`:
-
-```python
-@pytest.mark.asyncio
-async def test_async_function():
-    """Test async function."""
-    result = await my_async_function()
-    assert result == expected
-```
-
-### Model Validation Tests
-
-Test Pydantic models with ValidationError:
-
-```python
-from pydantic import ValidationError
-
-def test_model_validation():
-    """Test model rejects invalid data."""
-    with pytest.raises(ValidationError):
-        Signal(direction='invalid', confidence=0.5, reasoning='test')
-```
-
-## Common Test Patterns
-
-### 1. Test Database Query
-
-```python
-@pytest.mark.asyncio
-async def test_query(test_db):
-    tickers = await test_db.list_tickers()
-    assert isinstance(tickers, list)
-    assert len(tickers) > 0
-```
-
-### 2. Test Agent
-
-```python
-@pytest.mark.asyncio
-async def test_agent(test_db):
+async def test_agent_works(test_db):
+    """Basic smoke test - does agent run without crashing?"""
     agent = MyAgent()
     data = await test_db.get_fundamentals('AAPL')
     signal = agent.analyze('AAPL', data)
     
-    assert isinstance(signal, Signal)
-    assert signal.direction in ('bullish', 'bearish', 'neutral')
-    assert 0 <= signal.confidence <= 1
+    # Just check it returned something valid
+    assert signal is not None
+    assert signal.direction in ['bullish', 'bearish', 'neutral']
 ```
 
-### 3. Test Error Handling
+**Tests:** Agent doesn't crash, returns valid signal.
+
+### Test 2: Agent Logic Works
 
 ```python
-from agent_framework.database import QueryError
-
 @pytest.mark.asyncio
-async def test_error_handling(test_db):
-    with pytest.raises(QueryError):
-        await test_db.get_fundamentals('INVALID' * 100)
+async def test_low_pe_means_buy(test_db):
+    """Test that low PE = buy recommendation."""
+    agent = MyAgent()
+    
+    # Make up data with low PE
+    data = {'pe_ratio': 10.0, 'profit_margin': 20.0}
+    signal = agent.analyze('TEST', data)
+    
+    # Should be bullish
+    assert signal.direction == 'bullish'
 ```
 
-## Test Coverage
+**Tests:** Your agent's logic is correct.
 
-Current coverage: **~85%**
+### Test 3: Edge Cases
 
-View coverage report:
-```bash
-pytest tests/ --cov=agent_framework --cov-report=html
-open htmlcov/index.html  # or browse to file
-```
-
-## Troubleshooting
-
-### Test Database Doesn't Exist
-
-**Error:** `database "agent_framework_test" does not exist`
-
-**Solution:**
-```bash
-python setup_test_db.py
-```
-
-### Connection Refused
-
-**Error:** `connection refused`
-
-**Solution:**
-```bash
-docker-compose ps  # Check PostgreSQL is running
-docker-compose up -d postgres  # Start if needed
-```
-
-### Fixture Not Working
-
-**Error:** `AttributeError: 'async_generator' object has no attribute`
-
-**Solution:** Make sure you're using `@pytest_asyncio.fixture`:
 ```python
-import pytest_asyncio
-
-@pytest_asyncio.fixture
-async def my_fixture():
-    # Setup
-    yield something
-    # Teardown
+@pytest.mark.asyncio
+async def test_handles_missing_data(test_db):
+    """Test agent doesn't crash with missing data."""
+    agent = MyAgent()
+    
+    # Empty data
+    data = {}
+    signal = agent.analyze('TEST', data)
+    
+    # Should still return something
+    assert signal is not None
 ```
 
-### Tests Pass Locally But Fail in CI
+**Tests:** Agent handles errors gracefully.
 
-**Common causes:**
-1. Test database not set up in CI
-2. Different PostgreSQL version
-3. Missing environment variables
-4. Race conditions (use proper fixtures)
+## Test the Framework Itself
 
-### Slow Tests
+Run the built-in tests:
 
-RAG tests can be slow on first run (downloads models). Subsequent runs are fast.
-
-To skip slow tests:
 ```bash
-pytest tests/ -v -m "not slow"
+# Setup test database (one time)
+python setup_test_db.py
+
+# Run all framework tests
+pytest tests/ -v
+
+# See test coverage
+pytest tests/ --cov=agent_framework
 ```
 
-## Continuous Integration
+**What this tests:** The framework's database, models, utilities.
 
-### GitHub Actions Example
+## Common Test Patterns
 
-```yaml
-name: Tests
+### Pattern 1: Test Database Connection
 
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
+```python
+@pytest.mark.asyncio
+async def test_database_connection(test_db):
+    """Test we can connect to database."""
+    # If we get here, connection worked!
+    assert test_db is not None
     
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: agent_framework_test
-        ports:
-          - 5432:5432
+    # Check it's healthy
+    health = await test_db.health_check()
+    assert health == True
+```
+
+### Pattern 2: Test Agent on All Stocks
+
+```python
+@pytest.mark.asyncio
+async def test_agent_on_all_stocks(test_db):
+    """Test agent works on every stock."""
+    agent = MyAgent()
+    tickers = await test_db.list_tickers()
     
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.11
-      
-      - name: Install dependencies
-        run: |
-          pip install -e .[dev]
-      
-      - name: Run schema
-        run: psql postgresql://postgres:postgres@localhost:5432/agent_framework_test < schema.sql
-      
-      - name: Seed test database
-        run: DATABASE_URL=postgresql://postgres:postgres@localhost:5432/agent_framework_test python seed_data.py
-      
-      - name: Run tests
-        run: pytest tests/ -v --cov=agent_framework
+    for ticker in tickers:
+        data = await test_db.get_fundamentals(ticker)
+        signal = agent.analyze(ticker, data)
+        
+        # Should work for all stocks
+        assert signal.direction in ['bullish', 'bearish', 'neutral']
+```
+
+### Pattern 3: Test With Fake Data
+
+```python
+def test_agent_logic():
+    """Test agent without database (faster!)"""
+    agent = MyAgent()
+    
+    # No database needed - use fake data
+    fake_data = {
+        'pe_ratio': 15.0,
+        'profit_margin': 25.0,
+        'revenue_growth': 10.0
+    }
+    
+    signal = agent.analyze('FAKE', fake_data)
+    assert signal.confidence > 0
+```
+
+**Benefit:** Tests run faster (no database queries).
+
+## Mocking (Advanced)
+
+**What is mocking?** Pretending a component exists without actually using it. Good for testing AI agents without spending money on API calls.
+
+```python
+from unittest.mock import Mock
+
+def test_ai_agent_without_real_api():
+    """Test AI agent without calling actual AI API."""
+    from my_ai_agent import MyAIAgent
+    
+    agent = MyAIAgent()
+    
+    # Replace real AI with fake one
+    agent.llm = Mock()
+    agent.llm.chat.return_value = "bullish|80|Strong fundamentals"
+    
+    # Test works without spending money on API!
+    signal = agent.analyze('AAPL', {'pe_ratio': 20})
+    assert signal.direction == 'bullish'
+```
+
+**Why mock?** 
+- Don't spend money on API calls during testing
+- Tests run faster
+- Tests work without internet
+
+## When Tests Fail
+
+### Read the Error
+
+```
+AssertionError: assert 'BULLISH' in ['bullish', 'bearish', 'neutral']
+```
+
+**Translation:** Your agent returned "BULLISH" but test expected lowercase "bullish". Fix the capitalization!
+
+### Check What Was Returned
+
+```python
+signal = agent.analyze('AAPL', data)
+print(f"Got: {signal.direction}")  # Print to see what it actually is
+assert signal.direction == 'bullish'
+```
+
+### Use Debugger
+
+```python
+import pdb; pdb.set_trace()  # Pauses here
+
+signal = agent.analyze('AAPL', data)
+# Now you can inspect variables
 ```
 
 ## Best Practices
 
-### 1. Test Isolation
-
-- ✅ Use separate test database
-- ✅ Use fixtures for setup/teardown
-- ✅ Don't depend on test execution order
-- ✅ Clean up after tests
-
-### 2. Meaningful Tests
-
-- ✅ Test one thing per test
-- ✅ Use descriptive test names
-- ✅ Include docstrings
-- ✅ Assert specific conditions
-
-### 3. Fast Tests
-
-- ✅ Use fixtures to share setup
-- ✅ Mock external services when possible
-- ✅ Run database tests in parallel (future)
-- ✅ Skip slow tests in development
-
-### 4. Maintainable Tests
-
-- ✅ Keep tests simple
-- ✅ Avoid test duplication
-- ✅ Use helper functions
-- ✅ Update tests with code changes
-
-## Test Commands Cheat Sheet
+### 1. Test After Every Change
 
 ```bash
-# Basic
-pytest tests/                              # Run all tests
-pytest tests/ -v                           # Verbose output
-pytest tests/ -x                           # Stop on first failure
-pytest tests/ -k test_database            # Run matching tests
-
-# Coverage
-pytest tests/ --cov=agent_framework       # Show coverage
-pytest tests/ --cov-report=html           # HTML report
-pytest tests/ --cov-report=term-missing   # Show missing lines
-
-# Specific tests
-pytest tests/test_framework.py            # One file
-pytest tests/test_framework.py::TestDatabase  # One class
-pytest tests/test_framework.py::TestDatabase::test_connection  # One test
-
-# Output
-pytest tests/ -v                          # Verbose
-pytest tests/ -s                          # Show print statements
-pytest tests/ --tb=short                  # Short traceback
-pytest tests/ -vv                         # Very verbose
-
-# Performance
-pytest tests/ --durations=10              # Show 10 slowest tests
-pytest tests/ -n auto                     # Parallel (requires pytest-xdist)
-
-# Debugging
-pytest tests/ --pdb                       # Drop into debugger on failure
-pytest tests/ -l                          # Show local variables
+# After changing your agent
+pytest test_my_agent.py -v
 ```
 
-## Resources
+### 2. Test Happy Path (Normal Case)
 
-- pytest documentation: https://docs.pytest.org/
-- pytest-asyncio: https://pytest-asyncio.readthedocs.io/
-- Coverage.py: https://coverage.readthedocs.io/
+```python
+def test_normal_usage():
+    """Test typical use case."""
+    # Most common scenario
+```
+
+### 3. Test Edge Cases
+
+```python
+def test_empty_data():
+    """Test with no data."""
+    
+def test_extreme_values():
+    """Test with weird values (PE=0, PE=10000, etc.)"""
+```
+
+### 4. Keep Tests Simple
+
+```python
+# Good - one thing per test
+def test_low_pe_is_bullish():
+    assert agent.analyze(...).direction == 'bullish'
+
+# Bad - too much in one test
+def test_everything():
+    assert agent.analyze(...).direction == 'bullish'
+    assert agent.analyze(...).confidence > 0.5
+    assert agent.analyze(...).reasoning != ''
+    # ... 50 more assertions
+```
+
+### 5. Name Tests Clearly
+
+```python
+# Good names
+test_low_pe_recommends_buy()
+test_handles_missing_data()
+test_works_on_apple_stock()
+
+# Bad names
+test_1()
+test_stuff()
+test_agent()
+```
+
+## Troubleshooting Tests
+
+### "Test database not found"
+
+```bash
+# Create it
+python setup_test_db.py
+```
+
+### "Connection refused"
+
+```bash
+# Make sure Docker is running
+docker-compose up -d postgres
+```
+
+### "Import error"
+
+```bash
+# Reinstall framework
+pip install -e .
+```
+
+### Tests are slow
+
+**Solution:** Mock the database or use fake data instead of real queries.
+
+### "pytest: command not found"
+
+```bash
+# Install pytest
+pip install pytest pytest-asyncio
+```
+
+## Quick Commands
+
+```bash
+# Run all your tests
+pytest -v
+
+# Run specific file
+pytest test_my_agent.py -v
+
+# Run specific test
+pytest test_my_agent.py::test_low_pe_is_bullish -v
+
+# See print statements
+pytest -v -s
+
+# Stop on first failure
+pytest -x
+
+# Run tests matching name
+pytest -k "agent" -v
+
+# Check test coverage
+pytest --cov=agent_framework --cov-report=html
+```
+
+## Example Test File
+
+Here's a complete example you can copy:
+
+```python
+# test_my_value_agent.py
+import pytest
+from agent_framework import Database, Config
+from my_agent import ValueAgent
+
+@pytest.fixture
+async def test_db():
+    """Setup test database."""
+    db = Database(Config.get_test_database_url())
+    await db.connect()
+    yield db
+    await db.disconnect()
+
+@pytest.mark.asyncio
+async def test_value_agent_exists(test_db):
+    """Test we can create the agent."""
+    agent = ValueAgent()
+    assert agent is not None
+
+@pytest.mark.asyncio
+async def test_analyzes_apple(test_db):
+    """Test agent works on Apple stock."""
+    agent = ValueAgent()
+    data = await test_db.get_fundamentals('AAPL')
+    signal = agent.analyze('AAPL', data)
+    
+    assert signal.direction in ['bullish', 'bearish', 'neutral']
+    assert 0.0 <= signal.confidence <= 1.0
+    assert len(signal.reasoning) > 0
+
+def test_low_pe_is_bullish():
+    """Test low PE = buy recommendation."""
+    agent = ValueAgent()
+    data = {'pe_ratio': 10.0}
+    signal = agent.analyze('TEST', data)
+    
+    assert signal.direction == 'bullish'
+    assert signal.confidence > 0.7
+
+def test_high_pe_is_bearish():
+    """Test high PE = sell recommendation."""
+    agent = ValueAgent()
+    data = {'pe_ratio': 40.0}
+    signal = agent.analyze('TEST', data)
+    
+    assert signal.direction == 'bearish'
+```
+
+Run it:
+```bash
+pytest test_my_value_agent.py -v
+```
 
 ## Next Steps
 
-1. ✅ Set up test database: `python setup_test_db.py`
-2. ✅ Run tests: `pytest tests/ -v`
-3. ✅ Check coverage: `pytest tests/ --cov=agent_framework`
-4. 📝 Write tests for your custom agents
-5. 🔄 Set up CI/CD pipeline
+1. ✅ Write simple tests for your agents
+2. ✅ Run tests after making changes
+3. ✅ Fix any failures
+4. ✅ Add more tests as you add features
+
+**Remember:** Testing seems like extra work, but it saves you from bugs later!
+
+---
+
+**Not required for learning, but very helpful as you build more complex agents.** Start simple and add tests as you go!

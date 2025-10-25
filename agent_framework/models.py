@@ -3,6 +3,7 @@
 from typing import Optional, Dict, Any, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
+from .config import Config
 
 
 class Signal(BaseModel):
@@ -26,28 +27,126 @@ class LLMConfig(BaseModel):
     """Configuration for LLM providers with validation.
     
     Supports system prompts for agent personas.
+    Values can be customized per agent or use environment defaults.
+    
+    Example - Use defaults from .env:
+        config = LLMConfig(provider='openai')
+    
+    Example - Override temperature and max_tokens per agent:
+        config = LLMConfig(
+            provider='openai',
+            temperature=0.9,  # More creative than default
+            max_tokens=2000   # More detailed responses
+        )
+    
+    Example - Full customization:
+        config = LLMConfig(
+            provider='anthropic',
+            model='claude-3-opus-20240229',
+            temperature=0.3,     # Very focused
+            max_tokens=4000,     # Longer responses
+            system_prompt='You are a risk analyst...'
+        )
     """
     provider: Literal['openai', 'anthropic', 'ollama']
-    model: str = Field(min_length=1)
+    model: Optional[str] = None  # Will use Config default if None
     api_key: Optional[str] = None
     base_url: Optional[str] = None  # For Ollama
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    max_tokens: int = Field(default=1000, gt=0)
+    temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(default=None, gt=0)
     system_prompt: Optional[str] = None  # Agent persona
-    max_retries: int = Field(default=3, ge=0, le=10)
-    timeout: int = Field(default=60, gt=0)
+    max_retries: Optional[int] = Field(default=None, ge=0, le=10)
+    timeout: Optional[int] = Field(default=None, gt=0)
+    
+    def __init__(self, **data):
+        """Initialize with Config defaults if values not provided.
+        
+        This allows users to:
+        1. Accept all defaults: LLMConfig(provider='openai')
+        2. Override specific values: LLMConfig(provider='openai', temperature=0.9)
+        3. Fully customize: LLMConfig(provider='openai', model='gpt-4', temperature=0.5, max_tokens=2000)
+        """
+        super().__init__(**data)
+        # Apply Config defaults only for values not explicitly provided
+        if self.model is None:
+            object.__setattr__(self, 'model', Config.get_llm_model(self.provider))
+        if self.temperature is None:
+            object.__setattr__(self, 'temperature', Config.get_llm_temperature(self.provider))
+        if self.max_tokens is None:
+            object.__setattr__(self, 'max_tokens', Config.get_llm_max_tokens(self.provider))
+        if self.max_retries is None:
+            object.__setattr__(self, 'max_retries', Config.get_llm_max_retries())
+        if self.timeout is None:
+            object.__setattr__(self, 'timeout', Config.get_llm_timeout(self.provider))
+        if self.base_url is None and self.provider == 'ollama':
+            object.__setattr__(self, 'base_url', Config.get_ollama_url())
     
     model_config = {
         'frozen': True,
     }
+    
+    @classmethod
+    def create_custom(
+        cls,
+        provider: Literal['openai', 'anthropic', 'ollama'],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        model: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        **kwargs
+    ) -> 'LLMConfig':
+        """Helper method to create LLMConfig with custom temperature and max_tokens.
+        
+        This is a convenience method for the common use case of customizing
+        temperature and max_tokens while keeping other defaults.
+        
+        Args:
+            provider: LLM provider ('openai', 'anthropic', 'ollama')
+            temperature: Temperature for response randomness (0.0-2.0)
+                        Lower = more focused, Higher = more creative
+            max_tokens: Maximum tokens in response
+            model: Model name (optional, uses .env default if not specified)
+            system_prompt: System prompt for agent persona
+            **kwargs: Additional LLMConfig parameters
+        
+        Returns:
+            LLMConfig instance
+        
+        Example:
+            # Conservative agent with low temperature
+            config = LLMConfig.create_custom(
+                provider='openai',
+                temperature=0.3,     # Very focused
+                max_tokens=1000
+            )
+            
+            # Creative agent with high temperature
+            config = LLMConfig.create_custom(
+                provider='anthropic',
+                temperature=0.9,     # More creative
+                max_tokens=2000,
+                system_prompt='You are an innovative thinker...'
+            )
+        """
+        return cls(
+            provider=provider,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            model=model,
+            system_prompt=system_prompt,
+            **kwargs
+        )
 
 
 class RAGConfig(BaseModel):
-    """Configuration for RAG system."""
-    chunk_size: int = Field(default=500, gt=0)
-    chunk_overlap: int = Field(default=50, ge=0)
-    top_k: int = Field(default=3, gt=0)
-    embedding_model: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
+    """Configuration for RAG system.
+    
+    Defaults read from environment variables via Config.
+    """
+    chunk_size: int = Field(default_factory=Config.get_rag_chunk_size, gt=0)
+    chunk_overlap: int = Field(default_factory=Config.get_rag_chunk_overlap, ge=0)
+    top_k: int = Field(default_factory=Config.get_rag_top_k, gt=0)
+    embedding_model: str = Field(default_factory=Config.get_rag_embedding_model)
     
     model_config = {
         'frozen': True,
@@ -76,13 +175,16 @@ class AgentConfig(BaseModel):
 
 
 class DatabaseConfig(BaseModel):
-    """Database configuration with validation."""
+    """Database configuration with validation.
+    
+    Defaults read from environment variables via Config.
+    """
     connection_string: str = Field(min_length=1)
-    min_pool_size: int = Field(default=2, ge=1)
-    max_pool_size: int = Field(default=10, gt=0)
-    command_timeout: int = Field(default=60, gt=0)
-    max_queries: int = Field(default=50000, gt=0)
-    max_inactive_connection_lifetime: float = Field(default=300.0, gt=0)
+    min_pool_size: int = Field(default_factory=Config.get_db_min_pool_size, ge=1)
+    max_pool_size: int = Field(default_factory=Config.get_db_max_pool_size, gt=0)
+    command_timeout: int = Field(default_factory=Config.get_db_command_timeout, gt=0)
+    max_queries: int = Field(default_factory=Config.get_db_max_queries, gt=0)
+    max_inactive_connection_lifetime: float = Field(default_factory=Config.get_db_max_inactive_connection_lifetime, gt=0)
     
     model_config = {
         'frozen': True,

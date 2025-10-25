@@ -1,536 +1,213 @@
 # Project Structure
 
-Complete file tree and architecture guide for the AI Agent Framework v2.0.
-
-## File Tree
+## Directory Layout
 
 ```
 AI-Agent-Builder/
+├── agent_framework/          # Core package
+│   ├── __init__.py          # Public API
+│   ├── models.py            # Pydantic models
+│   ├── agent.py             # Agent base class
+│   ├── database.py          # PostgreSQL client
+│   ├── llm.py               # LLM client
+│   ├── rag.py               # RAG system
+│   ├── api.py               # FastAPI server
+│   ├── config.py            # Configuration
+│   └── utils.py             # Utilities
 │
-├── agent_framework/              # Core package (~1,000 lines)
-│   ├── __init__.py              # Public API exports (70 lines)
-│   ├── models.py                # Pydantic models with validation (100 lines)
-│   ├── agent.py                 # Agent base class (70 lines)
-│   ├── llm.py                   # LLM client with retries (180 lines)
-│   ├── rag.py                   # RAG system (150 lines)
-│   ├── database.py              # PostgreSQL with pooling (280 lines)
-│   ├── api.py                   # FastAPI with DI (200 lines)
-│   ├── config.py                # Configuration helpers (60 lines)
-│   └── utils.py                 # Shared utilities (90 lines)
+├── examples/                 # Working examples
+│   ├── 01_basic.py          # Simple agents
+│   ├── 02_llm_agent.py      # LLM agents
+│   ├── 03_rag_agent.py      # RAG agents
+│   └── 04_custom_llm_config.py  # LLM customization
 │
-├── examples/                     # Working examples (~400 lines)
-│   ├── 01_basic.py              # Simple agents (110 lines)
-│   ├── 02_llm_agent.py          # LLM agents with personas (150 lines)
-│   └── 03_rag_agent.py          # RAG-powered analysis (140 lines)
+├── tests/                    # Test suite
+│   └── test_framework.py    # Tests
 │
-├── tests/                        # Test suite (~300 lines)
-│   └── test_framework.py        # Comprehensive tests (300 lines)
+├── docs/                     # Documentation
+│   ├── GETTING_STARTED.md   # Installation & setup
+│   ├── CONFIGURATION.md     # Environment config
+│   ├── LLM_CUSTOMIZATION.md # LLM per-agent config
+│   ├── DATABASE_SETUP.md    # Database details
+│   ├── TESTING.md           # Testing guide
+│   └── PROJECT_STRUCTURE.md # This file
 │
-├── docs/                         # Documentation
-│   ├── INSTALL.md               # Installation guide
-│   ├── DATABASE_SETUP.md        # Database setup (Docker focus)
-│   └── PROJECT_STRUCTURE.md     # This file
-│
-├── docker-compose.yml            # PostgreSQL setup
-├── schema.sql                    # Database schema
-├── seed_data.py                  # Sample data seeder (180 lines)
-├── quickstart.py                 # Verification script (140 lines)
-├── requirements.txt              # Dependencies
-├── setup.py                      # Package configuration
-├── .env.example                  # Environment template
-├── .gitignore                    # Git ignore rules
-├── LICENSE                       # MIT License
-└── README.md                     # Main documentation
-
-Total: ~2,200 lines of clean, maintainable code
+├── docker-compose.yml        # PostgreSQL setup
+├── schema.sql                # Database schema
+├── seed_data.py              # Sample data
+├── requirements.txt          # Dependencies
+├── setup.py                  # Package config
+├── .env.example              # Config template
+└── README.md                 # Main docs
 ```
 
-## File Responsibilities
+## Core Modules
 
-### Core Package (`agent_framework/`)
+### models.py
+Pydantic models with validation:
+- `Signal` - Trading signal
+- `LLMConfig` - LLM configuration
+- `RAGConfig` - RAG configuration
+- `AgentConfig` - Agent configuration
+- `DatabaseConfig` - Database configuration
 
-**`__init__.py`** (70 lines)
-- Public API exports
-- Version info
-- Clean import interface
-- Exports all major classes and utilities
+### agent.py
+Base agent class with lazy initialization:
+- Abstract `analyze()` method
+- Optional LLM and RAG support
+- Simple, extensible design
 
-**`models.py`** (100 lines)
-- `Signal` - Trading signal with Pydantic validation
-- `LLMConfig` - LLM configuration with retry settings
-- `RAGConfig` - RAG configuration with validation
-- `AgentConfig` - Complete agent configuration
-- `DatabaseConfig` - Database connection settings
-- All use Pydantic for runtime validation
-
-**`agent.py`** (70 lines)
-- `Agent` - Abstract base class
-- Lazy LLM/RAG initialization
-- Simple analyze() interface
-- Minimal boilerplate
-
-**`llm.py`** (180 lines)
-- `LLMClient` - Unified LLM interface
-- Supports OpenAI, Anthropic, Ollama
-- Automatic retries with exponential backoff
-- System prompt support for personas
-- Comprehensive error handling
-- Timeout management
-
-**`rag.py`** (150 lines)
-- `RAGSystem` - Document retrieval
-- Text chunking with overlap
-- Semantic search using embeddings
-- Clean query interface
-- Statistics tracking
-- Scalability warnings
-
-**`database.py`** (280 lines)
-- `Database` - PostgreSQL client
-- Connection pooling (2-10 connections)
+### database.py
+PostgreSQL client with:
+- Connection pooling
 - Transaction support
-- Comprehensive error handling
+- Error handling
 - Health checks
-- No singleton pattern (testable)
 
-**`api.py`** (200 lines)
-- FastAPI REST endpoints
-- Dependency injection (no singletons)
-- Agent registration
+### llm.py
+Unified LLM interface for:
+- OpenAI
+- Anthropic
+- Ollama
+
+Features: retries, system prompts, error handling
+
+### rag.py
+Document retrieval and analysis:
+- Text chunking
+- Semantic search
+- Query interface
+
+### api.py
+FastAPI REST server:
+- Health endpoints
+- Data endpoints
 - Analysis endpoints
-- CORS support
-- Custom exception handlers
-- Pydantic request/response models
+- Agent registration
 
-**`config.py`** (60 lines)
-- `Config` - Centralized configuration
+### config.py
+Centralized configuration:
 - Environment variable helpers
-- Database URL management
-- LLM API key retrieval
-- Test database support
+- Database URLs
+- LLM settings
 
-**`utils.py`** (90 lines)
+### utils.py
+Shared utilities:
 - `parse_llm_signal()` - Parse LLM responses
 - `format_fundamentals()` - Format data for LLMs
-- `calculate_sentiment_score()` - Simple sentiment analysis
-- Shared helper functions
+- `calculate_sentiment_score()` - Sentiment analysis
 
-### Examples (`examples/`)
-
-**`01_basic.py`** (110 lines)
-- Simple agents without LLM
-- Value investing agent (PE ratios)
-- Growth investing agent (revenue growth)
-- Works immediately with sample data
-- Demonstrates database usage
-
-**`02_llm_agent.py`** (150 lines)
-- LLM-powered agents
-- Conservative investor persona
-- Aggressive trader persona
-- Demonstrates system prompt usage
-- Error handling with fallbacks
-
-**`03_rag_agent.py`** (140 lines)
-- RAG-powered SEC filing analysis
-- Document retrieval and analysis
-- Multi-query synthesis
-- Risk assessment agent
-- Async analysis patterns
-
-### Tests (`tests/`)
-
-**`test_framework.py`** (300 lines)
-- Pydantic model validation tests
-- Database connection and query tests
-- Agent functionality tests
-- RAG system tests
-- Utility function tests
-- Integration tests
-- Proper test fixtures
-- Separate test database
-- ~85% code coverage
-
-### Root Files
-
-**`seed_data.py`** (180 lines)
-- Seeds PostgreSQL with sample data
-- 4 tickers with fundamentals
-- 90 days of price history
-- News headlines
-- SEC 10-K filings
-- Uses Config for connection
-
-**`quickstart.py`** (140 lines)
-- Installation verification
-- Component testing
-- Diagnostic information
-- Next steps guidance
-
-**`docker-compose.yml`**
-- PostgreSQL 16 Alpine
-- Port mapping (5433:5432)
-- Automatic schema initialization
-- Health checks
-- Volume persistence
-
-**`schema.sql`**
-- Database schema definition
-- Four tables with indexes
-- Foreign key constraints
-- Optimized for queries
-
-**`requirements.txt`**
-- Core dependencies
-- Optional LLM providers
-- Optional RAG dependencies
-- Development tools
-
-**`setup.py`**
-- Package configuration
-- Dependency management
-- Install extras (llm, rag, dev, all)
-- Metadata
-
-**`.env.example`**
-- Environment variable template
-- Database URLs
-- API key placeholders
-- Configuration examples
-
-## Code Distribution
+## Code Size
 
 ```
-Core Framework:     1,200 lines (55%)
-Examples:            400 lines (18%)
-Tests:               300 lines (14%)
-Setup/Docs:          300 lines (13%)
-───────────────────────────────────
-Total:             2,200 lines
+Core package:      ~1,200 lines
+Examples:          ~400 lines
+Tests:             ~300 lines
+Total:             ~2,000 lines
 ```
 
-## Key Design Metrics
+Compact, maintainable codebase.
 
-### Lines of Code
-- **Agent base class:** 70 lines (extremely simple)
-- **LLM client:** 180 lines (3 providers + retries)
-- **RAG system:** 150 lines (full implementation)
-- **Database:** 280 lines (pooling + transactions + error handling)
-- **Total core:** ~1,200 lines (very maintainable)
+## Design Principles
 
-### Dependencies
-- **Required:** 5 packages (FastAPI, Uvicorn, Pydantic, asyncpg, NumPy)
-- **Optional LLM:** 3 packages (OpenAI, Anthropic, Ollama)
-- **Optional RAG:** 1 package (sentence-transformers)
-- **Development:** 3 packages (pytest, pytest-asyncio, black)
-- **Total minimal:** Clean and focused
+1. **Pydantic validation** - Runtime type checking
+2. **Dependency injection** - No singletons, testable
+3. **Lazy initialization** - Load only what's needed
+4. **Error handling** - Comprehensive exceptions
+5. **Connection pooling** - Performance
+6. **Async operations** - Non-blocking I/O
 
-### Performance
-- Connection pooling: 9x faster than new connections
-- Lazy initialization: Zero overhead for unused features
-- Async operations: Non-blocking I/O throughout
-- Pydantic validation: Fast runtime checks
+## Adding Components
 
-## Architecture Patterns
-
-### 1. Pydantic for Validation
-
-**Why:** Runtime validation, clear errors, better IDE support
+### New Agent
 
 ```python
-class Signal(BaseModel):
-    direction: Literal['bullish', 'bearish', 'neutral']
-    confidence: float = Field(ge=0.0, le=1.0)
-    reasoning: str = Field(min_length=1)
-    
-    model_config = {'frozen': True}
-```
-
-**Benefits:**
-- Automatic validation
-- Type coercion
-- Clear error messages
-- Immutability support
-- JSON schema generation
-
-### 2. Dependency Injection
-
-**Why:** Testability, flexibility, no global state
-
-```python
-async def get_db(request: Request) -> Database:
-    return request.app.state.db
-
-@app.get("/tickers")
-async def list_tickers(db: Database = Depends(get_db)):
-    return await db.list_tickers()
-```
-
-**Benefits:**
-- Easy testing with mocks
-- Multiple database support
-- No singleton issues
-- Clear dependencies
-
-### 3. Connection Pooling
-
-**Why:** Performance and resource management
-
-```python
-self._pool = await asyncpg.create_pool(
-    connection_string,
-    min_size=2,
-    max_size=10,
-    command_timeout=60,
-)
-```
-
-**Benefits:**
-- 9x faster than new connections
-- Automatic connection reuse
-- Resource limits
-- Health monitoring
-
-### 4. Transaction Support
-
-**Why:** Data consistency and atomicity
-
-```python
-async with db.transaction() as conn:
-    await conn.execute("INSERT ...")
-    await conn.execute("UPDATE ...")
-    # Auto commit/rollback
-```
-
-**Benefits:**
-- ACID guarantees
-- Automatic rollback on errors
-- Clean context manager API
-- Production-ready
-
-### 5. Comprehensive Error Handling
-
-**Why:** Reliability and debugging
-
-```python
-try:
-    async with self.acquire() as conn:
-        ...
-except asyncpg.PostgresError as e:
-    logger.error(f"Query failed: {e}")
-    raise QueryError("...") from e
-```
-
-**Benefits:**
-- Clear error messages
-- Proper exception hierarchy
-- Error propagation
-- Logging integration
-
-### 6. Lazy Initialization
-
-**Why:** Simplicity and performance
-
-```python
-@property
-def llm(self):
-    if self._llm is None and self.config.llm:
-        self._llm = LLMClient(self.config.llm)
-    return self._llm
-```
-
-**Benefits:**
-- Simple agents stay simple
-- No overhead for unused features
-- Clear initialization path
-- Memory efficient
-
-## Directory Layout Rationale
-
-### Single Package Directory
-
-All core code in `agent_framework/`:
-- Easy to navigate
-- Clear module boundaries
-- Simple imports
-- Logical grouping
-
-### Separate Examples
-
-Examples in `examples/`:
-- Self-contained demonstrations
-- Progressive complexity (01, 02, 03)
-- Work immediately with sample data
-- Copy-paste friendly
-
-### Comprehensive Tests
-
-Tests in `tests/`:
-- Organized by component
-- Integration tests included
-- High coverage
-- Fast execution
-- Proper fixtures
-
-### Documentation
-
-Docs in `docs/`:
-- Installation guide
-- Database setup (Docker focus)
-- Project structure
-- Clear organization
-
-## Adding New Components
-
-### New Agent Type
-
-```python
-# examples/04_my_agent.py
+# examples/my_agent.py
 from agent_framework import Agent, Signal
 
 class MyAgent(Agent):
-    def analyze(self, ticker: str, data: dict) -> Signal:
-        # Your logic here
-        return Signal('bullish', 0.8, 'Reasoning')
+    def analyze(self, ticker, data):
+        return Signal('bullish', 0.8, 'Custom logic')
 ```
 
 ### New Database Method
 
 ```python
 # agent_framework/database.py
-async def get_my_data(self, ticker: str):
-    """Get custom data."""
-    try:
-        async with self.acquire() as conn:
-            return await conn.fetch("...")
-    except asyncpg.PostgresError as e:
-        raise QueryError("...") from e
+async def get_custom_data(self, ticker):
+    async with self.acquire() as conn:
+        return await conn.fetch("SELECT...")
 ```
 
 ### New API Endpoint
 
 ```python
 # agent_framework/api.py
-@app.get("/my-endpoint")
-async def my_endpoint(db: Database = Depends(get_db)):
-    """My custom endpoint."""
-    data = await db.get_my_data()
-    return {"data": data}
+@app.get("/custom")
+async def custom_endpoint(db: Database = Depends(get_db)):
+    return await db.get_custom_data()
 ```
 
-### New Utility Function
+### New Utility
 
 ```python
 # agent_framework/utils.py
-def my_utility(data: dict) -> str:
-    """My utility function."""
-    # Your logic here
-    return result
+def custom_utility(data):
+    return processed_data
 ```
 
-## Production Deployment Structure
+## Import Patterns
 
-For production, add:
+```python
+# Core
+from agent_framework import Agent, Signal, Config
 
+# Database
+from agent_framework import Database
+
+# LLM
+from agent_framework import LLMConfig, LLMClient
+
+# RAG
+from agent_framework import RAGConfig, RAGSystem
+
+# API
+from agent_framework import api_app, register_agent_instance
+
+# Utils
+from agent_framework import parse_llm_signal, format_fundamentals
 ```
-AI-Agent-Builder/
-├── .github/
-│   └── workflows/
-│       ├── tests.yml        # CI/CD pipeline
-│       └── deploy.yml       # Deployment
-│
-├── kubernetes/              # K8s configs
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   └── ingress.yaml
-│
-├── monitoring/              # Observability
-│   ├── prometheus.yml
-│   └── grafana-dashboard.json
-│
-└── scripts/
-    ├── deploy.sh           # Deployment script
-    └── backup.sh           # Backup script
-```
+
+## File Conventions
+
+- **Classes**: PascalCase
+- **Functions**: snake_case
+- **Constants**: UPPER_SNAKE_CASE
+- **Private**: _leading_underscore
+- **Line limit**: 88 characters (Black)
+- **Type hints**: Required for public APIs
+- **Docstrings**: Required for public functions
 
 ## Testing Structure
 
 ```
 tests/
-├── test_framework.py       # Main test file
-├── test_models.py          # Model validation tests
-├── test_database.py        # Database tests
-├── test_agents.py          # Agent tests
-├── test_api.py             # API endpoint tests
-├── conftest.py             # Pytest fixtures
-└── fixtures/               # Test data
-    ├── sample_data.json
-    └── mock_responses.json
+├── test_framework.py     # All tests
+└── conftest.py           # Fixtures (if needed)
 ```
 
-## Import Patterns
+Keep tests simple and focused.
 
-### Good Imports
+## Documentation Structure
 
-```python
-# Clean, explicit imports
-from agent_framework import Agent, Signal, Config
-from agent_framework.database import Database
+```
+docs/
+├── GETTING_STARTED.md    # Installation & first steps
+├── CONFIGURATION.md      # Environment variables
+├── LLM_CUSTOMIZATION.md  # Per-agent LLM config
+├── DATABASE_SETUP.md     # Database details
+├── TESTING.md            # Testing guide
+└── PROJECT_STRUCTURE.md  # This file
 ```
 
-### Avoid
-
-```python
-# Don't use wildcard imports
-from agent_framework import *
-
-# Don't import internal modules
-from agent_framework.database import _get_connection
-```
-
-## Code Style
-
-### Formatting
-
-- Black for Python formatting
-- 88 character line limit
-- Type hints everywhere
-- Docstrings for public APIs
-
-### Naming
-
-- Classes: PascalCase
-- Functions: snake_case
-- Constants: UPPER_SNAKE_CASE
-- Private: _leading_underscore
-
-### Documentation
-
-- Module docstrings
-- Class docstrings
-- Function docstrings with Args/Returns
-- Inline comments for complex logic
-
-## Summary
-
-**Total Implementation:**
-- 9 core files (~1,200 lines)
-- 3 examples (~400 lines)
-- 1 test suite (~300 lines)
-- Supporting files (~300 lines)
-
-**Result:**
-- Simple, maintainable framework
-- Production-ready patterns
-- Comprehensive error handling
-- Proper testing support
-- Extensible architecture
-- Clear documentation
-
-**Philosophy:**
-> "Simplicity is the ultimate sophistication"
-> - Keep core small and focused
-> - Examples demonstrate patterns
-> - Tests ensure correctness
-> - Documentation enables adoption
-> - Error handling ensures reliability
+Minimal, focused documentation.

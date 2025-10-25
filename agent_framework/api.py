@@ -1,6 +1,5 @@
 """FastAPI REST API with dependency injection and proper error handling."""
 
-import os
 from contextlib import asynccontextmanager
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -13,9 +12,10 @@ from pydantic import BaseModel, Field
 
 from .database import Database, DatabaseError, ConnectionError as DBConnectionError
 from .models import Signal
+from .config import Config
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=getattr(logging, Config.get_log_level()))
 logger = logging.getLogger(__name__)
 
 
@@ -92,12 +92,11 @@ async def lifespan(app: FastAPI):
     Shutdown: Disconnect from database
     """
     # Startup
-    connection_string = os.getenv(
-        'DATABASE_URL',
-        'postgresql://postgres:postgres@localhost:5433/agent_framework'
-    )
+    connection_string = Config.get_database_url()
     
     logger.info("Starting application...")
+    logger.info(f"Connecting to database: {connection_string.split('@')[1] if '@' in connection_string else connection_string}")
+    
     db = Database(connection_string)
     
     try:
@@ -123,10 +122,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware with configurable origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=Config.get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

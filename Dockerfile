@@ -19,8 +19,11 @@ COPY . .
 # Install package in development mode
 RUN pip install -e .
 
-# Expose API port
-EXPOSE 8000
+# Expose API port (can be overridden with --env API_PORT=<port>)
+ARG API_PORT=8000
+EXPOSE ${API_PORT}
 
-# Run API server
-CMD ["uvicorn", "agent_framework.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run API server with configurable host and port
+CMD uvicorn agent_framework.api:app \
+    --host ${API_HOST:-0.0.0.0} \
+    --port ${API_PORT:-8000}

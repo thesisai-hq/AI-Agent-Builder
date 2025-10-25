@@ -66,8 +66,8 @@ setup(
         ],
     },
     project_urls={
-        "Bug Reports": "https://github.com/yourusername/ai-agent-framework/issues",
-        "Source": "https://github.com/yourusername/ai-agent-framework",
-        "Documentation": "https://github.com/yourusername/ai-agent-framework/tree/main/docs",
+        "Bug Reports": "https://github.com/thesisai-hq/AI-Agent-Builder/issues",
+        "Source": "https://github.com/thesisai-hq/AI-Agent-Builder",
+        "Documentation": "https://github.com/thesisai-hq/AI-Agent-Builder/tree/main/docs",
     },
 )
