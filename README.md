@@ -81,19 +81,26 @@ asyncio.run(main())
 ```
 AI-Agent-Builder/
 ├── agent_framework/        # Core framework
+│   ├── __init__.py        # Public API exports
 │   ├── agent.py           # Base Agent class
+│   ├── models.py          # Pydantic data models
 │   ├── database.py        # PostgreSQL client
 │   ├── llm.py             # LLM integrations
 │   ├── rag.py             # Document analysis
-│   └── api.py             # FastAPI server
+│   ├── api.py             # FastAPI server
+│   ├── config.py          # Configuration management
+│   └── utils.py           # Utility functions
 │
 ├── examples/              # Working examples
-│   ├── 01_basic.py       # Simple rule-based agents
-│   ├── 02_llm_agent.py   # AI-powered agents
-│   └── 03_rag_agent.py   # Document analysis
+│   ├── 01_basic.py        # Simple rule-based agents
+│   ├── 02_llm_agent.py    # AI-powered agents
+│   ├── 03_rag_agent.py    # Document analysis
+│   └── 04_custom_llm_config.py  # LLM customization
 │
 ├── docs/                  # Documentation
-└── tests/                 # Test suite
+├── tests/                 # Test suite
+├── setup.py               # Package configuration
+└── requirements.txt       # Dependencies
 ```
 
 ## Common Commands
