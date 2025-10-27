@@ -6,6 +6,16 @@ This ensures easy deployment across different environments (dev, test, prod).
 
 import os
 from typing import Optional
+from pathlib import Path
+
+# Load .env file if it exists
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent / '.env'
+    load_dotenv(dotenv_path=env_path)
+except ImportError:
+    # python-dotenv not installed, will use system environment variables
+    pass
 
 
 class Config:
