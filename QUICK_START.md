@@ -27,7 +27,7 @@ pip install -e .
 
 ```bash
 # Clone and create environment
-git clone https://github.com/yourusername/AI-Agent-Builder.git
+git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
 python3 -m venv venv
 source venv/bin/activate  # Linux/macOS
@@ -40,7 +40,7 @@ pip install -e .
 
 ```bash
 # Clone and install
-git clone https://github.com/yourusername/AI-Agent-Builder.git
+git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
 pip install -e .
 ```
