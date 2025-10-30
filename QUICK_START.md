@@ -20,7 +20,7 @@ conda activate agent-framework
 # Install framework
 git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
-pip install -e .
+pip install -e ".[all]"
 ```
 
 ### Option 2: venv (Built-in Python)
@@ -33,7 +33,7 @@ python3 -m venv venv
 source venv/bin/activate  # Linux/macOS
 
 # Install framework
-pip install -e .
+pip install -e ".[all]"
 ```
 
 ### Option 3: System Python (Simplest)
@@ -42,7 +42,26 @@ pip install -e .
 # Clone and install
 git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
+pip install -e ".[all]"
+```
+
+### Install Options Explained
+
+```bash
+# Core dependencies only (FastAPI, Database, no LLM)
 pip install -e .
+
+# Core + LLM support (OpenAI, Anthropic, Ollama)
+pip install -e ".[llm]"
+
+# Core + RAG support (Document analysis)
+pip install -e ".[rag]"
+
+# Core + Development tools (pytest, black, etc.)
+pip install -e ".[dev]"
+
+# Everything (recommended for getting started)
+pip install -e ".[all]"
 ```
 
 ## Setup Database
@@ -96,8 +115,8 @@ Revenue Growth: 8.5%
 
 **Run more examples:**
 ```bash
-python examples/02_llm_agent.py    # AI-powered analysis
-python examples/03_rag_agent.py    # Document analysis
+python examples/02_llm_agent.py    # AI-powered analysis (requires LLM)
+python examples/03_rag_agent.py    # Document analysis (requires RAG)
 ```
 
 **Create your own agent:**
@@ -169,8 +188,19 @@ sleep 10
 conda activate agent-framework  # If conda
 source venv/bin/activate        # If venv
 
-# Reinstall
-pip install -e .
+# Reinstall with all dependencies
+pip install -e ".[all]"
+```
+
+### Missing optional dependencies
+```bash
+# If you see "No module named 'openai'" or similar:
+
+# Install LLM dependencies
+pip install -e ".[llm]"
+
+# Or install everything
+pip install -e ".[all]"
 ```
 
 ### Port already in use
@@ -185,6 +215,21 @@ docker compose up -d postgres
 ```
 
 See [Database Guide](docs/DATABASE_SETUP.md) for more troubleshooting.
+
+## Optional: Ultra-Fast Installation with uv
+
+Want 10-100x faster installations?
+
+```bash
+# Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Use uv instead of pip (same commands work!)
+cd AI-Agent-Builder
+uv pip install -e ".[all]"
+
+# That's it - uv is a drop-in replacement for pip
+```
 
 ## Quick Commands Reference
 
@@ -204,6 +249,7 @@ docker ps                             # Check status
 # Development
 python my_agent.py                    # Run agent
 pytest tests/                         # Run tests
+pip install -e ".[dev]"              # Install dev tools
 ```
 
 ## Need Help?

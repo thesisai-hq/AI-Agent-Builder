@@ -35,8 +35,7 @@ AI-Agent-Builder/
 ├── docker-compose.yml        # PostgreSQL setup
 ├── schema.sql                # Database schema
 ├── seed_data.py              # Sample data
-├── requirements.txt          # Dependencies
-├── setup.py                  # Package config
+├── pyproject.toml            # Package config (PEP 621)
 ├── .env.example              # Config template
 └── README.md                 # Main docs
 ```

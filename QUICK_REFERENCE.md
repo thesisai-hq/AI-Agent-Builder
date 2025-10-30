@@ -321,20 +321,33 @@ pip install --upgrade package1 package2
 ### Framework Installation
 
 ```bash
-# Install framework
+# Install core only (FastAPI, Database, no AI)
 pip install -e .
 
-# Reinstall after changes
-pip install -e . --force-reinstall
+# Install with LLM support (OpenAI, Anthropic, Ollama)
+pip install -e ".[llm]"
 
-# Install with extras
-pip install -e ".[llm]"      # LLM support only
-pip install -e ".[rag]"      # RAG support only
-pip install -e ".[dev]"      # Development tools
-pip install -e ".[all]"      # Everything
+# Install with RAG support (Document analysis)
+pip install -e ".[rag]"
+
+# Install with dev tools (pytest, black, ruff)
+pip install -e ".[dev]"
+
+# Install everything (recommended)
+pip install -e ".[all]"
+
+# Combine multiple groups
+pip install -e ".[llm,rag]"
+
+# Reinstall after changes
+pip install -e ".[all]" --force-reinstall
 
 # Uninstall
-pip uninstall agent_framework
+pip uninstall ai-agent-framework
+
+# Check what's installed
+pip show ai-agent-framework
+pip list | grep -E "(openai|anthropic|ollama|sentence|pytest)"
 ```
 
 ## File Management
@@ -583,7 +596,7 @@ conda create -n agent-framework python=3.11 -y
 conda activate agent-framework
 git clone <repo-url>
 cd AI-Agent-Builder
-pip install -e .
+pip install -e ".[all]"
 cp .env.example .env
 docker compose up -d postgres
 sleep 10
@@ -597,7 +610,7 @@ git clone <repo-url>
 cd AI-Agent-Builder
 python3 -m venv venv
 source venv/bin/activate
-pip install -e .
+pip install -e ".[all]"
 cp .env.example .env
 docker compose up -d postgres
 sleep 10
@@ -609,7 +622,7 @@ python seed_data.py
 cd ~
 git clone <repo-url>
 cd AI-Agent-Builder
-pip install -e .
+pip install -e ".[all]"
 cp .env.example .env
 docker compose up -d postgres
 sleep 10

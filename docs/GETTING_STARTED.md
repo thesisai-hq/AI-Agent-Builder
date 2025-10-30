@@ -194,12 +194,6 @@ rm -rf venv
 
 # Recreate
 python3 -m venv venv
-
-# Save dependencies
-pip freeze > requirements.txt
-
-# Install from requirements
-pip install -r requirements.txt
 ```
 
 **Continue to Step 2** →
@@ -292,22 +286,43 @@ source venv/bin/activate
 # If using system Python: (nothing to activate)
 ```
 
-**Install:**
+**Install with dependencies:**
 
 ```bash
 # From project directory
 cd ~/AI-Agent-Builder
 
-# Install framework
+# Option 1: Install everything (recommended for beginners)
+pip install -e ".[all]"
+
+# Option 2: Core only (no LLM, no RAG)
 pip install -e .
+
+# Option 3: Core + LLM support (OpenAI, Anthropic, Ollama)
+pip install -e ".[llm]"
+
+# Option 4: Core + RAG support (Document analysis)
+pip install -e ".[rag]"
+
+# Option 5: Core + Dev tools (pytest, black, etc.)
+pip install -e ".[dev]"
 
 # Takes 2-3 minutes
 ```
 
+**What do the brackets mean?**
+- `.` - Install the current package (agent_framework)
+- `[all]` - Also install optional dependencies (llm + rag + dev)
+- `-e` - Editable mode (changes to code take effect immediately)
+
 **Verify:**
 
 ```bash
-pip show agent_framework
+# Check installation
+pip show ai-agent-framework
+
+# Test import
+python -c "from agent_framework import Agent, Database; print('✅ Success!')"
 ```
 
 ## Step 4: Install Docker
@@ -323,6 +338,9 @@ See detailed instructions in collapsible sections in README.md
 ## Step 5: Start Database
 
 ```bash
+# Copy environment file
+cp .env.example .env
+
 # Start PostgreSQL
 docker compose up -d postgres
 
@@ -343,16 +361,26 @@ docker ps
 python seed_data.py
 ```
 
+**Expected output:**
+```
+📊 Seeding fundamentals...
+  ✓ Added AAPL
+  ✓ Added MSFT
+  ✓ Added TSLA
+  ✓ Added JPM
+✅ Database seeding completed successfully!
+```
+
 ## Step 7: Run Examples
 
 ```bash
-# Simple agents
+# Simple rule-based agents (no LLM required)
 python examples/01_basic.py
 
-# AI-powered agents  
+# AI-powered agents (requires: pip install -e ".[llm]")
 python examples/02_llm_agent.py
 
-# Document analysis
+# Document analysis (requires: pip install -e ".[rag]")
 python examples/03_rag_agent.py
 ```
 
@@ -364,9 +392,33 @@ python examples/03_rag_agent.py
 | Commands | `conda activate` | `source venv/bin/activate` | None |
 | Isolation | ✅ Excellent | ✅ Good | ❌ None |
 | Package Mgmt | conda + pip | pip only | pip only |
-| Multiple Projects | ✅ Easy | ✅ Easy | ❌ Conflicts |
+| Multiple Projects | ✅ Very easy | ✅ Easy | ❌ May conflict |
 | Disk Space | ~500MB | ~50MB per env | Minimal |
 | **Best For** | Data science | Standard dev | Quick testing |
+
+## Dependency Groups Explained
+
+The framework uses modern Python packaging (PEP 621) with optional dependency groups:
+
+**Core dependencies** (always installed):
+```
+fastapi, uvicorn, pydantic, asyncpg, numpy, python-dotenv
+```
+
+**Optional dependencies:**
+
+| Group | Description | Install Command |
+|-------|-------------|-----------------|
+| `llm` | OpenAI, Anthropic, Ollama support | `pip install -e ".[llm]"` |
+| `rag` | Document analysis with sentence-transformers | `pip install -e ".[rag]"` |
+| `dev` | Testing and linting tools | `pip install -e ".[dev]"` |
+| `all` | Everything above | `pip install -e ".[all]"` |
+
+**Combine multiple groups:**
+```bash
+# LLM + RAG, but not dev tools
+pip install -e ".[llm,rag]"
+```
 
 ## Troubleshooting
 
@@ -385,7 +437,7 @@ conda activate agent-framework
 conda env remove -n agent-framework
 conda create -n agent-framework python=3.11 -y
 conda activate agent-framework
-pip install -e .
+pip install -e ".[all]"
 ```
 
 ### venv Issues
@@ -399,11 +451,11 @@ source venv/bin/activate
 rm -rf venv
 python3 -m venv venv
 source venv/bin/activate
-pip install -e .
+pip install -e ".[all]"
 
 # ModuleNotFoundError
 source venv/bin/activate  # Make sure activated!
-pip install -e .
+pip install -e ".[all]"
 ```
 
 ### System Python Issues
@@ -414,11 +466,25 @@ python3 --version
 alias python=python3
 
 # Permission denied
-pip install --user package-name
+pip install --user -e ".[all]"
 
 # Multiple Python versions
 python3.11 --version
 update-alternatives --config python3
+```
+
+### Missing Dependencies
+
+```bash
+# If you see "No module named 'openai'" or similar:
+
+# Install the missing group
+pip install -e ".[llm]"     # For OpenAI, Anthropic, Ollama
+pip install -e ".[rag]"     # For document analysis
+pip install -e ".[all]"     # For everything
+
+# Check what's installed
+pip list | grep -E "(openai|anthropic|ollama|sentence)"
 ```
 
 ## Complete Setup Scripts
@@ -435,7 +501,7 @@ conda create -n agent-framework python=3.11 -y
 conda activate agent-framework
 git clone <repo-url>
 cd AI-Agent-Builder
-pip install -e .
+pip install -e ".[all]"
 cp .env.example .env
 docker compose up -d postgres
 sleep 10
@@ -452,7 +518,7 @@ git clone <repo-url>
 cd AI-Agent-Builder
 python3 -m venv venv
 source venv/bin/activate
-pip install -e .
+pip install -e ".[all]"
 cp .env.example .env
 docker compose up -d postgres
 sleep 10
@@ -467,12 +533,31 @@ python examples/01_basic.py
 cd ~
 git clone <repo-url>
 cd AI-Agent-Builder
-pip install -e .
+pip install -e ".[all]"
 cp .env.example .env
 docker compose up -d postgres
 sleep 10
 python seed_data.py
 python examples/01_basic.py
+```
+
+## Optional: Ultra-Fast Installation with uv
+
+Want 10-100x faster installations? Use [uv](https://github.com/astral-sh/uv):
+
+```bash
+# Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Use uv instead of pip (same syntax!)
+uv pip install -e ".[all]"
+
+# Create virtual environment with uv (even faster)
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[all]"
+
+# uv is 10-100x faster than pip and fully compatible
 ```
 
 ## Next Steps

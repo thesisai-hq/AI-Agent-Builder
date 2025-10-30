@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# Build and distribution
 build/
 develop-eggs/
 dist/
@@ -16,6 +18,8 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -26,6 +30,7 @@ venv/
 env/
 ENV/
 .venv
+.env/
 
 # IDE
 .vscode/
@@ -78,12 +83,21 @@ setup_test_db.sh
 .ipynb_checkpoints/
 *.ipynb
 
-# MyPy
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.pytype/
 
 # Backup files
 *~
 *.swp
 *.swo
+
+# uv
+.uv/
+uv.lock
+
+# Deprecated files (if they accidentally get added back)
+setup.py
+requirements.txt

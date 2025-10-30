@@ -112,8 +112,14 @@ cd ~
 git clone <repo-url>
 cd AI-Agent-Builder
 
-# Install framework
-pip install -e .
+# Install framework with all dependencies
+pip install -e ".[all]"
+
+# Or install only what you need:
+# pip install -e .            # Core only
+# pip install -e ".[llm]"     # Core + LLM support
+# pip install -e ".[rag]"     # Core + RAG support
+# pip install -e ".[dev]"     # Core + dev tools
 
 # Done!
 ```
@@ -154,6 +160,7 @@ conda env remove -n myenv                   # Delete environment
 conda install numpy pandas                  # Install packages
 conda install -c conda-forge package-name   # From conda-forge
 pip install package-name                    # Use pip in conda (works!)
+pip install -e ".[llm]"                     # Install optional deps
 conda list                                  # List installed packages
 conda update --all                          # Update all packages
 
@@ -222,8 +229,14 @@ source venv/bin/activate
 ```bash
 # Make sure venv is activated (you should see (venv) in prompt)
 
-# Install framework
-pip install -e .
+# Install framework with all dependencies
+pip install -e ".[all]"
+
+# Or install only what you need:
+# pip install -e .            # Core only
+# pip install -e ".[llm]"     # Core + LLM support
+# pip install -e ".[rag]"     # Core + RAG support
+# pip install -e ".[dev]"     # Core + dev tools
 
 # Done!
 ```
@@ -267,9 +280,8 @@ which python                            # Should show venv path
 echo $VIRTUAL_ENV                       # Should show venv directory
 
 # Packages
-pip install package-name                # Install
-pip install -r requirements.txt         # Install from file
-pip freeze > requirements.txt           # Save current packages
+pip install package-name                # Install package
+pip install -e ".[llm]"                 # Install optional dependencies
 pip list                                # List installed
 pip show package-name                   # Show details
 
@@ -283,6 +295,8 @@ rm -rf venv                             # Delete folder
 
 # Recreate
 python3 -m venv venv
+source venv/bin/activate
+pip install -e ".[all]"
 ```
 
 ---
@@ -331,11 +345,17 @@ cd ~
 git clone <repo-url>
 cd AI-Agent-Builder
 
-# Install framework globally
-pip install -e .
+# Install framework with all dependencies
+pip install -e ".[all]"
+
+# Or install only what you need:
+# pip install -e .            # Core only
+# pip install -e ".[llm]"     # Core + LLM support
+# pip install -e ".[rag]"     # Core + RAG support
+# pip install -e ".[dev]"     # Core + dev tools
 
 # Or install for user only (safer)
-pip install --user -e .
+pip install --user -e ".[all]"
 ```
 
 ### Daily Usage
@@ -360,6 +380,7 @@ docker compose down
 # Install packages
 pip install package-name                # May need sudo
 pip install --user package-name         # User install (safer)
+pip install -e ".[llm]"                 # Install optional dependencies
 sudo pip install package-name           # System install (not recommended)
 
 # List packages
@@ -367,7 +388,7 @@ pip list                                # All packages
 pip list --user                         # User packages only
 
 # Check installation
-pip show agent_framework
+pip show ai-agent-framework
 
 # Upgrade
 pip install --upgrade package-name
@@ -397,11 +418,45 @@ source ~/.bashrc
 | **Isolation** | ✅ Excellent | ✅ Good | ❌ None |
 | **Package Sources** | conda + pip | pip only | pip only |
 | **Multiple Projects** | ✅ Very easy | ✅ Easy | ❌ May conflict |
-| **Environment Export** | ✅ Yes (YAML) | ✅ Yes (requirements.txt) | ❌ No |
+| **Optional Deps** | ✅ `pip install -e ".[llm]"` | ✅ `pip install -e ".[llm]"` | ✅ `pip install -e ".[llm]"` |
 | **Non-Python Packages** | ✅ Yes | ❌ No | ❌ No |
 | **Speed** | Medium | Fast | Fastest |
 | **Data Science** | ✅ Optimized | ⚠️ Manual install | ⚠️ Manual install |
 | **Best For** | ML/Data Science/Multi-project | Standard development | Quick testing/single project |
+
+## Understanding Optional Dependencies
+
+The framework uses modern Python packaging (PEP 621) with optional dependency groups:
+
+```bash
+# Install core only (FastAPI, Database, no AI)
+pip install -e .
+
+# Install with LLM support (OpenAI, Anthropic, Ollama)
+pip install -e ".[llm]"
+
+# Install with RAG support (document analysis)
+pip install -e ".[rag]"
+
+# Install with dev tools (pytest, black, ruff)
+pip install -e ".[dev]"
+
+# Install everything
+pip install -e ".[all]"
+
+# Combine multiple groups
+pip install -e ".[llm,rag]"
+```
+
+**What's in each group?**
+
+| Group | Packages |
+|-------|----------|
+| Core | fastapi, uvicorn, pydantic, asyncpg, numpy, python-dotenv |
+| `llm` | openai, anthropic, ollama |
+| `rag` | sentence-transformers |
+| `dev` | pytest, pytest-asyncio, pytest-cov, black, ruff |
+| `all` | Everything above |
 
 ## Troubleshooting Guide
 
@@ -438,7 +493,7 @@ conda deactivate
 conda env remove -n agent-framework
 conda create -n agent-framework python=3.11 -y
 conda activate agent-framework
-pip install -e .
+pip install -e ".[all]"
 ```
 
 ### venv Issues
@@ -482,8 +537,22 @@ python --version  # Verify
 source venv/bin/activate
 echo $VIRTUAL_ENV  # Should show path
 
-# Reinstall
-pip install -e .
+# Reinstall with all dependencies
+pip install -e ".[all]"
+```
+
+**Missing optional dependencies**
+```bash
+# If you see "No module named 'openai'" or similar:
+
+# Check what's installed
+pip list | grep -E "(openai|anthropic|ollama)"
+
+# Install the missing group
+pip install -e ".[llm]"
+
+# Or install everything
+pip install -e ".[all]"
 ```
 
 ### System Python Issues
@@ -491,10 +560,10 @@ pip install -e .
 **"Permission denied" when installing**
 ```bash
 # Use --user flag
-pip install --user package-name
+pip install --user -e ".[all]"
 
 # Or use sudo (not recommended)
-sudo pip install package-name
+sudo pip install -e ".[all]"
 ```
 
 **Multiple Python versions**
@@ -515,7 +584,7 @@ sudo update-alternatives --config python3
 # With system Python, projects share packages
 
 # Or use --user and careful package management
-pip install --user package-name
+pip install --user -e ".[all]"
 ```
 
 ## Migration Guide
@@ -523,36 +592,25 @@ pip install --user package-name
 ### From System Python to venv
 
 ```bash
-# Save current packages
-pip freeze > requirements_backup.txt
-
 # Create venv
 cd ~/AI-Agent-Builder
 python3 -m venv venv
 source venv/bin/activate
 
 # Install in venv
-pip install -e .
-
-# If needed, install other packages
-pip install -r requirements_backup.txt
+pip install -e ".[all]"
 ```
 
 ### From venv to Conda
 
 ```bash
-# Export current venv packages
-source venv/bin/activate
-pip freeze > requirements.txt
-deactivate
-
 # Create conda environment
 conda create -n agent-framework python=3.11 -y
 conda activate agent-framework
 
 # Install
-pip install -e .
-pip install -r requirements.txt
+cd ~/AI-Agent-Builder
+pip install -e ".[all]"
 
 # Optional: Delete old venv
 rm -rf venv
@@ -561,17 +619,14 @@ rm -rf venv
 ### From Conda to venv
 
 ```bash
-# Export conda environment
-conda activate agent-framework
-conda env export --from-history > packages.txt
-
 # Create venv
+cd ~/AI-Agent-Builder
 conda deactivate
 python3 -m venv venv
 source venv/bin/activate
 
 # Install
-pip install -e .
+pip install -e ".[all]"
 
 # Remove conda environment (optional)
 conda env remove -n agent-framework
@@ -585,11 +640,8 @@ conda env remove -n agent-framework
 # Install data science packages with conda
 conda install numpy pandas matplotlib scikit-learn
 
-# Use pip only for packages not in conda
-pip install agent_framework
-
-# Keep environments small (only what you need)
-conda env export --from-history > environment.yml
+# Use pip for the framework and other packages
+pip install -e ".[all]"
 
 # Update regularly
 conda update --all
@@ -604,22 +656,18 @@ python3 -m venv venv
 # Add venv/ to .gitignore (don't commit it)
 echo "venv/" >> .gitignore
 
-# Save dependencies regularly
-pip freeze > requirements.txt
+# Always activate before working
+source venv/bin/activate
 
-# Keep requirements clean
-pip install pipreqs
-pipreqs . --force  # Generate minimal requirements
+# Install all dependencies at once
+pip install -e ".[all]"
 ```
 
 ### For System Python Users
 
 ```bash
 # Use --user flag to avoid conflicts
-pip install --user package-name
-
-# Keep track of what you install
-pip freeze > installed_packages.txt
+pip install --user -e ".[all]"
 
 # Consider switching to venv if:
 # - You work on multiple projects
@@ -627,69 +675,34 @@ pip freeze > installed_packages.txt
 # - You want to share exact dependencies
 ```
 
-## Quick Commands by Environment
+## Optional: Ultra-Fast Installation with uv
 
-### Check Active Environment
+Want 10-100x faster installations? Use [uv](https://github.com/astral-sh/uv):
 
-**Conda:**
 ```bash
-conda env list
-# Active environment has * next to it
+# Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-conda info --envs
-# Same information
+# Create venv with uv (10x faster)
+uv venv
+source .venv/bin/activate
+
+# Install with uv (100x faster than pip)
+uv pip install -e ".[all]"
+
+# Add new packages
+uv pip install requests
+
+# uv is a drop-in replacement for pip
+# All pip commands work with uv
 ```
 
-**venv:**
-```bash
-echo $VIRTUAL_ENV
-# Shows: /home/.../AI-Agent-Builder/venv (if activated)
-# Shows nothing if not activated
-
-which python
-# Shows: ~/AI-Agent-Builder/venv/bin/python (if in venv)
-```
-
-**System Python:**
-```bash
-which python3
-# Shows: /usr/bin/python3 (system location)
-
-python3 --version
-# Shows installed version
-```
-
-### Install Package
-
-**Conda (preferred order):**
-```bash
-# 1. Try conda first
-conda install package-name
-
-# 2. If not available, use conda-forge
-conda install -c conda-forge package-name
-
-# 3. If still not available, use pip
-pip install package-name
-```
-
-**venv:**
-```bash
-# Activate first!
-source venv/bin/activate
-
-# Install with pip
-pip install package-name
-```
-
-**System Python:**
-```bash
-# Install for user (safer)
-pip install --user package-name
-
-# Or globally (may need sudo)
-sudo pip install package-name
-```
+**Why use uv?**
+- ✅ 10-100x faster than pip
+- ✅ Drop-in replacement (same commands)
+- ✅ Works with existing pyproject.toml
+- ✅ No configuration changes needed
+- ✅ Made by Astral (creators of Ruff)
 
 ## Complete Setup Commands
 
@@ -710,7 +723,7 @@ conda activate agent-framework
 # Install project
 git clone <repo-url>
 cd AI-Agent-Builder
-pip install -e .
+pip install -e ".[all]"
 
 # Setup
 cp .env.example .env
@@ -735,7 +748,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install
-pip install -e .
+pip install -e ".[all]"
 
 # Setup
 cp .env.example .env
@@ -756,7 +769,7 @@ git clone <repo-url>
 cd AI-Agent-Builder
 
 # Install
-pip install -e .
+pip install -e ".[all]"
 
 # Setup
 cp .env.example .env
@@ -768,85 +781,31 @@ python seed_data.py
 python examples/01_basic.py
 ```
 
-## Tips & Tricks
+### uv Setup (Ultra-Fast)
 
-### Auto-Activate Environment
-
-**Conda with direnv (auto-activate when entering directory):**
 ```bash
-# Install direnv
-# Ubuntu: sudo apt install direnv
-# macOS: brew install direnv
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone project
+cd ~
+git clone <repo-url>
+cd AI-Agent-Builder
+
+# Create venv and install (10x faster!)
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[all]"
 
 # Setup
-echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
-source ~/.bashrc
+cp .env.example .env
+docker compose up -d postgres
+sleep 10
+python seed_data.py
 
-# Create .envrc in project
-cd ~/AI-Agent-Builder
-echo 'conda activate agent-framework' > .envrc
-direnv allow
-
-# Now auto-activates when you cd into directory!
+# Verify
+python examples/01_basic.py
 ```
-
-**venv with shell function:**
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-ai() {
-    cd ~/AI-Agent-Builder
-    source venv/bin/activate
-    docker compose up -d postgres
-}
-
-# Usage: Just type 'ai' to start working
-ai
-```
-
-### Upgrade Python in Environment
-
-**Conda:**
-```bash
-# Create new environment with newer Python
-conda create -n agent-framework-py312 python=3.12 -y
-conda activate agent-framework-py312
-cd ~/AI-Agent-Builder
-pip install -e .
-```
-
-**venv:**
-```bash
-# Recreate venv with newer Python
-cd ~/AI-Agent-Builder
-deactivate
-rm -rf venv
-python3.12 -m venv venv
-source venv/bin/activate
-pip install -e .
-```
-
-## When to Use Each
-
-### Use Conda When:
-- Installing TensorFlow, PyTorch, or other ML frameworks
-- Working with Jupyter notebooks
-- Need specific versions of scientific libraries
-- Sharing environments across team
-- Working on multiple data science projects
-
-### Use venv When:
-- Building web applications
-- Working on a single project
-- Want lightweight solution
-- Following Python standard practices
-- Don't need conda-specific features
-
-### Use System Python When:
-- Quick scripting or testing
-- Learning Python basics
-- Running simple automation
-- Only have one Python project
-- Want minimum setup
 
 ---
 

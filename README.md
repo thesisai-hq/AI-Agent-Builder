@@ -65,6 +65,33 @@ async def main():
 asyncio.run(main())
 ```
 
+## Installation Options
+
+### Core Dependencies Only
+```bash
+pip install -e .
+```
+
+### With LLM Support (OpenAI, Anthropic, Ollama)
+```bash
+pip install -e ".[llm]"
+```
+
+### With RAG (Document Analysis)
+```bash
+pip install -e ".[rag]"
+```
+
+### With Development Tools
+```bash
+pip install -e ".[dev]"
+```
+
+### Everything
+```bash
+pip install -e ".[all]"
+```
+
 ## Documentation
 
 - **[Quick Start](QUICK_START.md)** - 5-minute setup guide
@@ -99,8 +126,8 @@ AI-Agent-Builder/
 │
 ├── docs/                  # Documentation
 ├── tests/                 # Test suite
-├── setup.py               # Package configuration
-└── requirements.txt       # Dependencies
+├── pyproject.toml         # Package configuration (PEP 621)
+└── docker-compose.yml     # Database setup
 ```
 
 ## Common Commands
@@ -134,18 +161,27 @@ curl https://ollama.ai/install.sh | sh
 
 # Download model
 ollama pull llama3.2
+
+# Install framework with LLM support
+pip install -e ".[llm]"
 ```
 
 ### OpenAI ChatGPT
 ```bash
 # Add to .env
 OPENAI_API_KEY=sk-your-key-here
+
+# Install with LLM support
+pip install -e ".[llm]"
 ```
 
 ### Anthropic Claude
 ```bash
 # Add to .env
 ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# Install with LLM support
+pip install -e ".[llm]"
 ```
 
 ## Requirements
@@ -153,6 +189,20 @@ ANTHROPIC_API_KEY=sk-ant-your-key-here
 - Python 3.10+
 - Docker (for PostgreSQL)
 - Terminal: WSL2, macOS, or Linux
+
+## Optional: Ultra-Fast Installation with uv
+
+Want 10-100x faster installs? Use [uv](https://github.com/astral-sh/uv):
+
+```bash
+# Install uv (one-time setup)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Use uv instead of pip (same commands)
+uv pip install -e ".[all]"
+
+# uv is a drop-in replacement - works with existing pyproject.toml
+```
 
 ## License
 

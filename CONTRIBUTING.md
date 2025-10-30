@@ -12,7 +12,7 @@ Thank you for considering contributing! This document provides guidelines for co
    ```
 3. **Install in development mode**:
    ```bash
-   pip install -e .[dev]
+   pip install -e ".[dev]"
    ```
 4. **Set up the database**:
    ```bash
@@ -244,7 +244,11 @@ Any other context or examples
 
 - Minimize new dependencies
 - Use optional dependencies when possible
-- Update `requirements.txt` or `setup.py`
+- Update `pyproject.toml` in the appropriate section:
+  - Core dependencies: `[project.dependencies]`
+  - Optional LLM: `[project.optional-dependencies.llm]`
+  - Optional RAG: `[project.optional-dependencies.rag]`
+  - Dev tools: `[project.optional-dependencies.dev]`
 - Document in README if user-facing
 
 ## Questions?
