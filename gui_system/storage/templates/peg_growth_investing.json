@@ -1,0 +1,62 @@
+{
+  "id": "peg_growth_investing",
+  "name": "PEG Growth Investing",
+  "description": "Advanced growth strategy using PEG ratio (PE/Growth) - find growth stocks at reasonable prices",
+  "type": "rule_based",
+  "icon": "rocket_launch",
+  "color": "#F59E0B",
+  "goal": "Identify growth stocks with favorable PEG ratios, indicating good value relative to growth rate",
+  "category": "advanced",
+  "rules": [
+    {
+      "id": "rule_1",
+      "conditions": [
+        {
+          "type": "formula",
+          "formula": "PE_RATIO / GROWTH_RATE",
+          "variables": {
+            "PE_RATIO": "pe_ratio",
+            "GROWTH_RATE": "revenue_growth"
+          },
+          "formula_operator": "<",
+          "formula_threshold": 1.0,
+          "formula_description": "PEG Ratio < 1 indicates undervalued growth stock"
+        },
+        {
+          "type": "simple",
+          "indicator": "revenue_growth",
+          "operator": ">",
+          "value": 15
+        }
+      ],
+      "action": {
+        "action": "bullish",
+        "size": 12,
+        "parameters": {}
+      },
+      "description": "Buy growth stocks with PEG < 1 and strong revenue growth"
+    },
+    {
+      "id": "rule_2",
+      "conditions": [
+        {
+          "type": "formula",
+          "formula": "PE_RATIO / GROWTH_RATE",
+          "variables": {
+            "PE_RATIO": "pe_ratio",
+            "GROWTH_RATE": "revenue_growth"
+          },
+          "formula_operator": ">",
+          "formula_threshold": 2.0,
+          "formula_description": "PEG Ratio > 2 indicates overvalued growth stock"
+        }
+      ],
+      "action": {
+        "action": "bearish",
+        "size": 5,
+        "parameters": {}
+      },
+      "description": "Sell overvalued growth stocks with high PEG"
+    }
+  ]
+}
