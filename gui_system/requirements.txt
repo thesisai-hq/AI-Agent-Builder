@@ -19,5 +19,8 @@ aiofiles==23.2.1
 # Formula evaluation - SAFE alternative to eval()
 simpleeval==0.9.13
 
+# Financial data
+yfinance>=0.2.48
+
 # Note: agent_framework dependencies are installed separately
 # Install with: pip install -e ../  (from AI-Agent-Builder root)

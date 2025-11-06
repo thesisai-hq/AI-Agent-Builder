@@ -1,16 +1,13 @@
 """Safe formula evaluation for custom analytical models.
 
-Uses simpleeval library for secure mathematical expression evaluation.
-No eval() - prevents code injection attacks.
+Uses simpleeval for safe evaluation - NO dangerous eval()!
+Supports mathematical expressions with financial variables.
 """
 
 import re
-import logging
 from typing import Dict, Any, Tuple, Optional
 import math
-from simpleeval import simple_eval, FunctionNotDefined, NameNotDefined
-
-logger = logging.getLogger(__name__)
+from simpleeval import simple_eval
 
 
 class FormulaEvaluator:
@@ -29,11 +26,11 @@ class FormulaEvaluator:
         'round': round,
     }
     
-    def validate_formula(
-        self,
-        formula: str,
-        variables: Dict[str, str]
-    ) -> Tuple[bool, Optional[str]]:
+    def __init__(self):
+        """Initialize evaluator."""
+        pass
+    
+    def validate_formula(self, formula: str, variables: Dict[str, str]) -> Tuple[bool, Optional[str]]:
         """Validate formula syntax and variables.
         
         Args:
@@ -46,28 +43,34 @@ class FormulaEvaluator:
         if not formula or not formula.strip():
             return False, "Formula cannot be empty"
         
+        # Check for dangerous patterns
+        dangerous = ['import', 'exec', 'eval', '__', 'open', 'file']
+        formula_lower = formula.lower()
+        for pattern in dangerous:
+            if pattern in formula_lower:
+                return False, f"Formula contains forbidden pattern: {pattern}"
+        
         # Extract variable names from formula
         var_pattern = r'\b([A-Z_][A-Z0-9_]*)\b'
         formula_vars = set(re.findall(var_pattern, formula))
         
         # Check all variables are defined
-        undefined_vars = []
         for var in formula_vars:
             if var not in variables and var not in self.SAFE_FUNCTIONS:
-                undefined_vars.append(var)
+                return False, f"Undefined variable: {var}. Please map it in variables."
         
-        if undefined_vars:
-            return False, f"Undefined variables: {', '.join(undefined_vars)}. Please map them in variables."
-        
-        # Try to parse with dummy values
+        # Try to parse (basic check)
         try:
-            test_namespace = {var: 1.0 for var in formula_vars if var not in self.SAFE_FUNCTIONS}
-            self._safe_eval(formula, test_namespace)
+            # Replace variables with dummy values for syntax check
+            test_formula = formula
+            for var in formula_vars:
+                if var not in self.SAFE_FUNCTIONS:
+                    test_formula = test_formula.replace(var, '1')
+            
+            # Try to evaluate with dummy values using simpleeval
+            simple_eval(test_formula, functions=self.SAFE_FUNCTIONS)
             return True, None
-        except NameNotDefined as e:
-            return False, f"Undefined name in formula: {e}"
-        except FunctionNotDefined as e:
-            return False, f"Unknown function: {e}. Available: {', '.join(self.SAFE_FUNCTIONS.keys())}"
+        
         except Exception as e:
             return False, f"Invalid formula syntax: {str(e)}"
     
@@ -95,45 +98,25 @@ class FormulaEvaluator:
             for var_name, data_field in variables.items():
                 value = data.get(data_field)
                 if value is None:
-                    logger.warning(f"Data field '{data_field}' not found for variable '{var_name}'")
                     return False, None, f"Data field '{data_field}' not found in stock data"
                 
                 # Convert to float
                 try:
                     namespace[var_name] = float(value)
-                except (TypeError, ValueError) as e:
-                    logger.error(f"Cannot convert '{data_field}' to number: {value}")
+                except (TypeError, ValueError):
                     return False, None, f"Cannot convert '{data_field}' to number: {value}"
             
-            # Evaluate formula
-            result = self._safe_eval(formula, namespace)
-            logger.info(f"Formula '{formula}' evaluated to {result}")
+            # Evaluate formula using simpleeval (SAFE!)
+            result = simple_eval(
+                formula,
+                names=namespace,
+                functions=self.SAFE_FUNCTIONS
+            )
+            
             return True, float(result), None
         
         except Exception as e:
-            logger.error(f"Formula evaluation error: {e}", exc_info=True)
             return False, None, f"Formula evaluation error: {str(e)}"
-    
-    def _safe_eval(self, expression: str, namespace: Dict[str, float]) -> float:
-        """Safely evaluate mathematical expression using simpleeval.
-        
-        Args:
-            expression: Math expression
-            namespace: Variable values
-            
-        Returns:
-            Evaluated result
-            
-        Raises:
-            Various simpleeval exceptions for invalid expressions
-        """
-        result = simple_eval(
-            expression,
-            names=namespace,
-            functions=self.SAFE_FUNCTIONS
-        )
-        
-        return float(result)
     
     def get_formula_description(
         self,
