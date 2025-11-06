@@ -8,6 +8,7 @@ Usage:
     python run.py              # Development mode (backend only)
     python run.py --frontend   # Development mode (backend + frontend)
     python run.py --prod       # Production mode (build frontend first)
+    python run.py --no-browser # Don't auto-open browser
 """
 
 import sys
@@ -24,6 +25,7 @@ def main():
     """Main launcher function."""
     args = sys.argv[1:]
     mode = "dev"
+    open_browser = "--no-browser" not in args
     
     if "--prod" in args:
         mode = "prod"
@@ -91,9 +93,17 @@ def main():
             backend_process.terminate()
             return
         
-        # Open browser
-        time.sleep(1)
-        webbrowser.open("http://localhost:5173")
+        # Open browser (optional, can cause keyring issues on Linux)
+        if open_browser:
+            print("Opening browser...")
+            time.sleep(1)
+            try:
+                webbrowser.open("http://localhost:5173")
+            except Exception as e:
+                print(f"⚠️  Could not auto-open browser: {e}")
+                print("Please open http://localhost:5173 manually")
+        else:
+            print("ℹ️  Auto-open disabled. Please open http://localhost:5173 manually")
         
         # Start frontend
         try:

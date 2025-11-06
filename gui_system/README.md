@@ -49,13 +49,13 @@ npm install
 **Option A: Backend + Frontend (Recommended)**
 ```bash
 # From AI-Agent-Builder/gui_system directory
-python run.py --frontend
+python run.py --frontend --no-browser
 ```
 
 This will:
 - Start FastAPI backend on http://localhost:8000
 - Start SvelteKit dev server on http://localhost:5173
-- Open browser automatically
+- Open your browser and check the URLs.
 
 **Option B: Backend Only**
 ```bash

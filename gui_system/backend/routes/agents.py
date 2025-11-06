@@ -230,7 +230,21 @@ def _generate_llm_based_code(agent: AgentResponse) -> str:
     """Generate code for LLM-based agent."""
     llm_config = agent.llm_config
     
-    tools_str = ", ".join([f'"{t}"' for t in (llm_config.tools or [])])
+    # Build system prompt - avoid nested f-strings
+    if llm_config.system_prompt:
+        system_prompt = llm_config.system_prompt
+    else:
+        system_prompt = f"""You are a financial analyst agent.
+Goal: {agent.goal}
+
+Analyze the provided stock data and respond with:
+SIGNAL: [bullish/bearish/neutral]
+CONFIDENCE: [0.0-1.0]
+REASONING: [your analysis]
+"""
+    
+    # Escape quotes in system prompt for code generation
+    system_prompt_escaped = system_prompt.replace('"""', '\\"\\"\\"')
     
     code = f'''"""
 {agent.name}
@@ -247,6 +261,8 @@ class {agent.name.replace(" ", "")}Agent(Agent):
     """{agent.goal}"""
     
     def __init__(self):
+        system_prompt = """{system_prompt_escaped}"""
+        
         config = AgentConfig(
             name="{agent.name}",
             description="{agent.description or agent.goal}",
@@ -255,14 +271,7 @@ class {agent.name.replace(" ", "")}Agent(Agent):
                 model="{llm_config.model}",
                 temperature={llm_config.temperature},
                 max_tokens={llm_config.max_tokens},
-                system_prompt="""{llm_config.system_prompt or f'''You are a financial analyst agent.
-Goal: {agent.goal}
-
-Analyze the provided stock data and respond with:
-SIGNAL: [bullish/bearish/neutral]
-CONFIDENCE: [0.0-1.0]
-REASONING: [your analysis]
-'''}"""
+                system_prompt=system_prompt
             )
         )
         super().__init__(config)

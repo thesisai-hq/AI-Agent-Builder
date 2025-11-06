@@ -5,7 +5,7 @@
 	import { api, type Template, type Rule, type AgentCreate, type LLMConfig } from '$lib/api';
 	import { loading } from '$lib/stores/agents';
 	import RuleBuilder from '$lib/components/RuleBuilder.svelte';
-	import LLMConfig from '$lib/components/LLMConfig.svelte';
+	import LLMConfigComponent from '$lib/components/LLMConfig.svelte';
 	
 	// Steps
 	const steps = [
@@ -438,7 +438,7 @@
 				{#if agentType === 'rule_based'}
 					<RuleBuilder bind:rules onchange={(newRules) => rules = newRules} />
 				{:else}
-					<LLMConfig bind:config={llmConfig} onchange={(newConfig) => llmConfig = newConfig} />
+					<LLMConfigComponent bind:config={llmConfig} onchange={(newConfig) => llmConfig = newConfig} />
 				{/if}
 			</div>
 			
