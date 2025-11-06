@@ -99,5 +99,6 @@ dmypy.json
 uv.lock
 
 # Deprecated files (if they accidentally get added back)
-setup.py
-requirements.txt
+# Only ignore root-level files, allow in subdirectories
+/setup.py
+/requirements.txt
