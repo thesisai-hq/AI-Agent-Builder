@@ -1,8 +1,9 @@
 """Template management routes."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from ..models import TemplateResponse, TemplateListResponse
 from ..storage import storage
+from ..errors import TemplateNotFoundError, APIError
 
 
 router = APIRouter(prefix="/templates", tags=["templates"])
@@ -19,7 +20,7 @@ async def list_templates():
         templates = storage.list_templates()
         return TemplateListResponse(templates=templates, total=len(templates))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list templates: {str(e)}")
+        raise APIError(500, "Failed to list templates", {"reason": str(e)})
 
 
 @router.get("/{template_id}", response_model=TemplateResponse)
@@ -34,5 +35,5 @@ async def get_template(template_id: str):
     """
     template = storage.get_template(template_id)
     if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise TemplateNotFoundError(template_id)
     return template

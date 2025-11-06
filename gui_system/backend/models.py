@@ -118,6 +118,16 @@ class TemplateListResponse(BaseModel):
     total: int
 
 
+# Data quality info
+class DataQualityInfo(BaseModel):
+    """Information about data quality and missing fields."""
+    total_fields: int
+    populated_fields: int
+    missing_fields: List[str] = Field(default_factory=list)
+    zero_value_fields: List[str] = Field(default_factory=list)
+    data_source: str = "yfinance"
+
+
 # Analysis models
 class AnalysisRequest(BaseModel):
     """Request to analyze a stock."""
@@ -134,6 +144,9 @@ class AnalysisResponse(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     reasoning: str
     timestamp: datetime
+    # NEW: Actual data used in analysis
+    data_used: Dict[str, Any] = Field(default_factory=dict)
+    data_quality: Optional[DataQualityInfo] = None
 
 
 # Formula validation

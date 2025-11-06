@@ -45,3 +45,15 @@ Thumbs.db
 # Build artifacts (if any)
 dist/
 build/
+
+# Internal documentation (development only)
+CODE_QUALITY_FIXES.md
+DEVELOPER_GUIDE.md
+verify_fixes.py
+cleanup_internal_files.py
+cleanup_internal_files.sh
+CLEANUP_SUMMARY.md
+
+# Frontend build artifacts
+frontend/.svelte-kit/
+frontend/build/

@@ -1,12 +1,13 @@
 """Agent management routes."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from typing import List
 from ..models import (
     AgentCreate, AgentUpdate, AgentResponse, 
     AgentListResponse, ExportCodeResponse
 )
 from ..storage import storage
+from ..errors import AgentNotFoundError, APIError
 
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -25,7 +26,7 @@ async def create_agent(agent: AgentCreate):
     try:
         return storage.create_agent(agent)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create agent: {str(e)}")
+        raise APIError(500, "Failed to create agent", {"reason": str(e)})
 
 
 @router.get("", response_model=AgentListResponse)
@@ -39,7 +40,7 @@ async def list_agents():
         agents = storage.list_agents()
         return AgentListResponse(agents=agents, total=len(agents))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list agents: {str(e)}")
+        raise APIError(500, "Failed to list agents", {"reason": str(e)})
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
@@ -54,7 +55,7 @@ async def get_agent(agent_id: str):
     """
     agent = storage.get_agent(agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise AgentNotFoundError(agent_id)
     return agent
 
 
@@ -71,7 +72,7 @@ async def update_agent(agent_id: str, update: AgentUpdate):
     """
     agent = storage.update_agent(agent_id, update)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise AgentNotFoundError(agent_id)
     return agent
 
 
@@ -84,7 +85,7 @@ async def delete_agent(agent_id: str):
     """
     success = storage.delete_agent(agent_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise AgentNotFoundError(agent_id)
 
 
 @router.get("/{agent_id}/export", response_model=ExportCodeResponse)
@@ -99,7 +100,7 @@ async def export_agent_code(agent_id: str):
     """
     agent = storage.get_agent(agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise AgentNotFoundError(agent_id)
     
     # Generate Python code
     code = _generate_agent_code(agent)

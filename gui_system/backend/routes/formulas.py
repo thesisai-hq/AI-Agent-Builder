@@ -1,8 +1,9 @@
 """Formula management and validation routes."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from ..models import FormulaValidateRequest, FormulaValidateResponse
 from ..formula_evaluator import formula_evaluator, FORMULA_TEMPLATES
+from ..errors import ValidationError, APIError
 
 
 router = APIRouter(prefix="/formulas", tags=["formulas"])
@@ -84,6 +85,6 @@ async def get_formula_template(template_id: str):
         Formula template details
     """
     if template_id not in FORMULA_TEMPLATES:
-        raise HTTPException(status_code=404, detail="Formula template not found")
+        raise APIError(404, "Formula template not found", {"template_id": template_id})
     
     return FORMULA_TEMPLATES[template_id]
