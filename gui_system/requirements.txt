@@ -29,10 +29,9 @@ numpy>=1.24.0,<2.0.0  # Pin to 1.x to avoid np.float_ deprecation
 
 # RAG System (Lightweight - No PyTorch)
 chromadb==0.4.22
-fastembed==0.3.1  # Updated version with correct imports
+fastembed==0.2.0  # Lightweight embeddings, no PyTorch dependency
 PyPDF2==3.0.1
 python-docx==1.1.0
-onnxruntime>=1.16.0  # Required by fastembed
 
 # Note: agent_framework dependencies are installed separately
 # Install with: pip install -e ../  (from AI-Agent-Builder root)
