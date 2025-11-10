@@ -2,9 +2,17 @@
 	import { onMount } from 'svelte';
 	import type { LLMConfig } from '$lib/api';
 	
-	export let config: LLMConfig;
-	export let agentId: string = '';
-	export let onchange: (config: LLMConfig) => void;
+	// In Svelte "runes" mode `export let` is not allowed. Use $props() to access
+	// incoming props and then create local mutable bindings with defaults.
+	const props = $props() as {
+		config: LLMConfig;
+		agentId?: string;
+		onchange?: (config: LLMConfig) => void;
+	};
+
+	let config: LLMConfig = props.config;
+	let agentId: string = props.agentId ?? '';
+	let onchange: (config: LLMConfig) => void = props.onchange ?? (() => {});
 	
 	const availableTools = [
 		{ 
