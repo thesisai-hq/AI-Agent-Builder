@@ -142,6 +142,12 @@
 			loadDocuments();
 		}
 	});
+<<<<<<< HEAD
+=======
+	
+	// Get current provider's models
+	$: currentModels = providerModels[config.provider as keyof typeof providerModels] || providerModels.openai;
+>>>>>>> parent of 6006a6f (fix $: syntax)
 </script>
 
 <div class="space-y-6">
