@@ -87,7 +87,7 @@ def validate_llm_config(provider: str, model: str) -> Tuple[bool, str]:
         (is_valid, error_message)
     """
     # Supported providers
-    supported_providers = ['openai', 'anthropic', 'cohere', 'azure', 'ollama']
+    supported_providers = ['openai', 'anthropic', 'cohere', 'azure']
     
     if provider not in supported_providers:
         return False, f"Unsupported provider: {provider}. Supported: {', '.join(supported_providers)}"

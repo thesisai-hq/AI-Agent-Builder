@@ -54,7 +54,6 @@ class LLMConfigModel(BaseModel):
     max_tokens: int = Field(default=2000, gt=0)
     system_prompt: Optional[str] = None
     tools: List[str] = Field(default_factory=list)
-    ollama_base_url: Optional[str] = Field(default="http://localhost:11434", description="Ollama API base URL")
 
 
 # Agent models
