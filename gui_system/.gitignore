@@ -54,6 +54,21 @@ cleanup_internal_files.py
 cleanup_internal_files.sh
 CLEANUP_SUMMARY.md
 
+# Phase implementation docs (internal)
+PHASE*.md
+IMPROVEMENTS*.md
+REVIEW*.md
+FIXES*.md
+BEFORE_AFTER.md
+FINAL_REVIEW.md
+COMPLETE_SUMMARY.md
+IMPLEMENTATION*.md
+MIGRATION.md
+TOOL*.md
+RAG_QUICKSTART.md
+GITIGNORE*.md
+CLEANUP_PLAN.md
+
 # Frontend build artifacts
 frontend/.svelte-kit/
 frontend/build/

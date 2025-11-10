@@ -2,9 +2,16 @@
 	import { onMount } from 'svelte';
 	import type { LLMConfig } from '$lib/api';
 	
-	export let config: LLMConfig;
-	export let agentId: string = '';
-	export let onchange: (config: LLMConfig) => void;
+	// Svelte 5 runes mode - use $props() instead of export let
+	let { 
+		config,
+		agentId = '',
+		onchange
+	}: {
+		config: LLMConfig;
+		agentId?: string;
+		onchange: (config: LLMConfig) => void;
+	} = $props();
 	
 	const availableTools = [
 		{ 

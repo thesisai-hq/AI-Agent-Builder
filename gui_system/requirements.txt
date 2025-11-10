@@ -19,8 +19,18 @@ aiofiles==23.2.1
 # Formula evaluation - SAFE alternative to eval()
 simpleeval==0.9.13
 
+# Code generation templates
+jinja2==3.1.2
+
 # Financial data
 yfinance>=0.2.48
+pandas>=2.0.0  # Required for yfinance financial statements
+
+# RAG System (Lightweight - No Database)
+chromadb==0.4.22
+sentence-transformers==2.2.2  # Local embeddings (free, no API key needed)
+PyPDF2==3.0.1
+python-docx==1.1.0  # For Word document support (future)
 
 # Note: agent_framework dependencies are installed separately
 # Install with: pip install -e ../  (from AI-Agent-Builder root)

@@ -1,5 +1,6 @@
 """Shared utility functions."""
 
+import re
 from typing import Tuple
 from .models import Signal
 
@@ -7,8 +8,14 @@ from .models import Signal
 def parse_llm_signal(response: str, fallback_reasoning: str = "") -> Signal:
     """Parse LLM response into Signal.
     
-    Expected format: DIRECTION|CONFIDENCE|REASONING
-    Example: bullish|80|Strong growth with healthy margins
+    Supports two formats:
+    1. Pipe-delimited: DIRECTION|CONFIDENCE|REASONING
+       Example: bullish|80|Strong growth with healthy margins
+    
+    2. Structured (GUI format):
+       SIGNAL: [bullish/bearish/neutral]
+       CONFIDENCE: [0.0-1.0]
+       REASONING: [detailed analysis]
     
     Args:
         response: LLM response text
@@ -17,6 +24,22 @@ def parse_llm_signal(response: str, fallback_reasoning: str = "") -> Signal:
     Returns:
         Parsed Signal object
     """
+    # Try structured format first (GUI format)
+    try:
+        signal_match = re.search(r'SIGNAL:\s*(bullish|bearish|neutral)', response, re.IGNORECASE)
+        conf_match = re.search(r'CONFIDENCE:\s*([0-9.]+)', response, re.IGNORECASE)
+        reason_match = re.search(r'REASONING:\s*(.+)', response, re.IGNORECASE | re.DOTALL)
+        
+        if signal_match and conf_match and reason_match:
+            direction = signal_match.group(1).lower()
+            confidence = max(0.0, min(1.0, float(conf_match.group(1))))
+            reasoning = reason_match.group(1).strip()
+            
+            return Signal(direction=direction, confidence=confidence, reasoning=reasoning)
+    except (ValueError, AttributeError):
+        pass
+    
+    # Try pipe-delimited format (original format)
     try:
         parts = response.split('|')
         if len(parts) >= 3:

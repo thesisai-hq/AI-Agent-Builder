@@ -1,8 +1,12 @@
 """Unified condition evaluator - eliminates duplicated evaluation logic."""
 
+import logging
 from typing import Dict, Any, Callable, List
 from .models import RuleCondition
 from .formula_evaluator import formula_evaluator
+from .constants import FLOAT_EQUALITY_THRESHOLD
+
+logger = logging.getLogger(__name__)
 
 
 class ConditionEvaluator:
@@ -14,8 +18,8 @@ class ConditionEvaluator:
         '>': lambda a, b: a > b,
         '<=': lambda a, b: a <= b,
         '>=': lambda a, b: a >= b,
-        '=': lambda a, b: abs(a - b) < 0.01,  # Float equality
-        '==': lambda a, b: abs(a - b) < 0.01,
+        '=': lambda a, b: abs(a - b) < FLOAT_EQUALITY_THRESHOLD,
+        '==': lambda a, b: abs(a - b) < FLOAT_EQUALITY_THRESHOLD,
     }
     
     def evaluate(self, condition: RuleCondition, data: Dict[str, Any]) -> bool:

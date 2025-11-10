@@ -1,5 +1,6 @@
-"""Stock analysis routes - REFACTORED with unified evaluator and formatters."""
+"""Stock analysis routes with unified LLM handling and RAG support."""
 
+import logging
 from fastapi import APIRouter
 from datetime import datetime
 
@@ -8,8 +9,11 @@ from ..storage import storage
 from ..data_service import data_service
 from ..tools import tool_registry
 from ..evaluator import condition_evaluator
-from ..formatters import DataFormatter
+from ..llm_utils import parse_llm_signal_response, format_llm_prompt
 from ..errors import AgentNotFoundError, InvalidTickerError, DataFetchError, AnalysisError
+from ..constants import NEUTRAL_DIRECTION, DEFAULT_CONFIDENCE, ERROR_CONFIDENCE
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -30,17 +34,14 @@ async def analyze_stock(request: AnalysisRequest):
     if not agent_data:
         raise AgentNotFoundError(request.agent_id)
     
-    # Validate ticker
+    # Fetch stock data (validation is implicit - will fail if ticker invalid)
     ticker_upper = request.ticker.upper()
-    if not data_service.validate_ticker(ticker_upper):
-        raise InvalidTickerError(ticker_upper)
-    
-    # Fetch stock data
     try:
         data = data_service.get_stock_data(ticker_upper)
         if not data:
-            raise DataFetchError(ticker_upper, "No data returned from source")
+            raise InvalidTickerError(ticker_upper)
     except Exception as e:
+        # If fetch fails, ticker is invalid or service unavailable
         raise DataFetchError(ticker_upper, str(e))
     
     # Analyze data quality
@@ -106,11 +107,24 @@ def _run_agent_analysis(agent_data, ticker: str, data: dict) -> dict:
         return _run_llm_based_analysis(agent_data, ticker, data)
 
 
-def _run_rule_based_analysis(agent_data, ticker: str, data: dict) -> dict:
-    """Run rule-based analysis using unified evaluator.
+def _create_error_signal(reason: str) -> dict:
+    """Create standardized error signal response.
     
-    SIMPLIFIED: Uses condition_evaluator instead of duplicate logic.
+    Args:
+        reason: Error description
+        
+    Returns:
+        Error signal dictionary
     """
+    return {
+        'direction': NEUTRAL_DIRECTION,
+        'confidence': ERROR_CONFIDENCE,
+        'reasoning': reason
+    }
+
+
+def _run_rule_based_analysis(agent_data, ticker: str, data: dict) -> dict:
+    """Run rule-based analysis using unified evaluator."""
     for rule in agent_data.rules:
         # ONE LINE - evaluates all conditions
         if condition_evaluator.evaluate_all(rule.conditions, data):
@@ -125,22 +139,18 @@ def _run_rule_based_analysis(agent_data, ticker: str, data: dict) -> dict:
     
     # No rules triggered
     return {
-        'direction': 'neutral',
-        'confidence': 0.5,
+        'direction': NEUTRAL_DIRECTION,
+        'confidence': DEFAULT_CONFIDENCE,
         'reasoning': 'No rules triggered'
     }
 
 
 def _run_llm_based_analysis(agent_data, ticker: str, data: dict) -> dict:
-    """Run LLM-based analysis with tool support."""
+    """Run LLM-based analysis with tool support including RAG."""
     try:
         from agent_framework import LLMClient, LLMConfig
     except ImportError:
-        return {
-            'direction': 'neutral',
-            'confidence': 0.0,
-            'reasoning': 'Error: agent_framework not installed. Run: pip install -e ../'
-        }
+        return _create_error_signal('Error: agent_framework not installed. Run: pip install -e ../')
     
     # Get enabled tools
     enabled_tools = agent_data.llm_config.tools or []
@@ -152,12 +162,29 @@ def _run_llm_based_analysis(agent_data, ticker: str, data: dict) -> dict:
         
         for tool_name in enabled_tools:
             try:
-                result = tool_registry.execute(tool_name, ticker=ticker)
-                tool_data_sections.append(f"=== {tool_name.upper()} ===\n{result}")
+                logger.info(f"Executing tool: {tool_name} for {ticker}")
+                
+                # Pass agent_id for document_analysis tool (RAG needs it)
+                if tool_name == 'document_analysis':
+                    result = tool_registry.execute(
+                        tool_name,
+                        ticker=ticker,
+                        agent_id=agent_data.id  # Required for RAG
+                    )
+                else:
+                    result = tool_registry.execute(tool_name, ticker=ticker)
+                
+                tool_data_sections.append(f"=== {tool_name.upper()} ===")
+                tool_data_sections.append(result)
+                tool_data_sections.append("")  # Empty line for separation
+                
             except Exception as e:
-                tool_data_sections.append(f"=== {tool_name.upper()} ===\nError: {e}")
+                logger.error(f"Tool {tool_name} execution failed: {e}", exc_info=True)
+                tool_data_sections.append(f"=== {tool_name.upper()} ===")
+                tool_data_sections.append(f"Error: {e}")
+                tool_data_sections.append("")  # Empty line for separation
         
-        tool_data_str = "\n\n".join(tool_data_sections)
+        tool_data_str = "\n".join(tool_data_sections)
     
     # Create LLM client
     try:
@@ -170,38 +197,23 @@ def _run_llm_based_analysis(agent_data, ticker: str, data: dict) -> dict:
         )
         llm = LLMClient(llm_cfg)
     except Exception as e:
-        return {
-            'direction': 'neutral',
-            'confidence': 0.0,
-            'reasoning': f'Error initializing LLM: {str(e)}'
-        }
+        return _create_error_signal(f'Error initializing LLM: {str(e)}')
     
-    # Format data using DataFormatter
-    formatted_data = DataFormatter.for_llm(data)
-    
-    # Build prompt
-    prompt = f"""{formatted_data}
-
-{tool_data_str}
-
-Based on the above data, provide your investment recommendation for {ticker}.
-
-Respond in this EXACT format:
-SIGNAL: [bullish/bearish/neutral]
-CONFIDENCE: [0.0-1.0]
-REASONING: [your detailed analysis]
-"""
+    # Format prompt using shared utility
+    prompt = format_llm_prompt(
+        ticker=ticker,
+        data=data,
+        goal=agent_data.goal,
+        tool_results=tool_data_str
+    )
     
     # Call LLM
     try:
         response = llm.chat(prompt)
-        return _parse_llm_response(response)
+        # Use shared parser
+        return parse_llm_signal_response(response)
     except Exception as e:
-        return {
-            'direction': 'neutral',
-            'confidence': 0.0,
-            'reasoning': f'LLM analysis failed: {str(e)}'
-        }
+        return _create_error_signal(f'LLM analysis failed: {str(e)}')
 
 
 def _get_default_system_prompt(agent_data) -> str:
@@ -215,35 +227,3 @@ SIGNAL: [bullish/bearish/neutral]
 CONFIDENCE: [0.0-1.0]
 REASONING: [your detailed analysis]
 """
-
-
-def _parse_llm_response(response: str) -> dict:
-    """Parse LLM response to extract signal, confidence, and reasoning."""
-    import re
-    
-    # Default values
-    direction = 'neutral'
-    confidence = 0.5
-    reasoning = response
-    
-    # Parse structured response
-    signal_match = re.search(r'SIGNAL:\s*(bullish|bearish|neutral)', response, re.IGNORECASE)
-    if signal_match:
-        direction = signal_match.group(1).lower()
-    
-    conf_match = re.search(r'CONFIDENCE:\s*([0-9.]+)', response, re.IGNORECASE)
-    if conf_match:
-        try:
-            confidence = max(0.0, min(1.0, float(conf_match.group(1))))
-        except ValueError:
-            pass
-    
-    reason_match = re.search(r'REASONING:\s*(.+)', response, re.IGNORECASE | re.DOTALL)
-    if reason_match:
-        reasoning = reason_match.group(1).strip()
-    
-    return {
-        'direction': direction,
-        'confidence': confidence,
-        'reasoning': reasoning
-    }
