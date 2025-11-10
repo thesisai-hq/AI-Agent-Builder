@@ -1,6 +1,7 @@
 """Lightweight RAG (Retrieval Augmented Generation) service.
 
 No database required - uses ChromaDB with file system storage.
+Uses FastEmbed for embeddings - no PyTorch dependency, faster and lighter.
 Each agent has its own document collection and embeddings.
 """
 
@@ -10,11 +11,44 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import chromadb
 from chromadb.config import Settings
-from chromadb.utils import embedding_functions
+from fastembed import TextEmbedding
 import PyPDF2
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+
+class FastEmbedEmbeddingFunction:
+    """Wrapper for FastEmbed to work with ChromaDB.
+    
+    FastEmbed is lighter and faster than sentence-transformers,
+    and doesn't require PyTorch.
+    """
+    
+    def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5"):
+        """Initialize FastEmbed model.
+        
+        Args:
+            model_name: Model to use for embeddings
+                - BAAI/bge-small-en-v1.5 (default, good balance)
+                - BAAI/bge-base-en-v1.5 (better quality, slower)
+                - sentence-transformers/all-MiniLM-L6-v2 (fastest)
+        """
+        self.model = TextEmbedding(model_name=model_name)
+    
+    def __call__(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for texts.
+        
+        Args:
+            texts: List of text strings
+            
+        Returns:
+            List of embedding vectors
+        """
+        # FastEmbed returns generator, convert to list
+        embeddings = list(self.model.embed(texts))
+        # Convert numpy arrays to lists
+        return [emb.tolist() for emb in embeddings]
 
 
 class RAGService:
@@ -28,11 +62,9 @@ class RAGService:
         """
         self.storage_path = Path(storage_path)
         
-        # Use sentence transformers for free local embeddings
-        # This avoids needing OpenAI API key
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"  # Fast, lightweight, free
-        )
+        # Use FastEmbed - lightweight, no PyTorch
+        self.embedding_function = FastEmbedEmbeddingFunction()
+        logger.info("RAG service initialized with FastEmbed (no PyTorch)")
     
     def add_document(
         self,
@@ -290,97 +322,6 @@ class RAGService:
                 "total_documents": 0,
                 "documents": []
             }
-    
-    def _get_collection(self, agent_id: str):
-        """Get or create ChromaDB collection for agent.
-        
-        Args:
-            agent_id: Agent ID
-            
-        Returns:
-            ChromaDB collection
-        """
-        embeddings_dir = self.storage_path / "agents" / agent_id / "embeddings"
-        embeddings_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Create persistent ChromaDB client
-        client = chromadb.PersistentClient(
-            path=str(embeddings_dir),
-            settings=Settings(
-                anonymized_telemetry=False,
-                allow_reset=True
-            )
-        )
-        
-        # Get or create collection with embedding function
-        collection = client.get_or_create_collection(
-            name=f"agent_{agent_id}",
-            embedding_function=self.embedding_function,
-            metadata={"hnsw:space": "cosine"}
-        )
-        
-        return collection
-    
-    def _extract_text(self, file_path: Path, filename: str) -> str:
-        """Extract text from various file formats.
-        
-        Args:
-            file_path: Path to file
-            filename: Original filename
-            
-        Returns:
-            Extracted text
-        """
-        ext = filename.lower().split('.')[-1]
-        
-        if ext == 'pdf':
-            return self._extract_pdf(file_path)
-        elif ext == 'txt':
-            return self._extract_txt(file_path)
-        else:
-            raise ValueError(f"Unsupported file type: {ext}. Supported: PDF, TXT")
-    
-    def _extract_pdf(self, file_path: Path) -> str:
-        """Extract text from PDF.
-        
-        Args:
-            file_path: Path to PDF file
-            
-        Returns:
-            Extracted text
-        """
-        text = ""
-        try:
-            with open(file_path, 'rb') as f:
-                pdf_reader = PyPDF2.PdfReader(f)
-                
-                for page_num, page in enumerate(pdf_reader.pages):
-                    page_text = page.extract_text()
-                    if page_text:
-                        text += f"\n--- Page {page_num + 1} ---\n"
-                        text += page_text
-                
-            return text.strip()
-        except Exception as e:
-            raise Exception(f"PDF extraction error: {str(e)}")
-    
-    def _extract_txt(self, file_path: Path) -> str:
-        """Extract text from TXT file.
-        
-        Args:
-            file_path: Path to text file
-            
-        Returns:
-            File contents
-        """
-        try:
-            # Try UTF-8 first
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        except UnicodeDecodeError:
-            # Fallback to latin-1
-            with open(file_path, 'r', encoding='latin-1') as f:
-                return f.read()
     
     def _split_text(self, text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
         """Split text into overlapping chunks.
