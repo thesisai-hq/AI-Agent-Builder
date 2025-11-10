@@ -44,9 +44,45 @@
 		}
 	];
 	
+	// Model options per provider
+	const providerModels = {
+		openai: [
+			{ value: 'gpt-4', label: 'GPT-4' },
+			{ value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+			{ value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' }
+		],
+		anthropic: [
+			{ value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+			{ value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+			{ value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
+		],
+		cohere: [
+			{ value: 'command', label: 'Command' },
+			{ value: 'command-light', label: 'Command Light' }
+		],
+		ollama: [
+			{ value: 'llama2', label: 'Llama 2' },
+			{ value: 'llama2:13b', label: 'Llama 2 13B' },
+			{ value: 'llama2:70b', label: 'Llama 2 70B' },
+			{ value: 'mistral', label: 'Mistral 7B' },
+			{ value: 'mixtral', label: 'Mixtral 8x7B' },
+			{ value: 'codellama', label: 'Code Llama' },
+			{ value: 'phi', label: 'Phi-2' },
+			{ value: 'neural-chat', label: 'Neural Chat' }
+		]
+	};
+	
 	let uploadedDocs = $state<any[]>([]);
 	let isUploading = $state(false);
 	let uploadError = $state<string | null>(null);
+	
+	// Initialize ollama_base_url if not set
+	$effect(() => {
+		if (config.provider === 'ollama' && !config.ollama_base_url) {
+			config.ollama_base_url = 'http://localhost:11434';
+			onchange(config);
+		}
+	});
 	
 	function toggleTool(toolId: string) {
 		const tools = config.tools || [];
@@ -141,6 +177,9 @@
 			loadDocuments();
 		}
 	});
+	
+	// Get current provider's models
+	$: currentModels = providerModels[config.provider as keyof typeof providerModels] || providerModels.openai;
 </script>
 
 <div class="space-y-6">
@@ -152,26 +191,72 @@
 				<option value="openai">OpenAI</option>
 				<option value="anthropic">Anthropic (Claude)</option>
 				<option value="cohere">Cohere</option>
+				<option value="ollama">Ollama (Local) 🏠</option>
 			</select>
 		</div>
 		<div>
 			<label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
 			<select bind:value={config.model} onchange={() => onchange(config)} class="input-field">
-				{#if config.provider === 'openai'}
-					<option value="gpt-4">GPT-4</option>
-					<option value="gpt-4-turbo">GPT-4 Turbo</option>
-					<option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-				{:else if config.provider === 'anthropic'}
-					<option value="claude-3-opus-20240229">Claude 3 Opus</option>
-					<option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-					<option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-				{:else if config.provider === 'cohere'}
-					<option value="command">Command</option>
-					<option value="command-light">Command Light</option>
-				{/if}
+				{#each currentModels as modelOption}
+					<option value={modelOption.value}>{modelOption.label}</option>
+				{/each}
 			</select>
 		</div>
 	</div>
+	
+	<!-- Ollama Base URL (only show for Ollama provider) -->
+	{#if config.provider === 'ollama'}
+		<div class="ollama-config">
+			<div class="flex items-center mb-3">
+				<span class="text-xl mr-2">🏠</span>
+				<h3 class="font-semibold text-gray-900">Ollama Configuration</h3>
+			</div>
+			
+			<div class="mb-3">
+				<label class="block text-sm font-medium text-gray-700 mb-2">
+					Ollama API URL
+					<span class="text-xs font-normal text-gray-500 ml-2">(Default: http://localhost:11434)</span>
+				</label>
+				<input 
+					type="text" 
+					bind:value={config.ollama_base_url}
+					oninput={() => onchange(config)}
+					class="input-field font-mono text-sm"
+					placeholder="http://localhost:11434"
+				/>
+			</div>
+			
+			<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+				<p class="text-sm text-blue-800">
+					<strong>💡 Using Ollama?</strong> Make sure Ollama is running locally:
+				</p>
+				<code class="text-xs bg-blue-100 px-2 py-1 rounded mt-2 inline-block">ollama serve</code>
+				<p class="text-xs text-blue-700 mt-2">
+					Install models: <code class="bg-blue-100 px-1 rounded">ollama pull llama2</code>
+				</p>
+			</div>
+		</div>
+	{/if}
+	
+	<!-- API Key Notice -->
+	{#if config.provider !== 'ollama'}
+		<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+			<p class="text-sm text-yellow-800">
+				⚠️ <strong>API Key Required:</strong> Make sure to set your {config.provider.toUpperCase()} API key in the environment:
+			</p>
+			<code class="text-xs bg-yellow-100 px-2 py-1 rounded mt-1 inline-block">
+				{config.provider === 'openai' ? 'OPENAI_API_KEY' : 
+				 config.provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 
+				 'COHERE_API_KEY'}=your_key_here
+			</code>
+		</div>
+	{:else}
+		<div class="bg-green-50 border border-green-200 rounded-lg p-3">
+			<p class="text-sm text-green-800">
+				✅ <strong>No API Key Needed:</strong> Ollama runs locally on your machine. Free and private!
+			</p>
+		</div>
+	{/if}
 	
 	<!-- Temperature & Tokens -->
 	<div class="grid grid-cols-2 gap-4">
@@ -255,7 +340,7 @@
 				</div>
 			{:else}
 				<p class="text-sm text-gray-600 mb-4">
-					Upload PDFs, Word docs, or text files that the AI should reference during analysis.
+					Upload PDFs or text files that the AI should reference during analysis.
 					Documents will be embedded and searchable.
 				</p>
 				
@@ -271,7 +356,7 @@
 					<input 
 						type="file" 
 						id="doc-upload" 
-						accept=".pdf,.txt,.doc,.docx"
+						accept=".pdf,.txt"
 						onchange={uploadDocument}
 						disabled={isUploading}
 						class="hidden"
@@ -290,7 +375,7 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
 							</svg>
 							<span class="text-sm font-medium text-gray-700">Click to upload or drag files here</span>
-							<span class="text-xs text-gray-500 mt-1">PDF, TXT, DOC, DOCX (max 10MB)</span>
+							<span class="text-xs text-gray-500 mt-1">PDF, TXT (max 10MB)</span>
 						{/if}
 					</label>
 				</div>
@@ -374,6 +459,10 @@
 	
 	.rag-section {
 		@apply p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200;
+	}
+	
+	.ollama-config {
+		@apply p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg border-2 border-green-200;
 	}
 	
 	.upload-area {

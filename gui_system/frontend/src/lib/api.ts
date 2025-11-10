@@ -41,6 +41,7 @@ export interface LLMConfig {
 	max_tokens: number;
 	system_prompt?: string;
 	tools: string[];
+	ollama_base_url?: string;  // For local Ollama
 }
 
 export interface Agent {
@@ -108,7 +109,7 @@ export interface Document {
 	filename: string;
 	size: number;
 	size_mb: number;
-	modified: number;
+	modified: string;
 }
 
 // API client
@@ -121,7 +122,8 @@ class APIClient {
 
 	private async request<T>(
 		endpoint: string,
-		options: RequestInit = {}
+		options: RequestInit = {},
+		expectJson: boolean = true
 	): Promise<T> {
 		const url = `${this.baseUrl}${endpoint}`;
 		const response = await fetch(url, {
@@ -135,6 +137,11 @@ class APIClient {
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ message: 'Request failed' }));
 			throw new Error(error.detail?.message || error.message || 'Request failed');
+		}
+
+		// Handle 204 No Content responses
+		if (response.status === 204 || !expectJson) {
+			return undefined as T;
 		}
 
 		return response.json();
@@ -164,11 +171,17 @@ class APIClient {
 	}
 
 	async deleteAgent(id: string): Promise<void> {
-		await this.request(`/agents/${id}`, { method: 'DELETE' });
+		// 204 No Content - don't expect JSON
+		await this.request(`/agents/${id}`, { method: 'DELETE' }, false);
 	}
 
 	async exportAgent(id: string): Promise<{ code: string; filename: string }> {
 		return this.request(`/agents/${id}/export`);
+	}
+
+	// Alias for backward compatibility
+	async exportAgentCode(id: string): Promise<{ code: string; filename: string }> {
+		return this.exportAgent(id);
 	}
 
 	// Template endpoints
@@ -211,6 +224,7 @@ class APIClient {
 	}
 
 	async deleteDocument(agentId: string, filename: string): Promise<void> {
+		// 204 No Content - don't expect JSON
 		await fetch(`${this.baseUrl}/agents/${agentId}/documents/${filename}`, {
 			method: 'DELETE',
 		});
