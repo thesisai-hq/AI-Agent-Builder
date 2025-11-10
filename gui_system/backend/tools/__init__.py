@@ -1,34 +1,25 @@
 """Tool implementations for LLM agents.
 
-Provides fully functional tools for AI-powered investment analysis:
-- web_search: Search for company news using yfinance
-- financial_data: Comprehensive financial analysis
-- calculator: Financial valuation models (DCF, P/E, Graham, Altman)
-- document_analysis: RAG-based document analysis (Phase 2+)
+Provides actual functionality for the tools that can be enabled:
+- web_search: Search for company information
+- financial_data: Get additional financial metrics
+- document_analysis: Analyze text documents (placeholder)
+- calculator: Mathematical calculations
 """
 
-import logging
+import yfinance as yf
 from typing import Dict, Any, Optional, List
-
-# Import enhanced tool implementations
-from .web_search import web_search as web_search_impl
-from .financial_data import financial_data as financial_data_impl
-from .calculator import calculator as calculator_impl
-from .document_analysis import document_analysis as document_analysis_impl
-
-logger = logging.getLogger(__name__)
 
 
 class ToolRegistry:
     """Registry of available tools for LLM agents."""
     
     def __init__(self):
-        """Initialize tool registry with available tools."""
         self.tools = {
             'web_search': self.web_search,
             'financial_data': self.financial_data,
-            'calculator': self.calculator,
             'document_analysis': self.document_analysis,
+            'calculator': self.calculator,
         }
     
     def execute(self, tool_name: str, **kwargs) -> str:
@@ -42,18 +33,12 @@ class ToolRegistry:
             Tool result as string
         """
         if tool_name not in self.tools:
-            available = ', '.join(self.tools.keys())
-            return f"Error: Tool '{tool_name}' not available. Available tools: {available}"
+            return f"Error: Tool '{tool_name}' not available"
         
         try:
-            logger.info(f"Executing tool: {tool_name} with args: {kwargs}")
-            result = self.tools[tool_name](**kwargs)
-            logger.info(f"Tool {tool_name} executed successfully")
-            return result
+            return self.tools[tool_name](**kwargs)
         except Exception as e:
-            error_msg = f"Error executing {tool_name}: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return error_msg
+            return f"Error executing {tool_name}: {str(e)}"
     
     def get_tool_descriptions(self, enabled_tools: List[str]) -> str:
         """Get descriptions of enabled tools for LLM prompt.
@@ -68,139 +53,184 @@ class ToolRegistry:
         
         if 'web_search' in enabled_tools:
             descriptions.append("""
-📰 WEB_SEARCH: Search for recent company news and information
-   - Fetches latest news articles from multiple sources
-   - Provides company context (sector, industry)
-   - Includes publication dates and sources
-   - Usage: web_search(ticker="AAPL")
-   - Example results: Recent earnings announcements, product launches, management changes
+WEB_SEARCH: Search for recent company news and information
+- Use this to get latest news, analyst opinions, company developments
+- Example: Recent earnings announcements, product launches, management changes
 """)
         
         if 'financial_data' in enabled_tools:
             descriptions.append("""
-📊 FINANCIAL_DATA: Access comprehensive financial analysis
-   - Complete financial statements (Income, Balance Sheet, Cash Flow)
-   - Analyst ratings and price targets
-   - Trading information (volume, 52-week range, beta)
-   - Ownership data (institutional, insider holdings)
-   - Dividend information
-   - Usage: financial_data(ticker="AAPL", include_statements=True)
-   - Provides deep financial insights for valuation
-""")
-        
-        if 'calculator' in enabled_tools:
-            descriptions.append("""
-🧮 CALCULATOR: Financial valuation models and calculations
-   - DCF Valuation: Discounted Cash Flow model
-     Usage: calculator(ticker="AAPL", model="dcf", growth_rate=0.10, discount_rate=0.10)
-   
-   - P/E Valuation: Price-to-Earnings based valuation
-     Usage: calculator(ticker="AAPL", model="pe", target_pe=20)
-   
-   - Graham Number: Benjamin Graham's intrinsic value formula
-     Usage: calculator(ticker="AAPL", model="graham")
-   
-   - Altman Z-Score: Bankruptcy prediction model
-     Usage: calculator(ticker="AAPL", model="altman")
-   
-   - Mathematical Expressions: calculator(expression="sqrt(100) + 2*5")
+FINANCIAL_DATA: Access additional detailed financial metrics
+- Get analyst targets, recommendations, institutional holders
+- View financial statements (income, balance sheet, cash flow)
+- See trading volume, 52-week ranges, beta
 """)
         
         if 'document_analysis' in enabled_tools:
             descriptions.append("""
-📄 DOCUMENT_ANALYSIS: Analyze uploaded documents (RAG)
-   - Query knowledge from user-uploaded PDFs, DOCs, TXT files
-   - Extracts relevant context for investment decisions
-   - Usage: document_analysis(ticker="AAPL", agent_id="your_agent_id")
-   - Note: Requires documents to be uploaded first
-   - Currently in development (Phase 2+)
+DOCUMENT_ANALYSIS: Analyze company documents and filings
+- Review SEC filings, annual reports, earnings transcripts
+- Extract key information from documents
+""")
+        
+        if 'calculator' in enabled_tools:
+            descriptions.append("""
+CALCULATOR: Perform complex financial calculations
+- Calculate intrinsic value, DCF models, custom ratios
+- Mathematical operations beyond basic metrics
 """)
         
         if descriptions:
-            header = "\n=== AVAILABLE TOOLS ===\n"
-            header += "You have access to the following tools to help with your analysis:\n"
-            return header + "\n".join(descriptions)
+            return "\nYou have access to these tools:\n" + "\n".join(descriptions)
         return ""
     
-    def list_tools(self) -> Dict[str, str]:
-        """List all available tools with descriptions.
-        
-        Returns:
-            Dictionary of tool names and descriptions
-        """
-        return {
-            'web_search': 'Search for company news and information',
-            'financial_data': 'Access comprehensive financial data and analysis',
-            'calculator': 'Financial valuation models (DCF, P/E, Graham, Altman)',
-            'document_analysis': 'Analyze uploaded documents (RAG) - Phase 2+'
-        }
-    
-    # Tool implementations
-    
-    def web_search(self, ticker: str, query: Optional[str] = None, max_results: int = 10) -> str:
-        """Search for company news using yfinance.
+    def web_search(self, ticker: str, query: Optional[str] = None) -> str:
+        """Search for company news and information.
         
         Args:
-            ticker: Stock ticker symbol
-            query: Optional search query (for future enhancement)
-            max_results: Maximum number of news items
-            
-        Returns:
-            Formatted news and information
-        """
-        return web_search_impl(ticker, query, max_results)
-    
-    def financial_data(self, ticker: str, include_statements: bool = True) -> str:
-        """Get comprehensive financial data and analysis.
-        
-        Args:
-            ticker: Stock ticker symbol
-            include_statements: Include financial statements
-            
-        Returns:
-            Formatted financial data
-        """
-        return financial_data_impl(ticker, include_statements)
-    
-    def calculator(
-        self,
-        expression: Optional[str] = None,
-        ticker: Optional[str] = None,
-        model: Optional[str] = None,
-        **kwargs
-    ) -> str:
-        """Financial calculator with valuation models.
-        
-        Args:
-            expression: Mathematical expression to evaluate
-            ticker: Stock ticker (required for valuation models)
-            model: Valuation model (dcf, pe, graham, altman)
-            **kwargs: Model-specific parameters
-            
-        Returns:
-            Calculation results
-        """
-        return calculator_impl(expression, ticker, model, **kwargs)
-    
-    def document_analysis(
-        self,
-        ticker: str,
-        agent_id: Optional[str] = None,
-        query: Optional[str] = None,
-        n_results: int = 5
-    ) -> str:
-        """Analyze documents using RAG system.
-        
-        Args:
-            ticker: Stock ticker symbol
-            agent_id: Agent ID (required for accessing agent's documents)
+            ticker: Stock ticker
             query: Optional specific query
-            n_results: Number of relevant chunks to retrieve
             
         Returns:
-            Relevant context from uploaded documents
+            News and information as string
         """
-        return document_analysis_impl(ticker, agent_id, query, n_results)
+        try:
+            stock = yf.Ticker(ticker)
+            
+            # Get news
+            news = stock.news
+            
+            if not news:
+                return f"No recent news found for {ticker}"
+            
+            # Format top 5 news items
+            news_items = []
+            for item in news[:5]:
+                title = item.get('title', 'No title')
+                publisher = item.get('publisher', 'Unknown')
+                news_items.append(f"- {title} ({publisher})")
+            
+            return "Recent News:\n" + "\n".join(news_items)
+            
+        except Exception as e:
+            return f"Error fetching news: {str(e)}"
+    
+    def financial_data(self, ticker: str) -> str:
+        """Get additional financial data and metrics.
+        
+        Args:
+            ticker: Stock ticker
+            
+        Returns:
+            Additional financial data as string
+        """
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            data = []
+            
+            # Analyst data
+            target_high = info.get('targetHighPrice', 0)
+            target_low = info.get('targetLowPrice', 0)
+            target_mean = info.get('targetMeanPrice', 0)
+            recommendations = info.get('recommendationKey', 'N/A')
+            
+            if target_mean:
+                data.append(f"Analyst Target: ${target_mean:.2f} (Range: ${target_low:.2f} - ${target_high:.2f})")
+            if recommendations:
+                data.append(f"Analyst Recommendation: {recommendations}")
+            
+            # Trading data
+            volume = info.get('volume', 0)
+            avg_volume = info.get('averageVolume', 0)
+            week_52_high = info.get('fiftyTwoWeekHigh', 0)
+            week_52_low = info.get('fiftyTwoWeekLow', 0)
+            beta = info.get('beta', 0)
+            
+            if volume:
+                data.append(f"Volume: {volume:,} (Avg: {avg_volume:,})")
+            if week_52_high and week_52_low:
+                data.append(f"52-Week Range: ${week_52_low:.2f} - ${week_52_high:.2f}")
+            if beta:
+                data.append(f"Beta: {beta:.2f}")
+            
+            # Institutional holdings
+            inst_holdings = info.get('heldPercentInstitutions', 0)
+            if inst_holdings:
+                data.append(f"Institutional Ownership: {inst_holdings * 100:.1f}%")
+            
+            # Business description
+            business = info.get('longBusinessSummary', '')
+            if business:
+                # Truncate to first 200 chars
+                summary = business[:200] + "..." if len(business) > 200 else business
+                data.append(f"\nBusiness: {summary}")
+            
+            return "\n".join(data) if data else "No additional data available"
+            
+        except Exception as e:
+            return f"Error fetching financial data: {str(e)}"
+    
+    def document_analysis(self, ticker: str, document_type: str = "earnings") -> str:
+        """Analyze company documents (placeholder - basic implementation).
+        
+        Args:
+            ticker: Stock ticker
+            document_type: Type of document to analyze
+            
+        Returns:
+            Document analysis as string
+        """
+        # Placeholder - in a full implementation, this would:
+        # 1. Fetch SEC filings from EDGAR
+        # 2. Download earnings transcripts
+        # 3. Parse and summarize documents
+        
+        # For now, get basic info from yfinance
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Get earnings data
+            earnings = stock.earnings
+            if earnings is not None and not earnings.empty:
+                recent_earnings = earnings.tail(4)
+                return f"Recent Earnings (Last 4 Quarters):\n{recent_earnings.to_string()}"
+            
+            return "No earnings document data available via yfinance. Full document analysis requires SEC EDGAR integration."
+            
+        except Exception as e:
+            return f"Error in document analysis: {str(e)}"
+    
+    def calculator(self, expression: str) -> str:
+        """Perform mathematical calculations.
+        
+        Args:
+            expression: Math expression to evaluate
+            
+        Returns:
+            Calculation result as string
+        """
+        try:
+            from simpleeval import simple_eval
+            import math
+            
+            functions = {
+                'sqrt': math.sqrt,
+                'abs': abs,
+                'log': math.log,
+                'exp': math.exp,
+                'pow': pow,
+                'max': max,
+                'min': min,
+            }
+            
+            result = simple_eval(expression, functions=functions)
+            return f"Calculation result: {result}"
+            
+        except Exception as e:
+            return f"Calculation error: {str(e)}"
 
 
 # Global tool registry
