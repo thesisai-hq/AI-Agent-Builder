@@ -178,8 +178,11 @@
 		}
 	});
 	
-	// Get current provider's models
-	$: currentModels = providerModels[config.provider as keyof typeof providerModels] || providerModels.openai;
+	// Get current provider's models (use $effect in runes mode to update currentModels)
+	let currentModels = providerModels.openai;
+	$effect(() => {
+		currentModels = providerModels[config.provider as keyof typeof providerModels] ?? providerModels.openai;
+	});
 </script>
 
 <div class="space-y-6">
