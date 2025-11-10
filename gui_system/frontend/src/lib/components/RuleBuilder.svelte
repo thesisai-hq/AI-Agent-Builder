@@ -1,14 +1,8 @@
 <script lang="ts">
 	import type { Rule, RuleCondition, RuleAction } from '$lib/api';
 	
-	// Svelte 5 runes mode - use $props() instead of export let
-	let {
-		rules,
-		onchange
-	}: {
-		rules: Rule[];
-		onchange: (rules: Rule[]) => void;
-	} = $props();
+	export let rules: Rule[];
+	export let onchange: (rules: Rule[]) => void;
 	
 	const indicators = [
 		{ value: 'pe_ratio', label: 'P/E Ratio' },

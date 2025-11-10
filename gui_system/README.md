@@ -15,7 +15,6 @@ This GUI system provides a user-friendly interface for:
 **Backend:**
 - FastAPI (Python 3.10+)
 - JSON file storage
-- Enhanced with caching and performance optimizations
 - Extends `agent_framework` library
 
 **Frontend:**
@@ -56,6 +55,7 @@ python run.py --frontend --no-browser
 This will:
 - Start FastAPI backend on http://localhost:8000
 - Start SvelteKit dev server on http://localhost:5173
+- Open your browser and check the URLs.
 
 **Option B: Backend Only**
 ```bash
@@ -76,21 +76,10 @@ gui_system/
 │   ├── main.py             # Main application
 │   ├── models.py           # Pydantic models
 │   ├── storage.py          # JSON storage manager
-│   ├── data_cache.py       # Caching system
-│   ├── code_generator.py   # Template-based code generation
-│   ├── constants.py        # Configuration constants
-│   ├── tools/              # Tool implementations
-│   │   ├── web_search.py   # News search
-│   │   ├── financial_data.py # Financial analysis
-│   │   ├── calculator.py   # Valuation models
-│   │   └── rag.py          # Document analysis (RAG)
-│   ├── templates/          # Code generation templates
 │   └── routes/             # API routes
 │       ├── agents.py       # Agent CRUD
 │       ├── templates.py    # Template management
-│       ├── analysis.py     # Stock analysis
-│       ├── formulas.py     # Formula validation
-│       └── documents.py    # Document upload (RAG)
+│       └── analysis.py     # Stock analysis
 │
 ├── frontend/               # SvelteKit frontend
 │   ├── src/
@@ -102,38 +91,17 @@ gui_system/
 │
 ├── storage/                # Data persistence
 │   ├── agents/            # User-created agents (JSON)
-│   │   └── {agent_id}/    # Per-agent storage
-│   │       ├── config.json      # Agent configuration
-│   │       ├── documents/       # Uploaded documents (RAG)
-│   │       └── embeddings/      # Vector embeddings (RAG)
 │   └── templates/         # Pre-built templates (JSON)
 │
 ├── requirements.txt        # Backend dependencies
 ├── run.py                 # Launcher script
-├── FORMULA_GUIDE.md       # Formula system documentation
 └── README.md              # This file
 ```
-
-## Features
-
-### LLM Agent Tools
-When creating LLM-powered agents, you can enable these tools:
-
-1. **Web Search** - Fetches latest company news and developments
-2. **Financial Data** - Comprehensive financial statements and analyst data
-3. **Calculator** - Financial valuation models (DCF, Graham Number, Altman Z-Score, P/E)
-4. **Document Analysis (RAG)** - Query uploaded PDF/TXT/DOC files for custom knowledge
-
-### RAG System
-- Upload documents per agent (PDFs, TXT, DOC files)
-- Automatic embedding generation with ChromaDB
-- Query relevant context during analysis
-- No external database required - all stored locally
 
 ## API Endpoints
 
 **Health Check:**
-- `GET /api/health` - Detailed system health status
+- `GET /api/health` - System health status
 
 **Agents:**
 - `POST /api/agents` - Create agent
@@ -143,26 +111,12 @@ When creating LLM-powered agents, you can enable these tools:
 - `DELETE /api/agents/{id}` - Delete agent
 - `GET /api/agents/{id}/export` - Export as Python code
 
-**Documents (RAG):**
-- `POST /api/agents/{id}/documents` - Upload document
-- `GET /api/agents/{id}/documents` - List documents
-- `DELETE /api/agents/{id}/documents/{filename}` - Delete document
-- `POST /api/agents/{id}/documents/query` - Query documents
-
 **Templates:**
 - `GET /api/templates` - List all templates
 - `GET /api/templates/{id}` - Get template details
 
 **Analysis:**
 - `POST /api/analysis` - Analyze stock with agent
-
-**Formulas:**
-- `POST /api/formulas/validate` - Validate formula
-- `GET /api/formulas/templates` - List formula templates
-
-**Cache:**
-- `GET /api/cache/stats` - Cache statistics
-- `POST /api/cache/clear` - Clear cache
 
 ## Development
 
@@ -198,23 +152,38 @@ npm run preview
 
 Visit http://localhost:8000/docs for interactive API documentation (Swagger UI).
 
-## Testing
-
-### Test Backend Tools
-```bash
-cd gui_system
-python test_tools.py
-```
-
-### Test RAG System
-```bash
-cd gui_system
-python test_rag.py
-```
-
 ## Creating Templates
 
-Templates are JSON files in `storage/templates/`. See existing templates for examples.
+Templates are JSON files in `storage/templates/`. Example:
+
+```json
+{
+  "id": "my_template",
+  "name": "My Strategy",
+  "description": "Description here",
+  "type": "rule_based",
+  "icon": "chart",
+  "color": "#3B82F6",
+  "goal": "Investment goal",
+  "category": "fundamental",
+  "rules": [
+    {
+      "conditions": [
+        {
+          "indicator": "pe_ratio",
+          "operator": "<",
+          "value": 15
+        }
+      ],
+      "action": {
+        "action": "bullish",
+        "size": 10
+      },
+      "description": "Rule description"
+    }
+  ]
+}
+```
 
 ## Troubleshooting
 
@@ -225,27 +194,24 @@ Templates are JSON files in `storage/templates/`. See existing templates for exa
 **Frontend won't start:**
 - Install dependencies: `cd frontend && npm install`
 - Check Node version: `node --version` (need 18+)
-- Verify `src/lib/` directory exists (should not be gitignored)
 
 **CORS errors:**
 - Backend allows localhost:5173 by default
 - Check `backend/main.py` CORS configuration
 
-**Slow performance:**
-- Check cache stats: `curl http://localhost:8000/api/cache/stats`
-- Clear cache if needed: `curl -X POST http://localhost:8000/api/cache/clear`
+**Database connection errors:**
+- GUI system doesn't require database for agent management
+- Database is only needed for stock analysis
+- Check `agent_framework` database setup in main repo
 
-**RAG not working:**
-- Ensure ChromaDB is installed: `pip install chromadb`
-- Check that documents are uploaded successfully
-- Verify embeddings directory exists in `storage/agents/{id}/embeddings/`
+## Next Steps
 
-## Performance
+After getting the GUI running:
 
-- **Health checks**: <10ms (optimized, no API calls)
-- **Cached queries**: ~50ms (98% faster than uncached)
-- **First-time queries**: 2-3s (normal yfinance fetch)
-- **Cache cleanup**: Automatic every 5 minutes
+1. **Explore Templates** - Check out pre-built strategies
+2. **Create an Agent** - Use the wizard to build your first agent
+3. **Test Analysis** - Analyze stocks with your agents
+4. **Export Code** - Download Python code for your agents
 
 ## Contributing
 

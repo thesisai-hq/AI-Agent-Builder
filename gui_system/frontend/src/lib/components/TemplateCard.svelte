@@ -1,14 +1,8 @@
 <script lang="ts">
 	import type { Template } from '$lib/api';
 	
-	// Svelte 5 runes mode - use $props()
-	let {
-		template,
-		onclick
-	}: {
-		template: Template;
-		onclick: () => void;
-	} = $props();
+	export let template: Template;
+	export let onclick: () => void;
 </script>
 
 <button
