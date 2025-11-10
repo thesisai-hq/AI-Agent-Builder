@@ -24,14 +24,13 @@ jinja2==3.1.2
 
 # Financial data
 yfinance>=0.2.48
-pandas>=2.0.0,<2.2.0  # Compatible with NumPy 1.x
-numpy>=1.24.0,<2.0.0  # Pin to 1.x to avoid np.float_ deprecation
+pandas>=2.0.0  # Required for yfinance financial statements
 
-# RAG System (Lightweight - No PyTorch)
+# RAG System (Lightweight - No Database)
 chromadb==0.4.22
-fastembed==0.2.0  # Lightweight embeddings, no PyTorch dependency
+sentence-transformers==2.2.2  # Local embeddings (free, no API key needed)
 PyPDF2==3.0.1
-python-docx==1.1.0
+python-docx==1.1.0  # For Word document support (future)
 
 # Note: agent_framework dependencies are installed separately
 # Install with: pip install -e ../  (from AI-Agent-Builder root)
