@@ -1,0 +1,73 @@
+"""
+{{ agent.name }}
+{{ agent.description or '' }}
+
+Generated from AI-Agent-Builder GUI
+"""
+
+from agent_framework import Agent, Signal
+from typing import Dict, Any
+{% if has_formulas %}
+import math
+{% endif %}
+
+
+class {{ class_name }}Agent(Agent):
+    """{{ agent.goal }}"""
+    
+    def analyze(self, ticker: str, data: Dict[str, Any]) -> Signal:
+        """Analyze stock data and generate signal.
+        
+        Args:
+            ticker: Stock ticker
+            data: Market/fundamental data
+            
+        Returns:
+            Trading signal
+        """
+        {% for rule in rules %}
+        # Rule {{ rule.index }}: {{ rule.description }}
+        condition_met = True
+        {% for condition in rule.conditions %}
+        {% if condition.type == 'formula' %}
+        
+        # Formula: {{ condition.description }}
+        {% for var_assignment in condition.var_assignments %}
+        {{ var_assignment }}
+        {% endfor %}
+        formula_result = {{ condition.formula }}
+        if not (formula_result {{ condition.operator }} {{ condition.threshold }}):
+            condition_met = False
+        {% else %}
+        
+        if not (data.get('{{ condition.indicator }}', 0) {{ condition.operator }} {{ condition.value }}):
+            condition_met = False
+        {% endif %}
+        {% endfor %}
+        
+        if condition_met:
+            return Signal('{{ rule.action }}', {{ "%.2f"|format(rule.size) }}, 
+                         '{{ rule.description }}')
+        
+        {% endfor %}
+        # Default: neutral
+        return Signal('neutral', 0.5, 'No rules triggered')
+
+
+# Usage example
+if __name__ == "__main__":
+    import asyncio
+    from agent_framework import Database, Config
+    
+    async def main():
+        db = Database(Config.get_database_url())
+        await db.connect()
+        
+        agent = {{ class_name }}Agent()
+        data = await db.get_fundamentals('AAPL')
+        signal = agent.analyze('AAPL', data)
+        
+        print(f"{signal.direction.upper()}: {signal.reasoning}")
+        await db.disconnect()
+    
+    asyncio.run(main())
