@@ -8,6 +8,7 @@ A lightweight framework for creating AI agents that analyze stocks and make inve
 
 **Key Features:**
 - 🤖 Rule-based or AI-powered agents
+- 🎨 Visual GUI for building agents (Streamlit)
 - 📊 PostgreSQL database with sample stock data
 - 🔌 Supports OpenAI, Anthropic, or local Ollama
 - 🚀 Production-ready FastAPI server
@@ -92,8 +93,23 @@ pip install -e ".[dev]"
 pip install -e ".[all]"
 ```
 
+## GUI - Visual Agent Builder
+
+Build agents visually with no coding required!
+
+```bash
+# Setup GUI
+./gui/setup.sh
+
+# Launch GUI
+./gui/launch.sh
+```
+
+See **[GUI Quick Start](GUI_QUICK_START.md)** for details.
+
 ## Documentation
 
+- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder
 - **[Quick Start](QUICK_START.md)** - 5-minute setup guide
 - **[Getting Started](docs/GETTING_STARTED.md)** - Detailed installation
 - **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Conda/venv/system Python guide
@@ -117,6 +133,13 @@ AI-Agent-Builder/
 │   ├── api.py             # FastAPI server
 │   ├── config.py          # Configuration management
 │   └── utils.py           # Utility functions
+│
+├── gui/                   # Visual agent builder (NEW)
+│   ├── app.py            # Streamlit GUI application
+│   ├── agent_loader.py   # Load/save agents
+│   ├── agent_creator.py  # Generate agent code
+│   ├── agent_tester.py   # Test agents
+│   └── README.md         # GUI documentation
 │
 ├── examples/              # Working examples
 │   ├── 01_basic.py        # Simple rule-based agents
