@@ -211,43 +211,37 @@ AI-Agent-Builder/
 
 ## Troubleshooting
 
-### LLM Package Not Installed
+### LLM Dependencies (Important!)
 
-**Error:**
-```
-Failed to initialize ollama client: No module named 'ollama'
-```
+**Error: "No module named 'ollama'" or similar**
 
-**Cause:** LLM packages (OpenAI, Anthropic, Ollama) are optional dependencies.
+LLM packages (OpenAI, Anthropic, Ollama) are **optional dependencies**. If you create or use LLM-powered agents, you need to install them.
 
-**Solutions:**
-
-**Option 1: Install all LLM providers**
-```bash
-pip install 'ai-agent-framework[llm]'
-```
-
-**Option 2: Install specific provider**
-```bash
-# For Ollama
-pip install ollama
-
-# For OpenAI
-pip install openai
-
-# For Anthropic
-pip install anthropic
-```
-
-**Option 3: Check which providers are installed**
+**Check what's installed:**
 ```bash
 python3 gui/check_llm_deps.py
 ```
 
-**Option 4: Use rule-based agents instead**
-- Rule-based agents don't need LLM packages
-- They work on any machine
-- Create in GUI with "Rule-Based" template
+**Install LLM dependencies:**
+
+```bash
+# Option 1: Install all LLM providers (recommended)
+pip install 'ai-agent-framework[llm]'
+
+# Option 2: Install specific provider
+pip install ollama      # For Ollama agents
+pip install openai      # For OpenAI agents
+pip install anthropic   # For Anthropic agents
+```
+
+**Which agents need LLM packages?**
+- ❌ Rule-Based agents: No LLM needed (work everywhere)
+- ✅ LLM-Powered agents: Need LLM packages
+- ✅ Hybrid agents: Need LLM packages
+
+**For multi-machine setup:**
+1. Install LLM packages on all machines: `pip install 'ai-agent-framework[llm]'`
+2. OR use only Rule-Based agents (no LLM dependencies)
 
 ### Files Not Saving
 

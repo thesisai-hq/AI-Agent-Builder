@@ -73,10 +73,18 @@ asyncio.run(main())
 pip install -e .
 ```
 
+**Includes:** FastAPI, Pydantic, AsyncPG, basic framework  
+**Can use:** Rule-based agents, database connections  
+**Cannot use:** LLM-powered agents
+
 ### With LLM Support (OpenAI, Anthropic, Ollama)
 ```bash
 pip install -e ".[llm]"
 ```
+
+**Includes:** Core + OpenAI, Anthropic, Ollama packages  
+**Can use:** All agent types (rule-based, LLM-powered, hybrid)  
+**Recommended for:** Development and LLM agent usage
 
 ### With RAG (Document Analysis)
 ```bash
@@ -91,6 +99,20 @@ pip install -e ".[dev]"
 ### Everything
 ```bash
 pip install -e ".[all]"
+```
+
+### Individual LLM Providers
+```bash
+pip install ollama      # Just Ollama
+pip install openai      # Just OpenAI
+pip install anthropic   # Just Anthropic
+```
+
+**Important:** LLM packages are optional. If you see errors like "No module named 'ollama'", install LLM dependencies:
+```bash
+pip install 'ai-agent-framework[llm]'  # All providers
+# OR
+pip install ollama  # Specific provider
 ```
 
 ## GUI - Visual Agent Builder

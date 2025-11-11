@@ -98,6 +98,29 @@ python3 examples/value_agent.py
 
 ## Troubleshooting
 
+### LLM Dependencies
+
+**Error: "No module named 'ollama'"**
+
+LLM packages are optional. Install them if you want to use LLM-powered or hybrid agents:
+
+```bash
+# Install all LLM providers
+pip install 'ai-agent-framework[llm]'
+
+# OR install specific provider
+pip install ollama      # For Ollama
+pip install openai      # For OpenAI
+pip install anthropic   # For Anthropic
+
+# Check what's installed
+python3 gui/check_llm_deps.py
+```
+
+**Rule-based agents don't need LLM packages** - they work on any machine.
+
+### Other Issues
+
 ### Files not saving?
 ```bash
 python3 gui/test_setup.py
