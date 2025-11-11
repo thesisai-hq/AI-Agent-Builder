@@ -1,449 +1,417 @@
 # Agent Builder GUI
 
-Visual interface for creating and managing AI investment agents.
-
-## Features
-
-- 📋 **Browse Agents** - View all agents in `examples/` directory
-- ➕ **Create Agents** - Build agents with visual interface
-- 🧪 **Test Agents** - Test agents with mock or real data
-- 💾 **Save Agents** - Save generated agents to `examples/`
+Visual interface for creating and managing AI investment agents without coding.
 
 ## Quick Start
 
-### 1. Install Dependencies
-
 ```bash
-# From AI-Agent-Builder root directory
-cd gui
-pip install -r requirements.txt
+# Setup (one time)
+cd ~/AI-Agent-Builder
+chmod +x gui/setup.sh gui/launch.sh
+./gui/setup.sh
+
+# Launch
+./gui/launch.sh
 ```
 
-### 2. Launch GUI
+Opens at: `http://localhost:8501`
 
-```bash
-# From AI-Agent-Builder root directory
-streamlit run gui/app.py
-```
+## Features
 
-The GUI will open in your browser at `http://localhost:8501`
+### 📋 Browse Agents
+- View all agents in `examples/` directory
+- Preview source code
+- See agent types and metadata
 
-### 3. Create Your First Agent
+### ➕ Create Agents
 
-1. Click "➕ Create Agent"
-2. Enter agent name and description
-3. Choose agent type:
-   - **Rule-Based**: Simple if/then logic
-   - **LLM-Powered**: AI-driven analysis
-   - **Hybrid**: Combines rules + LLM
-4. Configure parameters
-5. Click "Generate Code" to preview
-6. Click "💾 Save Agent" to save to `examples/`
+**Three agent types:**
 
-### 4. Test Your Agent
+1. **Rule-Based** - Simple if/then logic, no coding required
+   - Visual rule builder
+   - Fast execution
+   - Best for: Clear investment criteria
 
-1. Click "🧪 Test Agent"
-2. Select your agent
-3. Enter ticker symbol
-4. Use mock data or connect to database
-5. Click "🚀 Run Analysis"
+2. **LLM-Powered** - AI-driven analysis
+   - OpenAI, Anthropic, or Ollama support
+   - Configurable temperature (creativity)
+   - Custom system prompts (personality)
+   - Best for: Complex, nuanced analysis
 
-## Architecture
+3. **Hybrid** - Combines rules + LLM
+   - Rules trigger deeper analysis
+   - LLM provides reasoning
+   - Best for: Balanced speed and intelligence
 
-```
-gui/
-├── app.py              # Main Streamlit application
-├── agent_loader.py     # Load/save agents from examples/
-├── agent_creator.py    # Generate agent code from templates
-├── agent_tester.py     # Test agents with mock/real data
-└── requirements.txt    # GUI dependencies
-```
+### 🧪 Test Agents
+- Mock data testing (no database needed)
+- Real data testing (with database)
+- Execution timing
+- Visual results
 
-### Design Principles
+## Creating Your First Agent
 
-**Simplicity**: Minimal code, clear structure
-**Maintainability**: Each module has single responsibility
-**Compatibility**: Works seamlessly with AI-Agent-Builder framework
-**File-based**: Agents saved as .py files for version control
+### Example: Simple Value Agent
 
-## Agent Types
+1. Navigate to "➕ Create Agent"
 
-### Rule-Based Agents
+2. Configure:
+   ```
+   Agent Name: ValueAgent
+   Description: Buys undervalued stocks
+   Filename: value_agent.py
+   Type: Rule-Based
+   ```
 
-Simple if/then logic based on financial metrics.
+3. Add Rule:
+   ```
+   Metric: pe_ratio
+   Operator: <
+   Threshold: 15
+   Signal: bullish
+   Confidence: 0.8
+   ```
 
-**Example:**
-```python
-if pe_ratio < 15:
-    return Signal('bullish', 0.8, 'Undervalued')
-```
+4. Click "Generate Code" → Preview appears
 
-**When to use:**
-- Clear investment criteria
-- No need for complex reasoning
-- Fast execution required
+5. Click "💾 Save Agent" → File saved to `examples/`
 
-### LLM-Powered Agents
+6. Verify:
+   ```bash
+   ls examples/value_agent.py
+   python3 examples/value_agent.py
+   ```
 
-AI-driven analysis using OpenAI, Anthropic, or Ollama.
+### Example: AI-Powered Conservative Agent
 
-**Example:**
-```python
-# Agent uses natural language reasoning
-system_prompt = "You are a conservative value investor..."
-```
+1. Navigate to "➕ Create Agent"
 
-**When to use:**
-- Need nuanced analysis
-- Complex decision factors
-- Natural language reasoning
+2. Configure:
+   ```
+   Agent Name: ConservativeAgent
+   Type: LLM-Powered
+   Provider: ollama
+   Temperature: 0.3 (focused analysis)
+   Max Tokens: 1000
+   ```
 
-### Hybrid Agents
+3. System Prompt:
+   ```
+   You are a conservative value investor.
+   Focus on:
+   - Low PE ratios (< 15)
+   - High dividend yields (> 2%)
+   - Strong balance sheets
+   Analyze critically and conservatively.
+   ```
 
-Combines rule-based triggers with LLM analysis.
+4. Generate → Save
 
-**Example:**
-```python
-if revenue_growth > 20:
-    # Use LLM for detailed analysis
-    return self._llm_analysis(ticker, data)
-```
+## Testing Agents
 
-**When to use:**
-- Rules identify opportunities
-- LLM provides detailed reasoning
-- Balance speed and depth
+### With Mock Data
 
-## Usage Guide
+1. Navigate to "🧪 Test Agent"
+2. Select: `ValueAgent`
+3. Ticker: `AAPL`
+4. Enable "Use Mock Data"
+5. Set: PE Ratio = 12
+6. Click "🚀 Run Analysis"
+7. Result: BULLISH (80% confidence)
 
-### Creating Rule-Based Agents
+### With Real Data
 
-1. Select "Rule-Based" template
-2. Add rules:
-   - Choose metric (PE ratio, growth, etc.)
-   - Set operator (<, >, ==)
-   - Define threshold
-   - Set signal (bullish/bearish/neutral)
-   - Set confidence level
-3. Generate and save
-
-**Generated Code Pattern:**
-```python
-class MyAgent(Agent):
-    def analyze(self, ticker: str, data: dict) -> Signal:
-        if data.get('pe_ratio', 0) < 15:
-            return Signal('bullish', 0.8, 'Undervalued')
-        return Signal('neutral', 0.5, 'Fair value')
-```
-
-### Creating LLM-Powered Agents
-
-1. Select "LLM-Powered" template
-2. Choose provider (OpenAI, Anthropic, Ollama)
-3. Set temperature (0.0-1.0):
-   - Low (0.3): Focused, consistent
-   - Medium (0.5): Balanced
-   - High (0.9): Creative, diverse
-4. Set max_tokens (100-4000)
-5. Write system prompt (agent personality)
-6. Generate and save
-
-**Generated Code Pattern:**
-```python
-class MyAgent(Agent):
-    def __init__(self):
-        config = AgentConfig(
-            name="MyAgent",
-            llm=LLMConfig(
-                provider='ollama',
-                temperature=0.5,
-                max_tokens=1000,
-                system_prompt="You are a growth investor..."
-            )
-        )
-        super().__init__(config)
-    
-    def analyze(self, ticker: str, data: dict) -> Signal:
-        response = self.llm.chat(prompt)
-        return parse_llm_signal(response)
-```
-
-### Testing Agents
-
-#### With Mock Data
-
-1. Select agent
-2. Enable "Use Mock Data"
-3. Adjust financial metrics
-4. Run analysis
-
-**Best for:**
-- Quick testing
-- Edge case validation
-- No database required
-
-#### With Real Data
-
-1. Select agent
-2. Disable "Use Mock Data"
-3. Enter ticker symbol
-4. Run analysis (requires database)
-
-**Best for:**
-- Production validation
-- Real-world scenarios
-- Integration testing
-
-## File Organization
-
-### Agent Files
-
-All agents saved to `examples/` directory:
-
-```
-examples/
-├── 01_basic.py              # Framework examples
-├── 02_llm_agent.py
-├── 03_rag_agent.py
-├── 04_custom_llm_config.py
-├── my_value_agent.py        # Your custom agents
-├── my_growth_agent.py
-└── my_hybrid_agent.py
-```
-
-### Naming Conventions
-
-**Class Names**: PascalCase
-- `ValueAgent`, `GrowthAgent`, `MomentumAgent`
-
-**File Names**: snake_case
-- `value_agent.py`, `growth_agent.py`, `momentum_agent.py`
+1. Ensure database is running: `docker-compose up postgres`
+2. Navigate to "🧪 Test Agent"
+3. Select agent
+4. Ticker: `AAPL`
+5. Disable "Use Mock Data"
+6. Run Analysis
 
 ## Integration with thesis-ai
 
-Agents created in GUI can be imported directly in thesis-ai:
+### Method 1: Direct Import
 
 ```python
-# In thesis-ai/server/multi_agent_system/advisor/agents/
-from AI-Agent-Builder.examples.my_agent import MyAgent
+# In thesis-ai/server/multi_agent_system/advisor/orchestrator.py
+from ....AI-Agent-Builder.examples.value_agent import ValueAgent
 
-# Use in orchestrator
-agent = MyAgent()
-signal = agent.analyze('AAPL', data)
+class Orchestrator:
+    def __init__(self):
+        self.custom_agent = ValueAgent()
+        
+    async def analyze(self, ticker, data):
+        signal = self.custom_agent.analyze(ticker, data)
+        return signal
+```
+
+### Method 2: Add to Agent Suite
+
+```python
+# In orchestrator.py
+self.agents = {
+    'fundamental': FundamentalAgent(),
+    'technical': TechnicalAgent(),
+    'risk': RiskAgent(),
+    'macro': MacroAgent(),
+    'sentiment': SentimentAgent(),
+    'custom_value': ValueAgent()  # Your agent
+}
+```
+
+## Configuration
+
+### Valid Filenames
+
+✓ Good:
+- `value_agent.py`
+- `my_agent_v2.py`
+- `GrowthAgent.py`
+
+✗ Bad:
+- `my agent.py` (space)
+- `agent-name.py` (hyphen)
+- `1_agent.py` (starts with number)
+
+### LLM Temperature Guide
+
+| Range | Behavior | Use Case |
+|-------|----------|----------|
+| 0.0-0.3 | Focused, consistent | Value investing |
+| 0.4-0.6 | Balanced | General analysis |
+| 0.7-1.0 | Creative, diverse | Growth/speculation |
+
+### Agent Types Comparison
+
+| Type | Speed | Complexity | Best For |
+|------|-------|------------|----------|
+| Rule-Based | Fast | Low | Clear criteria |
+| LLM-Powered | Slow | High | Nuanced analysis |
+| Hybrid | Medium | Medium | Balanced approach |
+
+## File Structure
+
+```
+AI-Agent-Builder/
+├── gui/
+│   ├── app.py              # Main GUI
+│   ├── agent_loader.py     # Load/save agents
+│   ├── agent_creator.py    # Generate code
+│   ├── agent_tester.py     # Test agents
+│   ├── test_setup.py       # Diagnostic tool
+│   ├── setup.sh            # Setup script
+│   └── launch.sh           # Launch script
+│
+└── examples/               # Agents saved here
+    ├── 01_basic.py
+    ├── 02_llm_agent.py
+    ├── value_agent.py      # Your custom agents
+    └── ...
+```
+
+## Troubleshooting
+
+### Files Not Saving
+
+**Test the setup:**
+```bash
+python3 gui/test_setup.py
+```
+
+**Check permissions:**
+```bash
+ls -ld ~/AI-Agent-Builder/examples/
+# Should show: drwxr-xr-x
+
+# Fix if needed:
+chmod 755 ~/AI-Agent-Builder/examples/
+```
+
+**Verify directory exists:**
+```bash
+mkdir -p ~/AI-Agent-Builder/examples
+```
+
+### GUI Won't Start
+
+```bash
+# Install/upgrade Streamlit
+pip install --upgrade streamlit
+
+# Verify installation
+streamlit --version
+```
+
+### Module Not Found
+
+```bash
+# Install framework
+cd ~/AI-Agent-Builder
+pip install -e .
+
+# Verify
+python3 -c "import agent_framework; print('OK')"
+```
+
+### LLM Agents Fail
+
+**For Ollama:**
+```bash
+# Check if running
+curl http://localhost:11434/api/tags
+
+# Start Ollama
+ollama serve
+
+# Pull model
+ollama pull llama3.2
+```
+
+**For OpenAI:**
+```bash
+# Check API key exists
+grep OPENAI_API_KEY ~/AI-Agent-Builder/.env
+
+# Test connection
+curl https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY"
+```
+
+### Agent Not Loading
+
+**Check file format:**
+- Must be in `examples/` directory
+- Must have `.py` extension
+- Must contain class inheriting from `Agent`
+
+```python
+# Minimum valid agent
+from agent_framework import Agent, Signal
+
+class MyAgent(Agent):
+    def analyze(self, ticker, data):
+        return Signal('neutral', 0.5, 'test')
+```
+
+## Commands Reference
+
+```bash
+# Setup
+./gui/setup.sh                    # One-time setup
+python3 gui/test_setup.py         # Test setup
+
+# Launch
+./gui/launch.sh                   # Start GUI
+
+# Verify
+ls examples/                      # List agents
+python3 examples/my_agent.py      # Test agent
+
+# Database
+docker-compose up postgres        # Start database
+docker-compose down               # Stop database
+
+# Framework
+pip install -e .                  # Install framework
+pytest tests/                     # Run tests
 ```
 
 ## Common Patterns
 
 ### Basic Value Agent
-
 ```python
 class ValueAgent(Agent):
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    def analyze(self, ticker, data):
         pe = data.get('pe_ratio', 0)
-        
         if pe < 15:
-            return Signal('bullish', 0.8, f'Undervalued at PE={pe:.1f}')
-        elif pe > 30:
-            return Signal('bearish', 0.7, f'Overvalued at PE={pe:.1f}')
-        else:
-            return Signal('neutral', 0.6, 'Fair value')
+            return Signal('bullish', 0.8, f'Undervalued at PE={pe}')
+        return Signal('neutral', 0.5, 'Fair value')
 ```
 
-### LLM Agent with Persona
-
+### Growth Agent
 ```python
-class ConservativeAgent(Agent):
-    def __init__(self):
-        config = AgentConfig(
-            name="Conservative Investor",
-            llm=LLMConfig(
-                provider='ollama',
-                temperature=0.3,  # Focused analysis
-                system_prompt="You are a risk-averse value investor..."
-            )
-        )
-        super().__init__(config)
+class GrowthAgent(Agent):
+    def analyze(self, ticker, data):
+        growth = data.get('revenue_growth', 0)
+        margin = data.get('profit_margin', 0)
+        
+        if growth > 20 and margin > 15:
+            return Signal('bullish', 0.9, 'Strong growth + margins')
+        return Signal('neutral', 0.5, 'Moderate growth')
 ```
 
 ### Hybrid Agent
-
 ```python
 class HybridAgent(Agent):
-    def analyze(self, ticker: str, data: dict) -> Signal:
-        # Rule-based trigger
+    def __init__(self):
+        config = AgentConfig(
+            llm=LLMConfig(provider='ollama', temperature=0.5)
+        )
+        super().__init__(config)
+    
+    def analyze(self, ticker, data):
+        # Use rules first
         if data.get('revenue_growth', 0) > 30:
-            # Detailed LLM analysis
+            # Then LLM for detailed analysis
             return self._llm_analysis(ticker, data)
-        
-        # Default neutral
-        return Signal('neutral', 0.5, 'No strong signals')
+        return Signal('neutral', 0.5, 'No triggers')
 ```
 
-## Troubleshooting
+## Requirements
 
-### GUI Won't Start
-
-```bash
-# Check Streamlit installation
-pip list | grep streamlit
-
-# Reinstall if needed
-pip install --upgrade streamlit
-```
-
-### Agent Won't Load
-
-- Ensure file ends with `.py`
-- Check file contains `class XAgent(Agent):`
-- Verify file in `examples/` directory
-
-### LLM Agent Fails
-
-- Check LLM provider is running (Ollama)
-- Verify API keys in `.env` (OpenAI, Anthropic)
-- Test with rule-based fallback
-
-### Can't Save Agent
-
-- Check filename is valid (letters, numbers, underscores)
-- Ensure filename doesn't already exist
-- Verify write permissions on `examples/` directory
-
-## Advanced Usage
-
-### Custom Templates
-
-Add your own templates in `agent_creator.py`:
-
-```python
-def _generate_custom_agent(self, ...):
-    return '''
-    # Your custom template
-    '''
-```
-
-### Database Connection
-
-Agents automatically connect to database from `.env`:
-
-```bash
-DATABASE_URL=postgresql://user:pass@localhost:5432/db
-```
-
-### Multiple Providers
-
-Test same agent with different LLM providers:
-
-1. Create agent with OpenAI
-2. Save as `agent_openai.py`
-3. Create same agent with Ollama
-4. Save as `agent_ollama.py`
-5. Compare results
-
-## Best Practices
-
-### Agent Design
-
-- **Single Responsibility**: One agent, one strategy
-- **Clear Naming**: Describe what agent does
-- **Error Handling**: Always include fallback logic
-- **Documentation**: Add docstrings and comments
-
-### Testing
-
-- **Start Simple**: Test with mock data first
-- **Edge Cases**: Test with extreme values
-- **Real Data**: Validate with actual tickers
-- **Performance**: Check execution time
-
-### Code Quality
-
-- **Readability**: Use clear variable names
-- **Maintainability**: Keep methods small
-- **Consistency**: Follow framework patterns
-- **Comments**: Explain complex logic
-
-## Performance Tips
-
-### Rule-Based Agents
-
-- Fastest execution
-- No API calls
-- Predictable behavior
-- Best for high-frequency use
-
-### LLM Agents
-
-- Slower (API latency)
-- More intelligent
-- Variable behavior
-- Best for detailed analysis
-
-### Optimization
-
-- Use rules for quick filters
-- Use LLM for deep analysis
-- Cache LLM responses
-- Batch similar queries
-
-## Security
-
-### API Keys
-
-Never commit API keys to code:
-
-```python
-# ❌ Don't do this
-api_key = "sk-123456..."
-
-# ✅ Do this
-api_key = Config.get_openai_api_key()
-```
-
-### User Input
-
-GUI validates all input:
-- Filename validation
-- Code injection prevention
-- SQL injection protection (when using DB)
+- Python 3.10+
+- Streamlit 1.28+
+- AI-Agent-Builder framework
+- Optional: PostgreSQL (for real data testing)
+- Optional: Ollama/OpenAI/Anthropic (for LLM agents)
 
 ## Support
 
-### Documentation
+**Quick Help:**
+1. Run `python3 gui/test_setup.py` to diagnose issues
+2. Check sidebar "Save Location" in GUI
+3. Review terminal logs when GUI is running
+4. Check framework docs: `~/AI-Agent-Builder/README.md`
 
-- **Framework**: `~/AI-Agent-Builder/README.md`
-- **Examples**: `~/AI-Agent-Builder/examples/`
-- **API Docs**: `~/AI-Agent-Builder/docs/`
+**Common Issues:**
+- Files not saving → Run `python3 gui/test_setup.py`
+- GUI won't start → `pip install --upgrade streamlit`
+- Import errors → `pip install -e .`
+- LLM fails → Check provider is running
 
-### Getting Help
+## Tips
 
-1. Check examples for patterns
-2. Review framework documentation
-3. Test with mock data first
-4. Check error messages carefully
+**Agent Design:**
+- Start simple, add complexity gradually
+- Test with multiple tickers
+- Use clear, descriptive names
+- Include error handling
 
-## Future Enhancements
+**Rule-Based Agents:**
+- Fast execution
+- Predictable behavior
+- Good for screening
 
-Planned features:
-- [ ] Visual rule builder with drag-and-drop
-- [ ] Real-time agent performance charts
-- [ ] Multi-agent comparison view
-- [ ] Export agents to different formats
-- [ ] Import agents from GitHub
-- [ ] Agent marketplace/sharing
+**LLM Agents:**
+- More intelligent
+- Slower (API latency)
+- Good for detailed analysis
+- Use low temperature for consistency
 
-## Version History
+**Testing:**
+- Use mock data for quick tests
+- Test edge cases (extreme values)
+- Verify with real data before deployment
 
-**v1.0.0** (Current)
-- Browse agents from examples/
-- Create rule-based agents
-- Create LLM-powered agents  
-- Create hybrid agents
-- Test with mock data
-- Save agents to examples/
+## Version
+
+**Version:** 1.0.0  
+**Status:** Production Ready  
+**Last Updated:** 2025-01-23
 
 ---
 
-**Maintainer**: Your Team  
-**Last Updated**: 2025-01-23  
-**Status**: Production Ready
+**Documentation:**
+- Framework: `~/AI-Agent-Builder/README.md`
+- Examples: `~/AI-Agent-Builder/examples/`
+- Quick Start: `~/AI-Agent-Builder/GUI_QUICK_START.md`

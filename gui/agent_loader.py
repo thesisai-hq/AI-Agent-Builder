@@ -75,6 +75,12 @@ class AgentLoader:
         if not self._is_valid_filename(filename):
             return False, "Invalid filename. Use only letters, numbers, and underscores"
         
+        # Ensure examples directory exists
+        try:
+            self.examples_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            return False, f"Error creating examples directory: {e}"
+        
         file_path = self.examples_dir / filename
         
         # Check if file already exists
@@ -82,10 +88,14 @@ class AgentLoader:
             return False, f"File {filename} already exists. Choose a different name."
         
         try:
-            file_path.write_text(code)
-            return True, f"✅ Agent saved to examples/{filename}"
+            file_path.write_text(code, encoding='utf-8')
+            # Verify file was written
+            if file_path.exists():
+                return True, f"✅ Agent saved to {file_path.relative_to(file_path.parent.parent)}"
+            else:
+                return False, "File write succeeded but file not found"
         except Exception as e:
-            return False, f"Error saving file: {e}"
+            return False, f"Error saving file: {type(e).__name__}: {e}"
     
     def _parse_agent_file(self, file_path: Path) -> Optional[Dict[str, str]]:
         """Parse agent file to extract metadata.

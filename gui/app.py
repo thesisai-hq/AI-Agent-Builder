@@ -28,8 +28,11 @@ def main():
     
     # Initialize session state
     if 'agent_loader' not in st.session_state:
+        # Get absolute path to examples directory
         examples_dir = Path(__file__).parent.parent / "examples"
+        examples_dir = examples_dir.resolve()  # Convert to absolute path
         st.session_state.agent_loader = AgentLoader(examples_dir)
+        st.session_state.examples_dir = examples_dir
     
     # Sidebar navigation
     st.sidebar.title("Navigation")
@@ -43,6 +46,11 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Statistics")
     st.sidebar.metric("Total Agents", len(loader.list_agents()))
+    
+    # Show save location
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Save Location")
+    st.sidebar.caption(f"`{st.session_state.examples_dir}`")
     
     # Page routing
     if page == "📋 Browse Agents":
@@ -80,6 +88,12 @@ def show_create_page():
     """Display agent creation interface."""
     st.header("Create New Agent")
     
+    # Initialize session state for generated code
+    if 'generated_code' not in st.session_state:
+        st.session_state.generated_code = None
+    if 'current_filename' not in st.session_state:
+        st.session_state.current_filename = None
+    
     creator = AgentCreator()
     
     # Agent configuration
@@ -103,6 +117,11 @@ def show_create_page():
             value=f"{agent_name.lower() if agent_name else 'my_agent'}.py",
             help="File will be saved in examples/ directory"
         )
+        
+        # Show where file will be saved
+        if filename:
+            save_path = st.session_state.examples_dir / filename
+            st.caption(f"Will save to: `{save_path}`")
     
     with col2:
         st.subheader("Agent Type")
@@ -189,19 +208,37 @@ def show_create_page():
             system_prompt=system_prompt
         )
         
-        st.code(code, language="python")
+        # Store in session state
+        st.session_state.generated_code = code
+        st.session_state.current_filename = filename
+    
+    # Display generated code if available
+    if st.session_state.generated_code:
+        st.code(st.session_state.generated_code, language="python")
         
         # Save button
-        col1, col2 = st.columns([1, 4])
+        col1, col2, col3 = st.columns([1, 1, 3])
         with col1:
             if st.button("💾 Save Agent"):
                 loader = st.session_state.agent_loader
-                success, message = loader.save_agent(filename, code)
+                success, message = loader.save_agent(
+                    st.session_state.current_filename,
+                    st.session_state.generated_code
+                )
                 if success:
                     st.success(message)
                     st.balloons()
+                    # Clear session state after successful save
+                    st.session_state.generated_code = None
+                    st.session_state.current_filename = None
                 else:
                     st.error(message)
+        
+        with col2:
+            if st.button("🗑️ Clear"):
+                st.session_state.generated_code = None
+                st.session_state.current_filename = None
+                st.rerun()
 
 def show_test_page():
     """Display agent testing interface."""

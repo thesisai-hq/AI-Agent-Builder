@@ -98,26 +98,36 @@ pip install -e ".[all]"
 Build agents visually with no coding required!
 
 ```bash
-# Setup GUI
+# Setup
 ./gui/setup.sh
 
-# Launch GUI
+# Launch
 ./gui/launch.sh
 ```
+
+**Features:**
+- 📋 Browse existing agents
+- ➕ Create agents (Rule-Based, LLM-Powered, Hybrid)
+- 🧪 Test agents with mock or real data
+- 💾 Save directly to `examples/`
 
 See **[GUI Quick Start](GUI_QUICK_START.md)** for details.
 
 ## Documentation
 
-- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder
-- **[Quick Start](QUICK_START.md)** - 5-minute setup guide
+### Quick Start Guides
+- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder (5 min)
+- **[Quick Start](QUICK_START.md)** - Framework setup (5 min)
+
+### Framework Documentation
 - **[Getting Started](docs/GETTING_STARTED.md)** - Detailed installation
-- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Conda/venv/system Python guide
 - **[Configuration](docs/CONFIGURATION.md)** - Environment settings
-- **[Database Guide](docs/DATABASE_SETUP.md)** - Database setup and usage
-- **[LLM Customization](docs/LLM_CUSTOMIZATION.md)** - AI agent configuration
-- **[Testing](docs/TESTING.md)** - Testing your agents
-- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Architecture overview
+- **[Database Guide](docs/DATABASE_SETUP.md)** - Database setup
+- **[LLM Customization](docs/LLM_CUSTOMIZATION.md)** - AI configuration
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Architecture
+
+### GUI Documentation
+- **[GUI README](gui/README.md)** - Complete GUI guide
 
 ## Project Structure
 

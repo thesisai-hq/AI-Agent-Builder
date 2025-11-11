@@ -215,8 +215,16 @@ Example: bullish|75|Strong growth with healthy margins"""
             # Fallback to simple rule
             pe = data.get('pe_ratio', 0)
             if pe < 20:
-                return Signal('neutral', 0.5, f'LLM unavailable, PE={{pe:.1f}}')
-            return Signal('neutral', 0.5, 'LLM unavailable, insufficient data')
+                return Signal(
+                    direction='neutral',
+                    confidence=0.5,
+                    reasoning=f'LLM unavailable, PE={{pe:.1f}}'
+                )
+            return Signal(
+                direction='neutral',
+                confidence=0.5,
+                reasoning='LLM unavailable, insufficient data'
+            )
 
 
 async def main():
@@ -349,7 +357,11 @@ Format: DIRECTION|CONFIDENCE|REASONING"""
             return parse_llm_signal(response, f"Hybrid analysis of {{ticker}}")
         except Exception as e:
             print(f"⚠️  LLM error: {{e}}")
-            return Signal('neutral', 0.5, f'LLM error: {{str(e)[:100]}}')
+            return Signal(
+                direction='neutral',
+                confidence=0.5,
+                reasoning=f'LLM error: {{str(e)[:100]}}'
+            )
 
 
 async def main():

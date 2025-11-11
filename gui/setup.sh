@@ -35,6 +35,32 @@ echo "✓ GUI dependencies installed"
 if [ ! -d "examples" ]; then
     mkdir examples
     echo "✓ Created examples/ directory"
+else
+    echo "✓ examples/ directory exists"
+fi
+
+# Test file permissions
+echo ""
+echo "Testing file permissions..."
+test_file="examples/.test_write_permission"
+if touch "$test_file" 2>/dev/null; then
+    rm "$test_file"
+    echo "✓ Write permissions OK"
+else
+    echo "❌ Error: Cannot write to examples/ directory"
+    echo "   Run: chmod 755 examples/"
+    exit 1
+fi
+
+# Run setup test
+echo ""
+echo "Running setup verification..."
+python3 gui/test_setup.py
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "Testing Signal creation..."
+    python3 gui/test_signal.py
 fi
 
 echo ""
