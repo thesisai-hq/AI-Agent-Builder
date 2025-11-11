@@ -1,20 +1,22 @@
-"""Agent Tester - Test agents with mock or real data"""
+"""Agent Tester - Test agents with mock or real data and PDF documents"""
 
 import sys
 import importlib.util
 import time
+import asyncio
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 
 class AgentTester:
-    """Test agents with mock or database data."""
+    """Test agents with mock, database data, or PDF documents."""
     
     def test_agent(
         self,
         agent_filename: str,
         ticker: str,
-        mock_data: Optional[Dict] = None
+        mock_data: Optional[Dict] = None,
+        uploaded_file: Optional[Any] = None
     ) -> Dict:
         """Test an agent with provided data.
         
@@ -22,6 +24,7 @@ class AgentTester:
             agent_filename: Filename of agent in examples/
             ticker: Ticker symbol to analyze
             mock_data: Optional mock financial data
+            uploaded_file: Optional PDF file for RAG agents
             
         Returns:
             Dict with test results
@@ -56,6 +59,20 @@ class AgentTester:
             # Create agent instance
             agent = agent_class()
             
+            # Check if RAG agent (has analyze_async method)
+            is_rag_agent = hasattr(agent, 'analyze_async') and callable(getattr(agent, 'analyze_async'))
+            
+            if is_rag_agent and uploaded_file:
+                # RAG agent - extract PDF text and analyze
+                return self._test_rag_agent(agent, ticker, uploaded_file)
+            
+            elif is_rag_agent:
+                return {
+                    'success': False,
+                    'error': 'RAG agent requires a PDF document to analyze'
+                }
+            
+            # Traditional agent - use financial data
             # Prepare test data
             if mock_data:
                 data = {
@@ -91,6 +108,70 @@ class AgentTester:
             # Clean up
             if 'test_agent_module' in sys.modules:
                 del sys.modules['test_agent_module']
+    
+    def _test_rag_agent(
+        self,
+        agent,
+        ticker: str,
+        uploaded_file
+    ) -> Dict:
+        """Test a RAG agent with PDF document.
+        
+        Args:
+            agent: RAG agent instance
+            ticker: Ticker symbol
+            uploaded_file: Streamlit uploaded file object
+            
+        Returns:
+            Test results dict
+        """
+        try:
+            from PyPDF2 import PdfReader
+            
+            # Extract text from PDF
+            pdf_reader = PdfReader(uploaded_file)
+            document_text = ""
+            
+            for page_num, page in enumerate(pdf_reader.pages):
+                page_text = page.extract_text()
+                document_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+            
+            if not document_text.strip():
+                return {
+                    'success': False,
+                    'error': 'No text could be extracted from PDF'
+                }
+            
+            # Run async analysis
+            start_time = time.time()
+            result_dict = asyncio.run(agent.analyze_async(ticker, document_text))
+            execution_time = time.time() - start_time
+            
+            # Return RAG results (dict format, not Signal)
+            return {
+                'success': True,
+                'signal': {
+                    'direction': result_dict.get('direction', 'neutral'),
+                    'confidence': result_dict.get('confidence', 0.5),
+                    'reasoning': result_dict.get('reasoning', 'No reasoning provided'),
+                    'insights': result_dict.get('insights', [])
+                },
+                'execution_time': execution_time,
+                'ticker': ticker,
+                'pages_processed': len(pdf_reader.pages),
+                'text_length': len(document_text)
+            }
+            
+        except ImportError:
+            return {
+                'success': False,
+                'error': 'PyPDF2 not installed. Install with: pip install pypdf2'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'RAG analysis error: {str(e)}'
+            }
     
     def _find_agent_class(self, module):
         """Find the Agent class in a module.

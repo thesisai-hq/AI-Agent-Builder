@@ -129,9 +129,10 @@ Build agents visually with no coding required!
 
 **Features:**
 - 📋 Browse existing agents
-- ➕ Create agents (Rule-Based, LLM-Powered, Hybrid)
-- 🧪 Test agents with mock or real data
+- ➕ Create agents (Rule-Based, LLM-Powered, Hybrid, RAG-Powered)
+- 🧪 Test agents with mock data or PDF upload
 - 💾 Save directly to `examples/`
+- 📄 Drag-and-drop PDF for RAG agents
 
 See **[GUI Quick Start](GUI_QUICK_START.md)** for details.
 

@@ -117,10 +117,10 @@ class AgentLoader:
             agent_name = class_match.group(1)
             
             # Determine agent type based on code patterns
-            if 'LLMConfig' in content or 'self.llm' in content:
+            if 'RAGConfig' in content or 'self.rag' in content:
+                agent_type = "RAG-Powered"
+            elif 'LLMConfig' in content or 'self.llm' in content:
                 agent_type = "LLM-Powered"
-            elif 'RAGConfig' in content or 'self.rag' in content:
-                agent_type = "RAG-Enabled"
             else:
                 agent_type = "Rule-Based"
             

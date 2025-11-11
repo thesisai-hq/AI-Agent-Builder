@@ -2,3 +2,4 @@
 # Install with: pip install -r gui/requirements.txt
 
 streamlit>=1.28.0
+pypdf2>=3.0.0  # For PDF text extraction

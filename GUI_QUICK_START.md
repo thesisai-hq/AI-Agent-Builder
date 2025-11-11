@@ -46,10 +46,12 @@ Confidence: 0.8
 
 ## Test Your Agent
 
-### 1. Navigate
+### For Rule-Based/LLM Agents
+
+#### 1. Navigate
 Click "🧪 Test Agent"
 
-### 2. Configure
+#### 2. Configure
 ```
 Select Agent: ValueAgent
 Ticker: AAPL
@@ -57,14 +59,47 @@ Use Mock Data: ✓
 PE Ratio: 12
 ```
 
-### 3. Run
+#### 3. Run
 Click "🚀 Run Analysis"
 
-### 4. Result
+#### 4. Result
 ```
 Signal: 🟢 BULLISH
 Confidence: 80%
 Reasoning: Pe Ratio 12.0 is bullish
+```
+
+### For RAG Agents (NEW)
+
+#### 1. Navigate
+Click "🧪 Test Agent"
+
+#### 2. Select RAG Agent
+```
+Select Agent: SECAnalystAgent
+Ticker: AAPL
+```
+
+#### 3. Upload PDF
+**Drag and drop a PDF file:**
+- SEC 10-K filing
+- Earnings report
+- News articles
+- Research reports
+
+#### 4. Run
+Click "🚀 Run Analysis"
+
+#### 5. Result
+```
+Signal: 🟢 BULLISH
+Confidence: 75%
+Reasoning: Strong growth prospects...
+
+Detailed Insights:
+  • Financial performance shows 15% revenue growth
+  • Key risks include supply chain dependencies
+  • Growth strategies focus on AI integration
 ```
 
 ## Agent Types
@@ -82,6 +117,11 @@ Reasoning: Pe Ratio 12.0 is bullish
 ### Hybrid
 - Rules + LLM
 - Best of both worlds
+
+### RAG-Powered (NEW)
+- Document analysis
+- PDF upload support
+- Extract insights from text
 
 ## Verify Setup
 
@@ -119,6 +159,15 @@ python3 gui/check_llm_deps.py
 
 **Rule-based agents don't need LLM packages** - they work on any machine.
 
+**For RAG agents:**
+```bash
+# Install both LLM and RAG
+pip install 'ai-agent-framework[llm,rag]'
+
+# Also need pypdf2 for PDF upload
+pip install pypdf2
+```
+
 ### Other Issues
 
 ### Files not saving?
@@ -135,6 +184,11 @@ pip install --upgrade streamlit
 ### Module errors?
 ```bash
 pip install -e .
+```
+
+### PDF upload error?
+```bash
+pip install pypdf2
 ```
 
 ## Integration with thesis-ai

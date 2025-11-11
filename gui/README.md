@@ -25,23 +25,33 @@ Opens at: `http://localhost:8501`
 
 ### ➕ Create Agents
 
-**Three agent types:**
+**Four agent types:**
 
 1. **Rule-Based** - Simple if/then logic, no coding required
    - Visual rule builder
    - Fast execution
    - Best for: Clear investment criteria
+   - Dependencies: None (core only)
 
 2. **LLM-Powered** - AI-driven analysis
    - OpenAI, Anthropic, or Ollama support
    - Configurable temperature (creativity)
    - Custom system prompts (personality)
    - Best for: Complex, nuanced analysis
+   - Dependencies: LLM packages
 
 3. **Hybrid** - Combines rules + LLM
    - Rules trigger deeper analysis
    - LLM provides reasoning
    - Best for: Balanced speed and intelligence
+   - Dependencies: LLM packages
+
+4. **RAG-Powered** - Document analysis with retrieval (NEW)
+   - Analyzes SEC filings, news, earnings calls
+   - Vector-based document search
+   - LLM synthesis of retrieved content
+   - Best for: Long documents, text analysis
+   - Dependencies: LLM + RAG packages
 
 ### 🧪 Test Agents
 - Mock data testing (no database needed)
@@ -106,6 +116,39 @@ Opens at: `http://localhost:8501`
    ```
 
 4. Generate → Save
+
+### Example: RAG Document Analyzer (NEW)
+
+1. Navigate to "➕ Create Agent"
+
+2. Configure:
+   ```
+   Agent Name: SECAnalystAgent
+   Type: RAG-Powered
+   Provider: ollama
+   Temperature: 0.5
+   Max Tokens: 2000
+   Chunk Size: 300
+   Chunk Overlap: 50
+   Top K: 3
+   ```
+
+3. System Prompt:
+   ```
+   You are an SEC filing analyst.
+   Extract key insights:
+   - Financial performance trends
+   - Risk factors
+   - Strategic initiatives
+   Provide clear, actionable analysis.
+   ```
+
+4. Generate → Save
+
+**Note:** RAG agents require both LLM and RAG dependencies:
+```bash
+pip install 'ai-agent-framework[llm,rag]'
+```
 
 ## Testing Agents
 
@@ -183,11 +226,12 @@ self.agents = {
 
 ### Agent Types Comparison
 
-| Type | Speed | Complexity | Best For |
-|------|-------|------------|----------|
-| Rule-Based | Fast | Low | Clear criteria |
-| LLM-Powered | Slow | High | Nuanced analysis |
-| Hybrid | Medium | Medium | Balanced approach |
+| Type | Speed | Complexity | Best For | Dependencies |
+|------|-------|------------|----------|-------------|
+| Rule-Based | Fast | Low | Clear criteria | None |
+| LLM-Powered | Slow | High | Nuanced analysis | LLM |
+| Hybrid | Medium | Medium | Balanced approach | LLM |
+| RAG-Powered | Slow | High | Document analysis | LLM + RAG |
 
 ## File Structure
 
@@ -238,10 +282,16 @@ pip install anthropic   # For Anthropic agents
 - ❌ Rule-Based agents: No LLM needed (work everywhere)
 - ✅ LLM-Powered agents: Need LLM packages
 - ✅ Hybrid agents: Need LLM packages
+- ✅ RAG-Powered agents: Need LLM + RAG packages
+
+**For RAG agents, also install:**
+```bash
+pip install sentence-transformers  # For embeddings
+```
 
 **For multi-machine setup:**
-1. Install LLM packages on all machines: `pip install 'ai-agent-framework[llm]'`
-2. OR use only Rule-Based agents (no LLM dependencies)
+1. Install dependencies on all machines: `pip install 'ai-agent-framework[llm,rag]'`
+2. OR use only Rule-Based agents (no dependencies)
 
 ### Files Not Saving
 

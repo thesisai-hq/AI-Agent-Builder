@@ -127,10 +127,11 @@ def show_create_page():
         st.subheader("Agent Type")
         agent_type = st.selectbox(
             "Template",
-            ["Rule-Based", "LLM-Powered", "Hybrid"]
+            ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
         )
         
-        if agent_type in ["LLM-Powered", "Hybrid"]:
+        # LLM Configuration (for LLM, Hybrid, and RAG types)
+        if agent_type in ["LLM-Powered", "Hybrid", "RAG-Powered"]:
             st.markdown("**LLM Configuration**")
             llm_provider = st.selectbox("Provider", ["ollama", "openai", "anthropic"])
             temperature = st.slider("Temperature", 0.0, 1.0, 0.5, 0.1)
@@ -145,6 +146,20 @@ def show_create_page():
             temperature = None
             max_tokens = None
             system_prompt = None
+        
+        # RAG-specific configuration
+        if agent_type == "RAG-Powered":
+            st.markdown("**RAG Configuration**")
+            chunk_size = st.number_input("Chunk Size", 100, 1000, 300, 50,
+                help="Size of text chunks for vector search")
+            chunk_overlap = st.number_input("Chunk Overlap", 0, 200, 50, 10,
+                help="Overlap between chunks")
+            top_k = st.number_input("Top K Results", 1, 10, 3, 1,
+                help="Number of relevant chunks to retrieve")
+        else:
+            chunk_size = None
+            chunk_overlap = None
+            top_k = None
     
     # Analysis Logic
     st.subheader("Analysis Logic")
@@ -188,6 +203,17 @@ def show_create_page():
                     "direction": direction,
                     "confidence": confidence
                 })
+    elif agent_type == "RAG-Powered":
+        rules = None
+        st.info("📄 RAG agents analyze documents/text using retrieval and embeddings")
+        st.markdown("""
+        **RAG agents are best for:**
+        - Analyzing SEC filings, earnings calls, news articles
+        - Extracting insights from long documents
+        - Sentiment analysis from text data
+        
+        **Requires:** `pip install 'ai-agent-framework[llm,rag]'`
+        """)
     else:
         rules = None
         st.info("LLM-powered agents use natural language prompts instead of explicit rules")
@@ -205,7 +231,10 @@ def show_create_page():
             llm_provider=llm_provider,
             temperature=temperature,
             max_tokens=max_tokens,
-            system_prompt=system_prompt
+            system_prompt=system_prompt,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            top_k=top_k
         )
         
         # Store in session state
@@ -255,46 +284,93 @@ def show_test_page():
     agent_names = [a['name'] for a in agents]
     selected_agent = st.selectbox("Select Agent", agent_names)
     
-    # Get agent filename
-    agent_filename = next(
-        a['filename'] for a in agents if a['name'] == selected_agent
-    )
+    # Get agent info
+    agent_info = next(a for a in agents if a['name'] == selected_agent)
+    agent_filename = agent_info['filename']
+    agent_type = agent_info['type']
+    
+    # Show agent type
+    st.info(f"Agent Type: **{agent_type}**")
     
     # Test configuration
-    col1, col2 = st.columns(2)
+    ticker = st.text_input("Ticker Symbol", value="AAPL")
     
-    with col1:
-        ticker = st.text_input("Ticker Symbol", value="AAPL")
+    # Different UI for RAG agents vs traditional agents
+    if agent_type == "RAG-Powered":
+        st.subheader("📄 Document Upload")
+        st.markdown("RAG agents analyze documents. Upload a PDF to test:")
         
-    with col2:
-        st.markdown("**Test Data**")
+        uploaded_file = st.file_uploader(
+            "Drag and drop PDF here",
+            type=['pdf'],
+            help="Upload SEC filing, earnings report, or any financial document"
+        )
+        
+        if uploaded_file:
+            st.success(f"Uploaded: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
+            
+            # Extract text preview
+            with st.expander("Preview Document Text"):
+                from PyPDF2 import PdfReader
+                
+                try:
+                    pdf_reader = PdfReader(uploaded_file)
+                    preview_text = ""
+                    for page_num, page in enumerate(pdf_reader.pages[:3]):  # First 3 pages
+                        preview_text += f"\n--- Page {page_num + 1} ---\n"
+                        preview_text += page.extract_text()
+                    
+                    st.text_area(
+                        "Document Preview (first 3 pages)",
+                        preview_text[:2000] + "..." if len(preview_text) > 2000 else preview_text,
+                        height=200
+                    )
+                    st.caption(f"Total pages: {len(pdf_reader.pages)}")
+                except Exception as e:
+                    st.error(f"Error reading PDF: {e}")
+        
+        use_mock = False  # RAG agents don't use mock data
+        mock_data = None
+        
+    else:
+        # Traditional agents - use mock data
+        st.subheader("Test Data")
         use_mock = st.checkbox("Use Mock Data", value=True)
-    
-    if use_mock:
-        # Mock data inputs
-        st.subheader("Mock Financial Data")
-        mock_data = {}
+        uploaded_file = None
         
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            mock_data['pe_ratio'] = st.number_input("PE Ratio", 5.0, 100.0, 20.0)
-            mock_data['revenue_growth'] = st.number_input("Revenue Growth (%)", -20.0, 100.0, 15.0)
-        with col_b:
-            mock_data['profit_margin'] = st.number_input("Profit Margin (%)", -10.0, 50.0, 12.0)
-            mock_data['roe'] = st.number_input("ROE (%)", -20.0, 50.0, 15.0)
-        with col_c:
-            mock_data['debt_to_equity'] = st.number_input("Debt/Equity", 0.0, 5.0, 0.8)
-            mock_data['dividend_yield'] = st.number_input("Dividend Yield (%)", 0.0, 10.0, 2.0)
+        if use_mock:
+            # Mock data inputs
+            st.subheader("Mock Financial Data")
+            mock_data = {}
+            
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                mock_data['pe_ratio'] = st.number_input("PE Ratio", 5.0, 100.0, 20.0)
+                mock_data['revenue_growth'] = st.number_input("Revenue Growth (%)", -20.0, 100.0, 15.0)
+            with col_b:
+                mock_data['profit_margin'] = st.number_input("Profit Margin (%)", -10.0, 50.0, 12.0)
+                mock_data['roe'] = st.number_input("ROE (%)", -20.0, 50.0, 15.0)
+            with col_c:
+                mock_data['debt_to_equity'] = st.number_input("Debt/Equity", 0.0, 5.0, 0.8)
+                mock_data['dividend_yield'] = st.number_input("Dividend Yield (%)", 0.0, 10.0, 2.0)
+        else:
+            mock_data = None
     
     # Run test
     if st.button("🚀 Run Analysis", type="primary"):
         tester = AgentTester()
         
+        # Check if RAG agent has document
+        if agent_type == "RAG-Powered" and not uploaded_file:
+            st.error("Please upload a PDF document to test RAG agent")
+            return
+        
         with st.spinner("Running analysis..."):
             result = tester.test_agent(
                 agent_filename,
                 ticker,
-                mock_data if use_mock else None
+                mock_data,
+                uploaded_file  # Pass PDF file for RAG agents
             )
         
         if result['success']:
@@ -316,6 +392,13 @@ def show_test_page():
             
             st.markdown("**Reasoning:**")
             st.info(result['signal']['reasoning'])
+            
+            # Show insights for RAG agents
+            if 'insights' in result['signal'] and result['signal']['insights']:
+                st.markdown("**Detailed Insights:**")
+                for i, insight in enumerate(result['signal']['insights'], 1):
+                    with st.expander(f"Insight {i}"):
+                        st.write(insight)
             
         else:
             st.error(f"Error: {result['error']}")

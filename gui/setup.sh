@@ -28,8 +28,8 @@ echo "✓ Framework installed"
 # Install GUI dependencies
 echo ""
 echo "Installing GUI dependencies..."
-pip install -r gui/requirements.txt > /dev/null 2>&1 || pip install -r gui/requirements.txt
-echo "✓ GUI dependencies installed"
+pip install -r gui/requirements.txt > /dev/null 2>&1 || pip install streamlit pypdf2
+echo "✓ GUI dependencies installed (streamlit, pypdf2)"
 
 # Create examples directory if it doesn't exist
 if [ ! -d "examples" ]; then
