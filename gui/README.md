@@ -32,6 +32,7 @@ Opens at: `http://localhost:8501`
    - Fast execution
    - Best for: Clear investment criteria
    - Dependencies: None (core only)
+   - **NEW:** Advanced rules with AND/OR logic, score-based strategies
 
 2. **LLM-Powered** - AI-driven analysis
    - OpenAI, Anthropic, or Ollama support

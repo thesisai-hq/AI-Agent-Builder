@@ -1,4 +1,10 @@
-"""Agent Creator - Generate agent code from templates"""
+"""Agent Creator - Generate agent code from templates
+
+Now supports:
+- Simple rules (single conditions)
+- Advanced rules (multi-condition with AND/OR)
+- Score-based rules (point accumulation)
+"""
 
 from typing import List, Dict, Optional
 
@@ -25,12 +31,15 @@ class AgentCreator:
         Args:
             agent_name: Agent class name
             description: Agent description
-            agent_type: Type of agent (Rule-Based, LLM-Powered, Hybrid)
+            agent_type: Type of agent
             rules: List of rules for rule-based logic
-            llm_provider: LLM provider (openai, anthropic, ollama)
+            llm_provider: LLM provider
             temperature: LLM temperature
             max_tokens: LLM max tokens
             system_prompt: LLM system prompt
+            chunk_size: RAG chunk size
+            chunk_overlap: RAG chunk overlap
+            top_k: RAG top k results
             
         Returns:
             Complete Python code for the agent
@@ -62,6 +71,29 @@ class AgentCreator:
     ) -> str:
         """Generate rule-based agent code."""
         
+        if not rules:
+            return self._generate_empty_agent(agent_name, description)
+        
+        # Determine rule type
+        rule_type = rules[0].get('type', 'simple')
+        
+        if rule_type == 'simple':
+            return self._generate_simple_rules_agent(agent_name, description, rules)
+        elif rule_type == 'advanced':
+            return self._generate_advanced_rules_agent(agent_name, description, rules)
+        elif rule_type == 'score':
+            return self._generate_score_based_agent(agent_name, description, rules[0])
+        else:
+            return self._generate_simple_rules_agent(agent_name, description, rules)
+    
+    def _generate_simple_rules_agent(
+        self,
+        agent_name: str,
+        description: str,
+        rules: List[Dict]
+    ) -> str:
+        """Generate simple single-condition rules agent."""
+        
         # Generate rule logic
         rule_conditions = []
         for i, rule in enumerate(rules or []):
@@ -84,6 +116,8 @@ class AgentCreator:
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
+
+Strategy: Simple rule-based conditions
 """
 
 import asyncio
@@ -103,7 +137,7 @@ class {agent_name}(Agent):
         Returns:
             Signal with direction, confidence, and reasoning
         """
-        # Extract metrics from data
+        # Extract metrics
         {self._generate_metric_extraction(rules)}
         
         # Apply rules{rules_code}
@@ -117,20 +151,17 @@ class {agent_name}(Agent):
 
 
 async def main():
-    """Example usage of the agent."""
+    """Example usage."""
     print(f"{{'-' * 60}}")
     print(f"{agent_name} - Example Usage")
     print(f"{{'-' * 60}}\\n")
     
-    # Connect to database
     db = Database(Config.get_database_url())
     await db.connect()
     
     try:
-        # Create agent
         agent = {agent_name}()
         
-        # Analyze a few tickers
         for ticker in ['AAPL', 'MSFT', 'GOOGL']:
             data = await db.get_fundamentals(ticker)
             
@@ -139,9 +170,251 @@ async def main():
                 continue
             
             signal = agent.analyze(ticker, data)
+            print(f"📊 {{ticker}}: {{signal.direction.upper()}} ({{signal.confidence:.0%}})")
+            print(f"   {{signal.reasoning}}\\n")
+    
+    finally:
+        await db.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+'''
+    
+    def _generate_advanced_rules_agent(
+        self,
+        agent_name: str,
+        description: str,
+        rules: List[Dict]
+    ) -> str:
+        """Generate agent with multi-condition rules (AND/OR logic)."""
+        
+        # Generate rule logic with AND/OR
+        rule_conditions = []
+        for i, rule in enumerate(rules):
+            conditions = rule['conditions']
+            logic = rule['logic']
+            direction = rule['direction']
+            confidence = rule['confidence']
             
-            print(f"📊 {{ticker}}: {{signal.direction.upper()}} "
-                  f"({{signal.confidence:.0%}})")
+            # Build condition string
+            cond_parts = []
+            for cond in conditions:
+                metric = cond['metric']
+                operator = cond['operator']
+                threshold = cond['threshold']
+                
+                # Handle calculated metrics
+                if metric == 'peg_ratio':
+                    cond_parts.append(
+                        f"(pe_ratio / max(revenue_growth, 0.1) {operator} {threshold})"
+                    )
+                elif metric == 'quality_score':
+                    cond_parts.append(
+                        f"((roe * 0.4 + profit_margin * 0.3 + (1.0 / max(debt_to_equity, 0.1)) * 0.3) {operator} {threshold})"
+                    )
+                else:
+                    cond_parts.append(f"(data.get('{metric}', 0) {operator} {threshold})")
+            
+            logic_op = " and " if logic == "AND" else " or "
+            full_condition = logic_op.join(cond_parts)
+            
+            # Build reasoning string
+            cond_desc = f" {logic} ".join([f"{c['metric']} {c['operator']} {c['threshold']}" for c in conditions])
+            
+            rule_conditions.append(f"""
+        # Rule {i+1}: {cond_desc}
+        if {full_condition}:
+            return Signal(
+                direction='{direction}',
+                confidence={confidence},
+                reasoning=f"{{'{direction}'.capitalize()}} signal: {cond_desc}"
+            )""")
+        
+        rules_code = "".join(rule_conditions)
+        
+        return f'''"""Auto-generated agent: {agent_name}
+
+{description}
+
+Strategy: Advanced multi-condition rules with AND/OR logic
+"""
+
+import asyncio
+from agent_framework import Agent, Signal, Database, Config
+
+
+class {agent_name}(Agent):
+    """{description}"""
+    
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        """Analyze using advanced multi-condition rules.
+        
+        Args:
+            ticker: Stock ticker symbol
+            data: Financial data dictionary
+            
+        Returns:
+            Signal with direction, confidence, and reasoning
+        """
+        # Extract all metrics
+        pe_ratio = data.get('pe_ratio', 0)
+        revenue_growth = data.get('revenue_growth', 0)
+        profit_margin = data.get('profit_margin', 0)
+        roe = data.get('roe', 0)
+        debt_to_equity = data.get('debt_to_equity', 0)
+        dividend_yield = data.get('dividend_yield', 0)
+        pb_ratio = data.get('pb_ratio', 0)
+        current_ratio = data.get('current_ratio', 0)
+        
+        # Apply advanced rules{rules_code}
+        
+        # Default fallback
+        return Signal(
+            direction='neutral',
+            confidence=0.5,
+            reasoning='No rules matched'
+        )
+
+
+async def main():
+    """Example usage."""
+    print(f"{{'-' * 60}}")
+    print(f"{agent_name} - Advanced Rules")
+    print(f"{{'-' * 60}}\\n")
+    
+    db = Database(Config.get_database_url())
+    await db.connect()
+    
+    try:
+        agent = {agent_name}()
+        
+        for ticker in ['AAPL', 'MSFT', 'GOOGL']:
+            data = await db.get_fundamentals(ticker)
+            
+            if not data:
+                print(f"⚠️  No data for {{ticker}}")
+                continue
+            
+            signal = agent.analyze(ticker, data)
+            print(f"📊 {{ticker}}: {{signal.direction.upper()}} ({{signal.confidence:.0%}})")
+            print(f"   {{signal.reasoning}}\\n")
+    
+    finally:
+        await db.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+'''
+    
+    def _generate_score_based_agent(
+        self,
+        agent_name: str,
+        description: str,
+        rule_config: Dict
+    ) -> str:
+        \"\"\"Generate score-based agent.\"\"\"
+        
+        criteria = rule_config['criteria']
+        bullish_threshold = rule_config['bullish_threshold']
+        bullish_confidence = rule_config['bullish_confidence']
+        bearish_threshold = rule_config['bearish_threshold']
+        bearish_confidence = rule_config['bearish_confidence']
+        
+        # Generate scoring logic
+        score_checks = []
+        for criterion in criteria:
+            metric = criterion['metric']
+            operator = criterion['operator']
+            threshold = criterion['threshold']
+            points = criterion['points']
+            
+            score_checks.append(f"""
+        # {metric} {operator} {threshold} = {points:+d} points
+        if data.get('{metric}', 0) {operator} {threshold}:
+            score += {points}
+            reasons.append(f\"{metric.replace('_', ' ').title()} {{{metric}:.1f}} {operator} {threshold} ({points:+d} pts)\")""")
+        
+        score_code = "".join(score_checks)
+        
+        return f'''"""Auto-generated agent: {agent_name}
+
+{description}
+
+Strategy: Score-based point accumulation
+- Bullish if score >= {bullish_threshold}
+- Bearish if score <= {bearish_threshold}
+"""
+
+import asyncio
+from agent_framework import Agent, Signal, Database, Config
+
+
+class {agent_name}(Agent):
+    """{description}"""
+    
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        """Analyze using score-based strategy.
+        
+        Args:
+            ticker: Stock ticker symbol
+            data: Financial data dictionary
+            
+        Returns:
+            Signal with direction, confidence, and reasoning
+        """
+        # Initialize score and reasons
+        score = 0
+        reasons = []
+        
+        # Extract metrics
+        {self._generate_metric_extraction_for_score(criteria)}
+        
+        # Calculate score{score_code}
+        
+        # Determine signal based on score
+        if score >= {bullish_threshold}:
+            return Signal(
+                direction='bullish',
+                confidence={bullish_confidence},
+                reasoning=f'Score: {{score}} (bullish threshold: {bullish_threshold}). ' + '; '.join(reasons)
+            )
+        elif score <= {bearish_threshold}:
+            return Signal(
+                direction='bearish',
+                confidence={bearish_confidence},
+                reasoning=f'Score: {{score}} (bearish threshold: {bearish_threshold}). ' + '; '.join(reasons)
+            )
+        else:
+            return Signal(
+                direction='neutral',
+                confidence=0.5,
+                reasoning=f'Score: {{score}} (between {bearish_threshold} and {bullish_threshold}). ' + '; '.join(reasons) if reasons else 'Neutral score'
+            )
+
+
+async def main():
+    """Example usage."""
+    print(f"{{'-' * 60}}")
+    print(f"{agent_name} - Score-Based Strategy")
+    print(f"{{'-' * 60}}\\n")
+    
+    db = Database(Config.get_database_url())
+    await db.connect()
+    
+    try:
+        agent = {agent_name}()
+        
+        for ticker in ['AAPL', 'MSFT', 'GOOGL']:
+            data = await db.get_fundamentals(ticker)
+            
+            if not data:
+                print(f"⚠️  No data for {{ticker}}")
+                continue
+            
+            signal = agent.analyze(ticker, data)
+            print(f"📊 {{ticker}}: {{signal.direction.upper()}} ({{signal.confidence:.0%}})")
             print(f"   {{signal.reasoning}}\\n")
     
     finally:
@@ -402,7 +675,7 @@ class {agent_name}(Agent):
                     insights.append(f"[Error] {{context[:200]}}...")
             
             # Synthesize signal from insights
-            full_analysis = "\n".join(insights)
+            full_analysis = "\\n".join(insights)
             direction, confidence = calculate_sentiment_score(full_analysis)
             
             # Clear RAG for next document
@@ -612,10 +885,19 @@ if __name__ == "__main__":
 '''
     
     def _generate_metric_extraction(self, rules: List[Dict]) -> str:
-        """Generate metric extraction code."""
+        """Generate metric extraction code for simple rules."""
         if not rules:
             return "# No metrics to extract"
         
-        metrics = set(rule['metric'] for rule in rules)
+        metrics = set(rule.get('metric') for rule in rules if rule.get('metric'))
+        extractions = [f"{m} = data.get('{m}', 0)" for m in metrics]
+        return "\n        ".join(extractions)
+    
+    def _generate_metric_extraction_for_score(self, criteria: List[Dict]) -> str:
+        """Generate metric extraction code for score-based rules."""
+        if not criteria:
+            return "# No metrics to extract"
+        
+        metrics = set(c['metric'] for c in criteria)
         extractions = [f"{m} = data.get('{m}', 0)" for m in metrics]
         return "\n        ".join(extractions)

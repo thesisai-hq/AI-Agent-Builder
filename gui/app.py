@@ -165,44 +165,196 @@ def show_create_page():
     st.subheader("Analysis Logic")
     
     if agent_type == "Rule-Based":
-        st.markdown("Define your rule-based logic:")
+        st.markdown("Define your investment strategy:")
         
-        # Simple rule builder
-        num_rules = st.number_input("Number of Rules", 1, 5, 2)
-        rules = []
+        # Choose rule type
+        rule_style = st.radio(
+            "Rule Style",
+            ["Simple Rules", "Advanced Rules", "Score-Based"]
+        )
         
-        for i in range(num_rules):
-            with st.expander(f"Rule {i+1}"):
-                col_a, col_b, col_c = st.columns(3)
-                with col_a:
-                    metric = st.selectbox(
-                        "Metric",
-                        ["pe_ratio", "revenue_growth", "profit_margin", "roe"],
-                        key=f"metric_{i}"
+        if rule_style == "Simple Rules":
+            # Original simple rules
+            num_rules = st.number_input("Number of Rules", 1, 5, 2)
+            rules = []
+            
+            for i in range(num_rules):
+                with st.expander(f"Rule {i+1}"):
+                    col_a, col_b, col_c = st.columns(3)
+                    with col_a:
+                        metric = st.selectbox(
+                            "Metric",
+                            ["pe_ratio", "revenue_growth", "profit_margin", "roe", 
+                             "debt_to_equity", "dividend_yield", "pb_ratio", "current_ratio"],
+                            key=f"metric_{i}"
+                        )
+                    with col_b:
+                        operator = st.selectbox("Operator", ["<", ">", "<=", ">=", "=="], key=f"op_{i}")
+                    with col_c:
+                        threshold = st.number_input("Threshold", key=f"thresh_{i}")
+                    
+                    direction = st.selectbox(
+                        "Signal",
+                        ["bullish", "bearish", "neutral"],
+                        key=f"dir_{i}"
                     )
-                with col_b:
-                    operator = st.selectbox("Operator", ["<", ">", "=="], key=f"op_{i}")
-                with col_c:
-                    threshold = st.number_input("Threshold", key=f"thresh_{i}")
-                
-                direction = st.selectbox(
-                    "Signal",
-                    ["bullish", "bearish", "neutral"],
-                    key=f"dir_{i}"
+                    confidence = st.slider(
+                        "Confidence",
+                        0.0, 1.0, 0.7, 0.1,
+                        key=f"conf_{i}"
+                    )
+                    
+                    rules.append({
+                        "type": "simple",
+                        "metric": metric,
+                        "operator": operator,
+                        "threshold": threshold,
+                        "direction": direction,
+                        "confidence": confidence
+                    })
+        
+        elif rule_style == "Advanced Rules":
+            # Multi-condition rules with AND/OR
+            num_rules = st.number_input("Number of Rules", 1, 3, 1)
+            rules = []
+            
+            for i in range(num_rules):
+                with st.expander(f"Advanced Rule {i+1}"):
+                    num_conditions = st.number_input(
+                        "Number of Conditions",
+                        1, 5, 2,
+                        key=f"num_cond_{i}"
+                    )
+                    
+                    logic_operator = st.selectbox(
+                        "Combine conditions with",
+                        ["AND", "OR"],
+                        key=f"logic_{i}"
+                    )
+                    
+                    conditions = []
+                    for j in range(num_conditions):
+                        col_a, col_b, col_c = st.columns(3)
+                        with col_a:
+                            metric = st.selectbox(
+                                "Metric",
+                                ["pe_ratio", "revenue_growth", "profit_margin", "roe",
+                                 "debt_to_equity", "dividend_yield", "pb_ratio", "current_ratio",
+                                 "peg_ratio", "quality_score"],
+                                key=f"adv_metric_{i}_{j}"
+                            )
+                        with col_b:
+                            operator = st.selectbox(
+                                "Op",
+                                ["<", ">", "<=", ">=", "=="],
+                                key=f"adv_op_{i}_{j}"
+                            )
+                        with col_c:
+                            threshold = st.number_input(
+                                "Value",
+                                key=f"adv_thresh_{i}_{j}"
+                            )
+                        
+                        conditions.append({
+                            "metric": metric,
+                            "operator": operator,
+                            "threshold": threshold
+                        })
+                    
+                    direction = st.selectbox(
+                        "Signal",
+                        ["bullish", "bearish", "neutral"],
+                        key=f"adv_dir_{i}"
+                    )
+                    confidence = st.slider(
+                        "Confidence",
+                        0.0, 1.0, 0.7, 0.1,
+                        key=f"adv_conf_{i}"
+                    )
+                    
+                    rules.append({
+                        "type": "advanced",
+                        "conditions": conditions,
+                        "logic": logic_operator,
+                        "direction": direction,
+                        "confidence": confidence
+                    })
+        
+        else:  # Score-Based
+            st.markdown("""**Score-Based Strategy:**
+            Accumulate points based on conditions, then decide signal based on total score.""")
+            
+            num_criteria = st.number_input("Number of Scoring Criteria", 1, 10, 5)
+            criteria = []
+            
+            for i in range(num_criteria):
+                with st.expander(f"Criterion {i+1}"):
+                    col_a, col_b, col_c, col_d = st.columns(4)
+                    
+                    with col_a:
+                        metric = st.selectbox(
+                            "Metric",
+                            ["pe_ratio", "revenue_growth", "profit_margin", "roe",
+                             "debt_to_equity", "dividend_yield", "pb_ratio", "current_ratio"],
+                            key=f"score_metric_{i}"
+                        )
+                    with col_b:
+                        operator = st.selectbox(
+                            "Op",
+                            ["<", ">", "<=", ">="],
+                            key=f"score_op_{i}"
+                        )
+                    with col_c:
+                        threshold = st.number_input(
+                            "Value",
+                            key=f"score_thresh_{i}"
+                        )
+                    with col_d:
+                        points = st.number_input(
+                            "Points",
+                            -5, 5, 1,
+                            key=f"score_pts_{i}"
+                        )
+                    
+                    criteria.append({
+                        "metric": metric,
+                        "operator": operator,
+                        "threshold": threshold,
+                        "points": points
+                    })
+            
+            # Scoring thresholds
+            st.markdown("**Score Thresholds:**")
+            col1, col2 = st.columns(2)
+            with col1:
+                bullish_threshold = st.number_input(
+                    "Bullish if score >=",
+                    0, 20, 3
                 )
-                confidence = st.slider(
-                    "Confidence",
+                bullish_confidence = st.slider(
+                    "Bullish Confidence",
+                    0.0, 1.0, 0.8, 0.1,
+                    key="bullish_conf"
+                )
+            with col2:
+                bearish_threshold = st.number_input(
+                    "Bearish if score <=",
+                    -20, 0, -2
+                )
+                bearish_confidence = st.slider(
+                    "Bearish Confidence",
                     0.0, 1.0, 0.7, 0.1,
-                    key=f"conf_{i}"
+                    key="bearish_conf"
                 )
-                
-                rules.append({
-                    "metric": metric,
-                    "operator": operator,
-                    "threshold": threshold,
-                    "direction": direction,
-                    "confidence": confidence
-                })
+            
+            rules = [{
+                "type": "score",
+                "criteria": criteria,
+                "bullish_threshold": bullish_threshold,
+                "bullish_confidence": bullish_confidence,
+                "bearish_threshold": bearish_threshold,
+                "bearish_confidence": bearish_confidence
+            }]
     elif agent_type == "RAG-Powered":
         rules = None
         st.info("📄 RAG agents analyze documents/text using retrieval and embeddings")
