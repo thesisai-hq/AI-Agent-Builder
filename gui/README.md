@@ -211,6 +211,44 @@ AI-Agent-Builder/
 
 ## Troubleshooting
 
+### LLM Package Not Installed
+
+**Error:**
+```
+Failed to initialize ollama client: No module named 'ollama'
+```
+
+**Cause:** LLM packages (OpenAI, Anthropic, Ollama) are optional dependencies.
+
+**Solutions:**
+
+**Option 1: Install all LLM providers**
+```bash
+pip install 'ai-agent-framework[llm]'
+```
+
+**Option 2: Install specific provider**
+```bash
+# For Ollama
+pip install ollama
+
+# For OpenAI
+pip install openai
+
+# For Anthropic
+pip install anthropic
+```
+
+**Option 3: Check which providers are installed**
+```bash
+python3 gui/check_llm_deps.py
+```
+
+**Option 4: Use rule-based agents instead**
+- Rule-based agents don't need LLM packages
+- They work on any machine
+- Create in GUI with "Rule-Based" template
+
 ### Files Not Saving
 
 **Test the setup:**

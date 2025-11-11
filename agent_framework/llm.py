@@ -65,19 +65,34 @@ class LLMClient:
         
         try:
             if self.config.provider == 'openai':
-                import openai
+                try:
+                    import openai
+                except ImportError:
+                    raise LLMError(
+                        "OpenAI package not installed. Install with: pip install 'ai-agent-framework[llm]' or pip install openai"
+                    )
                 self._client = openai.OpenAI(
                     api_key=self.config.api_key,
                     timeout=self.config.timeout
                 )
             elif self.config.provider == 'anthropic':
-                import anthropic
+                try:
+                    import anthropic
+                except ImportError:
+                    raise LLMError(
+                        "Anthropic package not installed. Install with: pip install 'ai-agent-framework[llm]' or pip install anthropic"
+                    )
                 self._client = anthropic.Anthropic(
                     api_key=self.config.api_key,
                     timeout=self.config.timeout
                 )
             elif self.config.provider == 'ollama':
-                import ollama
+                try:
+                    import ollama
+                except ImportError:
+                    raise LLMError(
+                        "Ollama package not installed. Install with: pip install 'ai-agent-framework[llm]' or pip install ollama"
+                    )
                 self._client = ollama.Client(
                     host=self.config.base_url or 'http://localhost:11434'
                 )
@@ -86,9 +101,12 @@ class LLMClient:
             
             logger.info(f"Initialized {self.config.provider} client")
             return self._client
+        except LLMError:
+            # Re-raise LLMError as-is with clear message
+            raise
         except Exception as e:
             logger.error(f"Failed to initialize {self.config.provider} client: {e}")
-            raise LLMError(f"Could not initialize {self.config.provider}") from e
+            raise LLMError(f"Could not initialize {self.config.provider}: {e}") from e
     
     def chat(self, message: str, context: Optional[str] = None) -> str:
         """Send chat message with optional context and retries.

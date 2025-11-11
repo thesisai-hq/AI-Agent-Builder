@@ -157,6 +157,16 @@ if __name__ == "__main__":
         return f'''"""Auto-generated LLM-powered agent: {agent_name}
 
 {description}
+
+DEPENDENCIES:
+This agent requires LLM dependencies. Install with:
+  pip install 'ai-agent-framework[llm]'
+
+Or install specific provider:
+  pip install {llm_provider}
+
+To check which providers are installed:
+  python3 gui/check_llm_deps.py
 """
 
 import asyncio
@@ -214,16 +224,24 @@ Example: bullish|75|Strong growth with healthy margins"""
             print(f"⚠️  LLM error: {{e}}")
             # Fallback to simple rule
             pe = data.get('pe_ratio', 0)
-            if pe < 20:
+            growth = data.get('revenue_growth', 0)
+            
+            if pe < 20 and growth > 10:
                 return Signal(
-                    direction='neutral',
+                    direction='bullish',
+                    confidence=0.6,
+                    reasoning=f'LLM unavailable ({{type(e).__name__}}), using fallback: PE={{pe:.1f}}, Growth={{growth:.1f}}%'
+                )
+            elif pe > 30:
+                return Signal(
+                    direction='bearish',
                     confidence=0.5,
-                    reasoning=f'LLM unavailable, PE={{pe:.1f}}'
+                    reasoning=f'LLM unavailable ({{type(e).__name__}}), using fallback: High PE={{pe:.1f}}'
                 )
             return Signal(
                 direction='neutral',
-                confidence=0.5,
-                reasoning='LLM unavailable, insufficient data'
+                confidence=0.4,
+                reasoning=f'LLM unavailable ({{type(e).__name__}}), insufficient data for fallback'
             )
 
 
@@ -293,6 +311,16 @@ if __name__ == "__main__":
 {description}
 
 Uses rule-based logic for clear signals, LLM for complex analysis.
+
+DEPENDENCIES:
+This agent requires LLM dependencies. Install with:
+  pip install 'ai-agent-framework[llm]'
+
+Or install specific provider:
+  pip install {llm_provider}
+
+To check which providers are installed:
+  python3 gui/check_llm_deps.py
 """
 
 import asyncio
