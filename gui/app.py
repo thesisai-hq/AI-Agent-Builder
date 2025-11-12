@@ -13,7 +13,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
 from gui.agent_tester import AgentTester
-from gui.templates import StrategyTemplates
 
 # Page configuration
 st.set_page_config(
@@ -31,7 +30,7 @@ def main():
     if 'agent_loader' not in st.session_state:
         # Get absolute path to examples directory
         examples_dir = Path(__file__).parent.parent / "examples"
-        examples_dir = examples_dir.resolve()  # Convert to absolute path
+        examples_dir = examples_dir.resolve()
         st.session_state.agent_loader = AgentLoader(examples_dir)
         st.session_state.examples_dir = examples_dir
     
@@ -117,11 +116,9 @@ def show_browse_page():
                 
                 with col_b:
                     if st.button("📋 Copy", key=f"dup_{agent_info['filename']}", use_container_width=True):
-                        # Show duplicate dialog
                         st.session_state[f"duplicating_{agent_info['filename']}"] = True
                 
                 with col_c:
-                    # Export button
                     code = loader.get_agent_code(agent_info['filename'])
                     st.download_button(
                         "⬇️ Export",
@@ -144,8 +141,7 @@ def show_browse_page():
                     st.markdown("---")
                     st.markdown("**Duplicate Agent**")
                     
-                    # Suggest new filename
-                    base_name = agent_info['filename'][:-3]  # Remove .py
+                    base_name = agent_info['filename'][:-3]
                     suggested_name = f"{base_name}_copy.py"
                     
                     new_name = st.text_input(
@@ -197,62 +193,29 @@ def show_create_page():
     """Display agent creation interface."""
     st.header("Create New Agent")
     
+    st.info("💡 **Tip:** Browse the examples directory to see strategy templates (Buffett, Lynch, Graham, etc.). Duplicate them to create variations!")
+    
     # Initialize session state for generated code
     if 'generated_code' not in st.session_state:
         st.session_state.generated_code = None
     if 'current_filename' not in st.session_state:
         st.session_state.current_filename = None
-    if 'loaded_template' not in st.session_state:
-        st.session_state.loaded_template = None
     
     creator = AgentCreator()
-    templates = StrategyTemplates.get_all_templates()
-    
-    # Template Selection
-    st.subheader("🎯 Strategy Templates")
-    col_t1, col_t2 = st.columns([3, 1])
-    
-    with col_t1:
-        template_name = st.selectbox(
-            "Load Template (Optional)",
-            ["None - Start from scratch"] + list(templates.keys()),
-            help="Pre-built strategies from famous investors"
-        )
-    
-    with col_t2:
-        if template_name != "None - Start from scratch":
-            if st.button("📄 Load Template", use_container_width=True):
-                st.session_state.loaded_template = templates[template_name]
-                st.success(f"Loaded: {template_name}")
-                st.rerun()
-    
-    # Show template description if loaded
-    if st.session_state.loaded_template:
-        st.info(st.session_state.loaded_template.get('strategy_description', '').strip())
-        
-        if st.button("🗑️ Clear Template"):
-            st.session_state.loaded_template = None
-            st.rerun()
-    
-    st.markdown("---")
     
     # Agent configuration
     col1, col2 = st.columns(2)
-    
-    # Get defaults from template if loaded
-    template = st.session_state.loaded_template or {}
     
     with col1:
         st.subheader("Basic Information")
         agent_name = st.text_input(
             "Agent Class Name",
-            value=template.get('agent_name', 'MyAgent'),
+            value="MyAgent",
             help="Python class name (e.g., ValueAgent, GrowthAgent)"
         )
         
         description = st.text_area(
             "Description",
-            value=template.get('description', ''),
             help="What does this agent do?"
         )
         
@@ -262,30 +225,17 @@ def show_create_page():
             help="File will be saved in examples/ directory"
         )
         
-        # Show where file will be saved
         if filename:
             save_path = st.session_state.examples_dir / filename
             st.caption(f"Will save to: `{save_path}`")
     
     with col2:
         st.subheader("Agent Type")
-        
-        # Get index for template type
-        type_options = ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
-        default_type_index = 0
-        if template.get('agent_type'):
-            try:
-                default_type_index = type_options.index(template.get('agent_type'))
-            except ValueError:
-                default_type_index = 0
-        
         agent_type = st.selectbox(
             "Template",
-            type_options,
-            index=default_type_index
+            ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
         )
         
-        # LLM Configuration (for LLM, Hybrid, and RAG types)
         if agent_type in ["LLM-Powered", "Hybrid", "RAG-Powered"]:
             st.markdown("**LLM Configuration**")
             llm_provider = st.selectbox("Provider", ["ollama", "openai", "anthropic"])
@@ -302,7 +252,6 @@ def show_create_page():
             max_tokens = None
             system_prompt = None
         
-        # RAG-specific configuration
         if agent_type == "RAG-Powered":
             st.markdown("**RAG Configuration**")
             chunk_size = st.number_input("Chunk Size", 100, 1000, 300, 50,
@@ -322,49 +271,13 @@ def show_create_page():
     if agent_type == "Rule-Based":
         st.markdown("Define your investment strategy:")
         
-        # Get default rule style from template
-        default_rule_style = template.get('rule_style', 'Simple Rules') if template else 'Simple Rules'
-        rule_style_options = ["Simple Rules", "Advanced Rules", "Score-Based"]
-        try:
-            rule_style_index = rule_style_options.index(default_rule_style)
-        except ValueError:
-            rule_style_index = 0
-        
-        # Choose rule type
         rule_style = st.radio(
             "Rule Style",
-            rule_style_options,
-            index=rule_style_index,
+            ["Simple Rules", "Advanced Rules", "Score-Based"],
             help="Simple: Single conditions | Advanced: Multi-condition AND/OR | Score: Point accumulation"
         )
         
-        # Note if using template
-        if template and template.get('rules'):
-            st.success(f"🎯 Template loaded! The rules below are pre-configured. You can modify them or use as-is.")
-            st.markdown("**Template Rules Summary:**")
-            
-            template_rules = template.get('rules', [])
-            if template_rules:
-                rule = template_rules[0]  # Show first rule config
-                if rule.get('type') == 'score':
-                    st.markdown(f"- Score-based with {len(rule.get('criteria', []))} criteria")
-                    st.markdown(f"- Bullish threshold: {rule.get('bullish_threshold', 0)}")
-                    st.markdown(f"- Bearish threshold: {rule.get('bearish_threshold', 0)}")
-                elif rule.get('type') == 'advanced':
-                    st.markdown(f"- {len(template_rules)} advanced rule(s)")
-                    for i, r in enumerate(template_rules, 1):
-                        logic = r.get('logic', 'AND')
-                        num_cond = len(r.get('conditions', []))
-                        st.markdown(f"- Rule {i}: {num_cond} conditions ({logic}) → {r.get('direction', 'neutral')}")
-            
-            st.info("💡 Tip: Click 'Generate Code' to see the complete strategy, or modify the configuration below.")
-        
-        # If template loaded, use its rules directly for generation
-        if template and template.get('rules'):
-            rules = template.get('rules')
-            st.caption("⬇️ Template rules will be used. To customize, clear template and rebuild manually.")
-        else:
-            # Original simple rules
+        if rule_style == "Simple Rules":
             num_rules = st.number_input("Number of Rules", 1, 5, 2)
             rules = []
             
@@ -383,16 +296,8 @@ def show_create_page():
                     with col_c:
                         threshold = st.number_input("Threshold", key=f"thresh_{i}")
                     
-                    direction = st.selectbox(
-                        "Signal",
-                        ["bullish", "bearish", "neutral"],
-                        key=f"dir_{i}"
-                    )
-                    confidence = st.slider(
-                        "Confidence",
-                        0.0, 1.0, 0.7, 0.1,
-                        key=f"conf_{i}"
-                    )
+                    direction = st.selectbox("Signal", ["bullish", "bearish", "neutral"], key=f"dir_{i}")
+                    confidence = st.slider("Confidence", 0.0, 1.0, 0.7, 0.1, key=f"conf_{i}")
                     
                     rules.append({
                         "type": "simple",
@@ -404,23 +309,13 @@ def show_create_page():
                     })
         
         elif rule_style == "Advanced Rules":
-            # Multi-condition rules with AND/OR
             num_rules = st.number_input("Number of Rules", 1, 3, 1)
             rules = []
             
             for i in range(num_rules):
                 with st.expander(f"Advanced Rule {i+1}"):
-                    num_conditions = st.number_input(
-                        "Number of Conditions",
-                        1, 5, 2,
-                        key=f"num_cond_{i}"
-                    )
-                    
-                    logic_operator = st.selectbox(
-                        "Combine conditions with",
-                        ["AND", "OR"],
-                        key=f"logic_{i}"
-                    )
+                    num_conditions = st.number_input("Number of Conditions", 1, 5, 2, key=f"num_cond_{i}")
+                    logic_operator = st.selectbox("Combine conditions with", ["AND", "OR"], key=f"logic_{i}")
                     
                     conditions = []
                     for j in range(num_conditions):
@@ -434,33 +329,14 @@ def show_create_page():
                                 key=f"adv_metric_{i}_{j}"
                             )
                         with col_b:
-                            operator = st.selectbox(
-                                "Op",
-                                ["<", ">", "<=", ">=", "=="],
-                                key=f"adv_op_{i}_{j}"
-                            )
+                            operator = st.selectbox("Op", ["<", ">", "<=", ">=", "=="], key=f"adv_op_{i}_{j}")
                         with col_c:
-                            threshold = st.number_input(
-                                "Value",
-                                key=f"adv_thresh_{i}_{j}"
-                            )
+                            threshold = st.number_input("Value", key=f"adv_thresh_{i}_{j}")
                         
-                        conditions.append({
-                            "metric": metric,
-                            "operator": operator,
-                            "threshold": threshold
-                        })
+                        conditions.append({"metric": metric, "operator": operator, "threshold": threshold})
                     
-                    direction = st.selectbox(
-                        "Signal",
-                        ["bullish", "bearish", "neutral"],
-                        key=f"adv_dir_{i}"
-                    )
-                    confidence = st.slider(
-                        "Confidence",
-                        0.0, 1.0, 0.7, 0.1,
-                        key=f"adv_conf_{i}"
-                    )
+                    direction = st.selectbox("Signal", ["bullish", "bearish", "neutral"], key=f"adv_dir_{i}")
+                    confidence = st.slider("Confidence", 0.0, 1.0, 0.7, 0.1, key=f"adv_conf_{i}")
                     
                     rules.append({
                         "type": "advanced",
@@ -471,8 +347,7 @@ def show_create_page():
                     })
         
         else:  # Score-Based
-            st.markdown("""**Score-Based Strategy:**
-            Accumulate points based on conditions, then decide signal based on total score.""")
+            st.markdown("**Score-Based Strategy:** Accumulate points, decide signal based on total score.")
             
             num_criteria = st.number_input("Number of Scoring Criteria", 1, 10, 5)
             criteria = []
@@ -489,22 +364,11 @@ def show_create_page():
                             key=f"score_metric_{i}"
                         )
                     with col_b:
-                        operator = st.selectbox(
-                            "Op",
-                            ["<", ">", "<=", ">="],
-                            key=f"score_op_{i}"
-                        )
+                        operator = st.selectbox("Op", ["<", ">", "<=", ">="], key=f"score_op_{i}")
                     with col_c:
-                        threshold = st.number_input(
-                            "Value",
-                            key=f"score_thresh_{i}"
-                        )
+                        threshold = st.number_input("Value", key=f"score_thresh_{i}")
                     with col_d:
-                        points = st.number_input(
-                            "Points",
-                            -5, 5, 1,
-                            key=f"score_pts_{i}"
-                        )
+                        points = st.number_input("Points", -5, 5, 1, key=f"score_pts_{i}")
                     
                     criteria.append({
                         "metric": metric,
@@ -513,29 +377,14 @@ def show_create_page():
                         "points": points
                     })
             
-            # Scoring thresholds
             st.markdown("**Score Thresholds:**")
             col1, col2 = st.columns(2)
             with col1:
-                bullish_threshold = st.number_input(
-                    "Bullish if score >=",
-                    0, 20, 3
-                )
-                bullish_confidence = st.slider(
-                    "Bullish Confidence",
-                    0.0, 1.0, 0.8, 0.1,
-                    key="bullish_conf"
-                )
+                bullish_threshold = st.number_input("Bullish if score >=", 0, 20, 3)
+                bullish_confidence = st.slider("Bullish Confidence", 0.0, 1.0, 0.8, 0.1, key="bullish_conf")
             with col2:
-                bearish_threshold = st.number_input(
-                    "Bearish if score <=",
-                    -20, 0, -2
-                )
-                bearish_confidence = st.slider(
-                    "Bearish Confidence",
-                    0.0, 1.0, 0.7, 0.1,
-                    key="bearish_conf"
-                )
+                bearish_threshold = st.number_input("Bearish if score <=", -20, 0, -2)
+                bearish_confidence = st.slider("Bearish Confidence", 0.0, 1.0, 0.7, 0.1, key="bearish_conf")
             
             rules = [{
                 "type": "score",
@@ -545,17 +394,10 @@ def show_create_page():
                 "bearish_threshold": bearish_threshold,
                 "bearish_confidence": bearish_confidence
             }]
+    
     elif agent_type == "RAG-Powered":
         rules = None
         st.info("📄 RAG agents analyze documents/text using retrieval and embeddings")
-        st.markdown("""
-        **RAG agents are best for:**
-        - Analyzing SEC filings, earnings calls, news articles
-        - Extracting insights from long documents
-        - Sentiment analysis from text data
-        
-        **Requires:** `pip install 'ai-agent-framework[llm,rag]'`
-        """)
     else:
         rules = None
         st.info("LLM-powered agents use natural language prompts instead of explicit rules")
@@ -579,7 +421,6 @@ def show_create_page():
             top_k=top_k
         )
         
-        # Store in session state
         st.session_state.generated_code = code
         st.session_state.current_filename = filename
     
@@ -587,7 +428,6 @@ def show_create_page():
     if st.session_state.generated_code:
         st.code(st.session_state.generated_code, language="python")
         
-        # Save button
         col1, col2, col3 = st.columns([1, 1, 3])
         with col1:
             if st.button("💾 Save Agent"):
@@ -599,7 +439,6 @@ def show_create_page():
                 if success:
                     st.success(message)
                     st.balloons()
-                    # Clear session state after successful save
                     st.session_state.generated_code = None
                     st.session_state.current_filename = None
                 else:
@@ -622,22 +461,17 @@ def show_test_page():
         st.info("No agents available to test. Create one first!")
         return
     
-    # Select agent
     agent_names = [a['name'] for a in agents]
     selected_agent = st.selectbox("Select Agent", agent_names)
     
-    # Get agent info
     agent_info = next(a for a in agents if a['name'] == selected_agent)
     agent_filename = agent_info['filename']
     agent_type = agent_info['type']
     
-    # Show agent type
     st.info(f"Agent Type: **{agent_type}**")
     
-    # Test configuration
     ticker = st.text_input("Ticker Symbol", value="AAPL")
     
-    # Different UI for RAG agents vs traditional agents
     if agent_type == "RAG-Powered":
         st.subheader("📄 Document Upload")
         st.markdown("RAG agents analyze documents. Upload a PDF to test:")
@@ -651,14 +485,13 @@ def show_test_page():
         if uploaded_file:
             st.success(f"Uploaded: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
             
-            # Extract text preview
             with st.expander("Preview Document Text"):
                 from PyPDF2 import PdfReader
                 
                 try:
                     pdf_reader = PdfReader(uploaded_file)
                     preview_text = ""
-                    for page_num, page in enumerate(pdf_reader.pages[:3]):  # First 3 pages
+                    for page_num, page in enumerate(pdf_reader.pages[:3]):
                         preview_text += f"\n--- Page {page_num + 1} ---\n"
                         preview_text += page.extract_text()
                     
@@ -671,17 +504,15 @@ def show_test_page():
                 except Exception as e:
                     st.error(f"Error reading PDF: {e}")
         
-        use_mock = False  # RAG agents don't use mock data
+        use_mock = False
         mock_data = None
         
     else:
-        # Traditional agents - use mock data
         st.subheader("Test Data")
         use_mock = st.checkbox("Use Mock Data", value=True)
         uploaded_file = None
         
         if use_mock:
-            # Mock data inputs
             st.subheader("Mock Financial Data")
             mock_data = {}
             
@@ -698,27 +529,19 @@ def show_test_page():
         else:
             mock_data = None
     
-    # Run test
     if st.button("🚀 Run Analysis", type="primary"):
         tester = AgentTester()
         
-        # Check if RAG agent has document
         if agent_type == "RAG-Powered" and not uploaded_file:
             st.error("Please upload a PDF document to test RAG agent")
             return
         
         with st.spinner("Running analysis..."):
-            result = tester.test_agent(
-                agent_filename,
-                ticker,
-                mock_data,
-                uploaded_file  # Pass PDF file for RAG agents
-            )
+            result = tester.test_agent(agent_filename, ticker, mock_data, uploaded_file)
         
         if result['success']:
             st.success("Analysis Complete!")
             
-            # Display results
             col1, col2, col3 = st.columns(3)
             
             with col1:
@@ -735,7 +558,6 @@ def show_test_page():
             st.markdown("**Reasoning:**")
             st.info(result['signal']['reasoning'])
             
-            # Show insights for RAG agents
             if 'insights' in result['signal'] and result['signal']['insights']:
                 st.markdown("**Detailed Insights:**")
                 for i, insight in enumerate(result['signal']['insights'], 1):

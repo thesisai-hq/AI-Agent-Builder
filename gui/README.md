@@ -22,6 +22,7 @@ Opens at: `http://localhost:8501`
 - View all agents in `examples/` directory
 - **Search and filter** agents
 - **Statistics dashboard** (total, by type, custom count)
+- **Strategy examples** (Buffett, Lynch, Graham)
 - Preview source code
 - **Duplicate agents** for variations
 - **Export agents** to share
