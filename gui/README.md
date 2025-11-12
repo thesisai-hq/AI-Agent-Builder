@@ -20,7 +20,12 @@ Opens at: `http://localhost:8501`
 
 ### 📋 Browse Agents
 - View all agents in `examples/` directory
+- **Search and filter** agents
+- **Statistics dashboard** (total, by type, custom count)
 - Preview source code
+- **Duplicate agents** for variations
+- **Export agents** to share
+- **Delete agents** with safety confirmations
 - See agent types and metadata
 
 ### ➕ Create Agents

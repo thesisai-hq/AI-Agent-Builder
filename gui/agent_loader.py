@@ -83,9 +83,9 @@ class AgentLoader:
         
         file_path = self.examples_dir / filename
         
-        # Check if file already exists
+        # Check if file already exists (don't allow overwrite in save)
         if file_path.exists():
-            return False, f"File {filename} already exists. Choose a different name."
+            return False, f"File {filename} already exists. Choose a different name or delete the existing one first."
         
         try:
             file_path.write_text(code, encoding='utf-8')
@@ -96,6 +96,77 @@ class AgentLoader:
                 return False, "File write succeeded but file not found"
         except Exception as e:
             return False, f"Error saving file: {type(e).__name__}: {e}"
+    
+    def delete_agent(self, filename: str) -> Tuple[bool, str]:
+        """Delete an agent file.
+        
+        Args:
+            filename: Filename to delete
+            
+        Returns:
+            Tuple of (success, message)
+        """
+        file_path = self.examples_dir / filename
+        
+        if not file_path.exists():
+            return False, f"File {filename} not found"
+        
+        # Don't delete framework example files
+        if filename.startswith('0'):
+            return False, "Cannot delete framework example files (01_*.py, 02_*.py, etc.)"
+        
+        try:
+            file_path.unlink()
+            return True, f"✅ Deleted {filename}"
+        except Exception as e:
+            return False, f"Error deleting file: {e}"
+    
+    def duplicate_agent(self, filename: str, new_filename: str) -> Tuple[bool, str]:
+        """Duplicate an agent file.
+        
+        Args:
+            filename: Original filename
+            new_filename: New filename for the copy
+            
+        Returns:
+            Tuple of (success, message)
+        """
+        # Validate new filename
+        if not new_filename.endswith('.py'):
+            return False, "Filename must end with .py"
+        
+        if not self._is_valid_filename(new_filename):
+            return False, "Invalid filename. Use only letters, numbers, and underscores"
+        
+        source_path = self.examples_dir / filename
+        dest_path = self.examples_dir / new_filename
+        
+        if not source_path.exists():
+            return False, f"Source file {filename} not found"
+        
+        if dest_path.exists():
+            return False, f"File {new_filename} already exists. Choose a different name."
+        
+        try:
+            # Read source and write to destination
+            code = source_path.read_text(encoding='utf-8')
+            
+            # Update class name in duplicated code
+            import re
+            # Extract original class name
+            match = re.search(r'class\s+(\w+)\(Agent\)', code)
+            if match:
+                old_class = match.group(1)
+                # Create new class name from filename
+                new_class = ''.join(word.capitalize() for word in new_filename[:-3].split('_'))
+                # Replace class name
+                code = code.replace(f'class {old_class}', f'class {new_class}')
+                code = code.replace(f'{old_class}()', f'{new_class}()')
+            
+            dest_path.write_text(code, encoding='utf-8')
+            return True, f"✅ Duplicated to {new_filename}"
+        except Exception as e:
+            return False, f"Error duplicating file: {e}"
     
     def _parse_agent_file(self, file_path: Path) -> Optional[Dict[str, str]]:
         """Parse agent file to extract metadata.

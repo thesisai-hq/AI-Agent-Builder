@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
 from gui.agent_tester import AgentTester
+from gui.templates import StrategyTemplates
 
 # Page configuration
 st.set_page_config(
@@ -71,18 +72,126 @@ def show_browse_page():
         st.info("No agents found in examples/ directory")
         return
     
+    # Summary stats
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Agents", len(agents))
+    with col2:
+        rule_based = len([a for a in agents if a['type'] == 'Rule-Based'])
+        st.metric("Rule-Based", rule_based)
+    with col3:
+        llm_powered = len([a for a in agents if 'LLM' in a['type'] or 'RAG' in a['type']])
+        st.metric("LLM/RAG", llm_powered)
+    with col4:
+        custom = len([a for a in agents if not a['filename'].startswith('0')])
+        st.metric("Your Agents", custom)
+    
+    st.markdown("---")
+    
+    # Search/Filter
+    search = st.text_input("🔍 Search agents", placeholder="Type to filter...")
+    
+    if search:
+        agents = [a for a in agents if search.lower() in a['name'].lower() or search.lower() in a['filename'].lower()]
+    
+    st.caption(f"Showing {len(agents)} agent(s)")
+    
     # Display agents in a grid
     cols = st.columns(2)
     for idx, agent_info in enumerate(agents):
         with cols[idx % 2]:
-            with st.expander(f"**{agent_info['name']}**"):
+            # Check if framework example (can't delete)
+            is_framework_example = agent_info['filename'].startswith('0')
+            
+            with st.expander(f"**{agent_info['name']}**", expanded=False):
                 st.markdown(f"**File:** `{agent_info['filename']}`")
                 st.markdown(f"**Type:** {agent_info['type']}")
                 
-                # Show code preview
-                if st.button("View Code", key=f"view_{agent_info['filename']}"):
+                # Action buttons
+                col_a, col_b, col_c, col_d = st.columns(4)
+                
+                with col_a:
+                    if st.button("👁️ View", key=f"view_{agent_info['filename']}", use_container_width=True):
+                        code = loader.get_agent_code(agent_info['filename'])
+                        st.code(code, language="python")
+                
+                with col_b:
+                    if st.button("📋 Copy", key=f"dup_{agent_info['filename']}", use_container_width=True):
+                        # Show duplicate dialog
+                        st.session_state[f"duplicating_{agent_info['filename']}"] = True
+                
+                with col_c:
+                    # Export button
                     code = loader.get_agent_code(agent_info['filename'])
-                    st.code(code, language="python")
+                    st.download_button(
+                        "⬇️ Export",
+                        data=code,
+                        file_name=agent_info['filename'],
+                        mime="text/x-python",
+                        key=f"export_{agent_info['filename']}",
+                        use_container_width=True
+                    )
+                
+                with col_d:
+                    if is_framework_example:
+                        st.button("🔒 Protected", disabled=True, key=f"del_{agent_info['filename']}", use_container_width=True)
+                    else:
+                        if st.button("🗑️ Delete", key=f"del_{agent_info['filename']}", type="secondary", use_container_width=True):
+                            st.session_state[f"deleting_{agent_info['filename']}"] = True
+                
+                # Handle duplicate dialog
+                if st.session_state.get(f"duplicating_{agent_info['filename']}"):
+                    st.markdown("---")
+                    st.markdown("**Duplicate Agent**")
+                    
+                    # Suggest new filename
+                    base_name = agent_info['filename'][:-3]  # Remove .py
+                    suggested_name = f"{base_name}_copy.py"
+                    
+                    new_name = st.text_input(
+                        "New filename:",
+                        value=suggested_name,
+                        key=f"new_name_{agent_info['filename']}"
+                    )
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("✅ Duplicate", key=f"confirm_dup_{agent_info['filename']}"):
+                            success, message = loader.duplicate_agent(agent_info['filename'], new_name)
+                            if success:
+                                st.success(message)
+                                del st.session_state[f"duplicating_{agent_info['filename']}"]
+                                st.rerun()
+                            else:
+                                st.error(message)
+                    
+                    with col2:
+                        if st.button("Cancel", key=f"cancel_dup_{agent_info['filename']}"):
+                            del st.session_state[f"duplicating_{agent_info['filename']}"]
+                            st.rerun()
+                
+                # Handle delete confirmation
+                if st.session_state.get(f"deleting_{agent_info['filename']}"):
+                    st.markdown("---")
+                    st.warning(f"⚠️ **Confirm Deletion**")
+                    st.markdown(f"Are you sure you want to delete `{agent_info['filename']}`?")
+                    st.caption("This action cannot be undone.")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("🗑️ Confirm Delete", key=f"confirm_del_{agent_info['filename']}", type="primary"):
+                            success, message = loader.delete_agent(agent_info['filename'])
+                            if success:
+                                st.success(message)
+                                del st.session_state[f"deleting_{agent_info['filename']}"]
+                                st.rerun()
+                            else:
+                                st.error(message)
+                    
+                    with col2:
+                        if st.button("Cancel", key=f"cancel_del_{agent_info['filename']}"):
+                            del st.session_state[f"deleting_{agent_info['filename']}"]
+                            st.rerun()
 
 def show_create_page():
     """Display agent creation interface."""
@@ -93,22 +202,57 @@ def show_create_page():
         st.session_state.generated_code = None
     if 'current_filename' not in st.session_state:
         st.session_state.current_filename = None
+    if 'loaded_template' not in st.session_state:
+        st.session_state.loaded_template = None
     
     creator = AgentCreator()
+    templates = StrategyTemplates.get_all_templates()
+    
+    # Template Selection
+    st.subheader("🎯 Strategy Templates")
+    col_t1, col_t2 = st.columns([3, 1])
+    
+    with col_t1:
+        template_name = st.selectbox(
+            "Load Template (Optional)",
+            ["None - Start from scratch"] + list(templates.keys()),
+            help="Pre-built strategies from famous investors"
+        )
+    
+    with col_t2:
+        if template_name != "None - Start from scratch":
+            if st.button("📄 Load Template", use_container_width=True):
+                st.session_state.loaded_template = templates[template_name]
+                st.success(f"Loaded: {template_name}")
+                st.rerun()
+    
+    # Show template description if loaded
+    if st.session_state.loaded_template:
+        st.info(st.session_state.loaded_template.get('strategy_description', '').strip())
+        
+        if st.button("🗑️ Clear Template"):
+            st.session_state.loaded_template = None
+            st.rerun()
+    
+    st.markdown("---")
     
     # Agent configuration
     col1, col2 = st.columns(2)
+    
+    # Get defaults from template if loaded
+    template = st.session_state.loaded_template or {}
     
     with col1:
         st.subheader("Basic Information")
         agent_name = st.text_input(
             "Agent Class Name",
-            value="MyAgent",
+            value=template.get('agent_name', 'MyAgent'),
             help="Python class name (e.g., ValueAgent, GrowthAgent)"
         )
         
         description = st.text_area(
             "Description",
+            value=template.get('description', ''),
             help="What does this agent do?"
         )
         
@@ -125,9 +269,20 @@ def show_create_page():
     
     with col2:
         st.subheader("Agent Type")
+        
+        # Get index for template type
+        type_options = ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
+        default_type_index = 0
+        if template.get('agent_type'):
+            try:
+                default_type_index = type_options.index(template.get('agent_type'))
+            except ValueError:
+                default_type_index = 0
+        
         agent_type = st.selectbox(
             "Template",
-            ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
+            type_options,
+            index=default_type_index
         )
         
         # LLM Configuration (for LLM, Hybrid, and RAG types)
@@ -167,13 +322,48 @@ def show_create_page():
     if agent_type == "Rule-Based":
         st.markdown("Define your investment strategy:")
         
+        # Get default rule style from template
+        default_rule_style = template.get('rule_style', 'Simple Rules') if template else 'Simple Rules'
+        rule_style_options = ["Simple Rules", "Advanced Rules", "Score-Based"]
+        try:
+            rule_style_index = rule_style_options.index(default_rule_style)
+        except ValueError:
+            rule_style_index = 0
+        
         # Choose rule type
         rule_style = st.radio(
             "Rule Style",
-            ["Simple Rules", "Advanced Rules", "Score-Based"]
+            rule_style_options,
+            index=rule_style_index,
+            help="Simple: Single conditions | Advanced: Multi-condition AND/OR | Score: Point accumulation"
         )
         
-        if rule_style == "Simple Rules":
+        # Note if using template
+        if template and template.get('rules'):
+            st.success(f"🎯 Template loaded! The rules below are pre-configured. You can modify them or use as-is.")
+            st.markdown("**Template Rules Summary:**")
+            
+            template_rules = template.get('rules', [])
+            if template_rules:
+                rule = template_rules[0]  # Show first rule config
+                if rule.get('type') == 'score':
+                    st.markdown(f"- Score-based with {len(rule.get('criteria', []))} criteria")
+                    st.markdown(f"- Bullish threshold: {rule.get('bullish_threshold', 0)}")
+                    st.markdown(f"- Bearish threshold: {rule.get('bearish_threshold', 0)}")
+                elif rule.get('type') == 'advanced':
+                    st.markdown(f"- {len(template_rules)} advanced rule(s)")
+                    for i, r in enumerate(template_rules, 1):
+                        logic = r.get('logic', 'AND')
+                        num_cond = len(r.get('conditions', []))
+                        st.markdown(f"- Rule {i}: {num_cond} conditions ({logic}) → {r.get('direction', 'neutral')}")
+            
+            st.info("💡 Tip: Click 'Generate Code' to see the complete strategy, or modify the configuration below.")
+        
+        # If template loaded, use its rules directly for generation
+        if template and template.get('rules'):
+            rules = template.get('rules')
+            st.caption("⬇️ Template rules will be used. To customize, clear template and rebuild manually.")
+        else:
             # Original simple rules
             num_rules = st.number_input("Number of Rules", 1, 5, 2)
             rules = []
