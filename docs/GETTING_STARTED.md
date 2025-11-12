@@ -162,7 +162,7 @@ sudo dnf install python3 python3-pip
 ```bash
 # Navigate to project directory
 cd ~
-git clone <repo-url>
+git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
 
 # Create virtual environment
@@ -258,8 +258,8 @@ sudo dnf install git
 # Navigate home
 cd ~
 
-# Clone repository (replace with actual URL)
-git clone <repo-url>
+# Clone repository
+git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 
 # Navigate into project
 cd AI-Agent-Builder
@@ -499,7 +499,7 @@ bash Miniconda3-latest-Linux-x86_64.sh
 source ~/.bashrc
 conda create -n agent-framework python=3.11 -y
 conda activate agent-framework
-git clone <repo-url>
+git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
 pip install -e ".[all]"
 cp .env.example .env
@@ -564,7 +564,7 @@ uv pip install -e ".[all]"
 
 - Read [CONFIGURATION.md](CONFIGURATION.md) for settings
 - Read [LLM_CUSTOMIZATION.md](LLM_CUSTOMIZATION.md) for AI options
-- Check [QUICK_REFERENCE.md](../QUICK_REFERENCE.md) for commands
+- See [QUICK_START.md](../QUICK_START.md) for quick commands reference
 
 ---
 

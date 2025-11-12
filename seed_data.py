@@ -1,4 +1,26 @@
-"""Seed PostgreSQL database with sample financial data."""
+"""Seed PostgreSQL database with sample financial data.
+
+⚠️ DATA DISCLAIMER:
+
+ALL DATA IN THIS FILE IS SYNTHETIC, SIMPLIFIED, OR FICTIONAL FOR EDUCATIONAL PURPOSES ONLY.
+
+Data Attribution:
+- Fundamental metrics: Approximate values based on publicly available information, simplified for demonstration
+- Price data: Randomly generated using simplified models, NOT actual market prices
+- News headlines: Fictional examples created for testing purposes
+- SEC filings: Simplified summaries for educational demonstration, NOT actual filings
+
+This data:
+- Should NEVER be used for real investment decisions
+- Is NOT sourced from professional data providers
+- May contain errors, approximations, or outdated information  
+- Does NOT reflect current market conditions
+- Is provided solely for learning the framework's functionality
+
+For real-time, accurate market data, use professional data services.
+
+See DISCLAIMER.md for complete legal terms.
+"""
 
 import asyncio
 from datetime import datetime, timedelta
@@ -253,6 +275,10 @@ async def main():
     """Run all seed functions."""
     print("=" * 60)
     print("AI Agent Framework - Database Seeding")
+    print("=" * 60)
+    print()
+    print("⚠️  DISCLAIMER: Sample data for educational use only")
+    print("   NOT real market data. See DISCLAIMER.md for full terms.")
     print("=" * 60)
     
     # Get connection string from config

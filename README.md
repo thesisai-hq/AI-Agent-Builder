@@ -2,6 +2,46 @@
 
 Build AI-powered investment analysis agents in Python.
 
+---
+
+## ⚠️ IMPORTANT DISCLAIMER
+
+**THIS IS AN EDUCATIONAL TOOL FOR LEARNING PURPOSES ONLY**
+
+### Not Financial Advice
+- This software does NOT provide financial, investment, trading, or any other type of professional advice
+- All outputs from agents are for educational demonstration purposes only
+- DO NOT use this software to make real investment decisions without consulting qualified financial professionals
+- The creators and contributors are NOT licensed financial advisors
+
+### No Warranties
+- This software is provided "AS IS" without warranty of any kind, express or implied
+- We make NO representations about the accuracy, reliability, or completeness of any information
+- Past performance or theoretical results do NOT guarantee future performance
+- Use this software at your own risk
+
+### Investment Risks
+- All investments carry risk, including the potential loss of principal
+- Stock market performance is unpredictable and can result in significant losses
+- The agents created with this framework have NOT been tested for actual trading
+- Theoretical or simulated results do NOT guarantee real-world performance
+
+### Data Attribution
+- Sample data included is synthetic or simplified for educational purposes
+- Real-time market data requires professional data subscriptions
+- Do not rely on included sample data for any real-world decisions
+
+### Legal Compliance
+- Users are responsible for compliance with all applicable laws and regulations
+- Securities trading may require licenses in your jurisdiction
+- Consult legal and financial professionals before any trading activities
+
+**By using this software, you acknowledge that you have read, understood, and agreed to these terms.**
+
+**For production-ready investment tools with proper risk management, compliance, and support, see [thesis-app](https://thesisai.app).**
+
+---
+
 ## What Is This?
 
 A lightweight framework for creating AI agents that analyze stocks and make investment recommendations. Think of it as LEGO blocks for building custom stock analysts.
@@ -276,4 +316,6 @@ MIT License - See [LICENSE](LICENSE) file.
 
 ---
 
-Built for learning and experimentation. Not financial advice.
+**Built for learning and experimentation. Not financial advice.**
+
+**See [DISCLAIMER.md](DISCLAIMER.md) for full legal terms.**

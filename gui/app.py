@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
 from gui.agent_tester import AgentTester
+from gui.backtester import Backtester, BacktestResult
 from gui.metrics import MetricDefinitions, RuleValidator
 
 # Page configuration
@@ -26,10 +27,122 @@ def get_metric_definitions():
     return MetricDefinitions.get_all_metrics()
 
 
+def show_disclaimer():
+    """Show disclaimer on first visit."""
+    if "disclaimer_accepted" not in st.session_state:
+        st.session_state.disclaimer_accepted = False
+    
+    if not st.session_state.disclaimer_accepted:
+        st.error("⚠️ IMPORTANT DISCLAIMER - PLEASE READ")
+        
+        st.markdown("""
+        ### Educational Use Only
+        
+        This software is for **learning purposes only** and is **NOT intended for real trading**.
+        
+        **By using this application, you acknowledge that:**
+        
+        - ❌ **NOT FINANCIAL ADVICE:** This tool does not provide investment recommendations
+        - ❌ **NO WARRANTIES:** Software provided "as is" with no guarantees of accuracy
+        - ❌ **THEORETICAL ONLY:** Agents have not been validated for real trading
+        - ❌ **SAMPLE DATA:** All included data is synthetic or simplified
+        - ⚠️ **INVESTMENT RISKS:** All investments carry risk of loss
+        - ✅ **EDUCATIONAL PURPOSE:** For learning investment concepts only
+        
+        **You should:**
+        - Consult licensed financial advisors before making investment decisions
+        - Never trade with money you cannot afford to lose
+        - Understand that past performance does not guarantee future results
+        - Review the full [DISCLAIMER.md](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md) for complete legal terms
+        
+        ---
+        
+        **For production trading tools with proper risk management, see [thesis-app](https://thesisai.app)**
+        """)
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("✅ I Understand - Continue to Application", type="primary", use_container_width=True):
+                st.session_state.disclaimer_accepted = True
+                st.rerun()
+        
+        st.stop()
+
+
+def show_license_modal():
+    """Display full MIT License."""
+    st.title("📄 MIT License")
+    
+    st.markdown("""
+    ### AI-Agent-Builder Framework
+    
+    **Copyright (c) 2025 ThesisAI LLC**
+    
+    ---
+    
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+    
+    **THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.**
+    
+    ---
+    
+    ### What This Means
+    
+    The MIT License is one of the most permissive open source licenses. You can:
+    
+    - ✅ Use this software for any purpose (personal, academic, commercial)
+    - ✅ Modify the code however you want
+    - ✅ Distribute your modified or unmodified versions
+    - ✅ Sublicense or sell copies
+    
+    **Your only obligations:**
+    
+    - Include the copyright notice and license text in any copies
+    - Accept that the software comes with no warranties
+    
+    ### Additional Legal Terms
+    
+    While the MIT License covers software usage, please also review:
+    
+    - **[DISCLAIMER.md](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)** - Educational use and financial advice disclaimers
+    - **[CONTRIBUTING.md](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/CONTRIBUTING.md)** - Guidelines for contributing
+    
+    ### Questions?
+    
+    For questions about licensing or usage, please:
+    - Open an issue on [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
+    - Email: support@thesisai.app
+    """)
+    
+    if st.button("← Back to Application", type="primary"):
+        st.session_state.show_license = False
+        st.rerun()
+
+
 def main():
     """Main application entry point."""
+    # Show disclaimer first
+    show_disclaimer()
+    
     st.title("🤖 AI Agent Builder")
     st.markdown("Create and manage AI investment agents")
+    
+    # Show reminder banner
+    st.warning("📚 **Educational Tool** | Not for real trading | [Read Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)")
 
     # Initialize session state
     if "agent_loader" not in st.session_state:
@@ -41,7 +154,7 @@ def main():
 
     # Sidebar navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to:", ["📋 Browse Agents", "➕ Create Agent", "🧪 Test Agent"])
+    page = st.sidebar.radio("Go to:", ["📋 Browse Agents", "➕ Create Agent", "🧪 Test Agent", "📈 Backtest Agent"])
 
     # Show quick stats
     loader = st.session_state.agent_loader
@@ -53,7 +166,40 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Save Location")
     st.sidebar.caption(f"`{st.session_state.examples_dir}`")
+    
+    # Disclaimer reminder in sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.error("⚠️ **Educational Use Only**")
+    st.sidebar.caption("""
+    Not financial advice.
+    Do not use for real trading.
+    [Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)
+    """)
+    
+    # Link to thesis-app
+    st.sidebar.markdown("---")
+    st.sidebar.info("""
+    🚀 **Ready for Production?**
+    
+    Check out [thesis-app](https://thesisai.app) for:
+    - Real-time market data
+    - Multi-agent orchestration
+    - Risk management
+    - Production support
+    """)
+    
+    st.sidebar.markdown("---")
+    st.sidebar.caption("**AI-Agent-Builder v1.0.0**  \nMIT License | [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder)")
+    
+    # License link
+    if st.sidebar.button("📄 View License", use_container_width=True):
+        st.session_state.show_license = True
 
+    # License modal
+    if st.session_state.get("show_license", False):
+        show_license_modal()
+        return
+    
     # Page routing
     if page == "📋 Browse Agents":
         show_browse_page()
@@ -61,6 +207,8 @@ def main():
         show_create_page()
     elif page == "🧪 Test Agent":
         show_test_page()
+    elif page == "📈 Backtest Agent":
+        show_backtest_page()
 
 
 def show_browse_page():
@@ -714,6 +862,16 @@ def show_test_page():
         else:
             mock_data = None
 
+    # Show warning before running analysis
+    st.markdown("---")
+    st.warning("""
+    ⚠️ **Testing Reminder:**
+    - This is a theoretical test using mock data
+    - Results are for educational purposes only
+    - Do not use these signals for real trading
+    - Always consult financial professionals for investment decisions
+    """)
+    
     if st.button("🚀 Run Analysis", type="primary"):
         tester = AgentTester()
 
@@ -751,6 +909,208 @@ def show_test_page():
 
         else:
             st.error(f"Error: {result['error']}")
+
+
+def show_backtest_page():
+    """Display backtesting interface."""
+    st.header("📈 Backtest Agent")
+    
+    st.info("""
+    🎯 **What is Backtesting?**
+    
+    Backtesting shows how your agent would have performed on historical data.
+    This helps you understand if your rules would have been profitable.
+    
+    **⚠️ Important:** Past performance does NOT guarantee future results!
+    """)
+    
+    loader = st.session_state.agent_loader
+    agents = loader.list_agents()
+    
+    if not agents:
+        st.info("No agents available to backtest. Create one first!")
+        return
+    
+    # Agent selection
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        agent_names = [a["name"] for a in agents]
+        selected_agent = st.selectbox("🤖 Select Agent to Backtest", agent_names)
+        
+        agent_info = next(a for a in agents if a["name"] == selected_agent)
+        agent_filename = agent_info["filename"]
+        agent_type = agent_info["type"]
+        
+        st.caption(f"Type: **{agent_type}**")
+    
+    with col2:
+        st.markdown("### Quick Info")
+        st.caption("ℹ️ Backtesting runs your agent on multiple scenarios to see signal distribution.")
+    
+    # Data source selection
+    st.markdown("---")
+    st.subheader("📊 Data Source")
+    
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        use_database = st.radio(
+            "Data Source",
+            ["Mock Data (Scenarios)", "Database (Sample Stocks)"],
+            help="Mock data tests various financial scenarios. Database uses actual sample data."
+        )
+    
+    with col_b:
+        if use_database == "Database (Sample Stocks)":
+            st.info("📁 Uses: AAPL, MSFT, TSLA, JPM from database")
+            tickers = ["AAPL", "MSFT", "TSLA", "JPM"]
+        else:
+            st.info("🎲 Tests 5 scenarios: undervalued, growth, overvalued, balanced, high-debt")
+            tickers = ["SCENARIO_1", "SCENARIO_2", "SCENARIO_3", "SCENARIO_4", "SCENARIO_5"]
+    
+    # Educational disclaimer
+    st.markdown("---")
+    st.warning("""
+    📚 **Educational Backtesting**
+    
+    This is a simplified backtest for learning purposes:
+    
+    **What it does:**
+    - ✅ Shows signal distribution (bullish/bearish/neutral)
+    - ✅ Calculates average confidence
+    - ✅ Shows reasoning for each signal
+    - ✅ Helps you understand your rules
+    
+    **What it does NOT do:**
+    - ❌ No real price movements
+    - ❌ No profit/loss calculation
+    - ❌ No transaction costs
+    - ❌ No market impact simulation
+    
+    For production backtesting, use:
+    - Backtrader, Zipline, QuantConnect
+    - Or thesis-app with real historical data
+    """)
+    
+    # Run backtest button
+    st.markdown("---")
+    
+    if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
+        with st.spinner("Running backtest..."):
+            import asyncio
+            
+            backtester = Backtester()
+            
+            # Run async backtest
+            success, result, error = asyncio.run(
+                backtester.run_backtest(
+                    agent_filename,
+                    tickers,
+                    use_database=(use_database == "Database (Sample Stocks)")
+                )
+            )
+        
+        if success:
+            st.success("✅ Backtest Complete!")
+            
+            # Display results
+            st.markdown("---")
+            st.subheader("📈 Backtest Results")
+            
+            # Metrics row
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Signals", result.total_signals)
+            
+            with col2:
+                st.metric("Avg Confidence", f"{result.avg_confidence:.1%}")
+            
+            with col3:
+                win_rate = result.get_win_rate()
+                st.metric("Bullish Signals", f"{win_rate:.1%}")
+                st.caption("(Simplified win rate)")
+            
+            with col4:
+                st.metric("Execution Time", f"{result.execution_time:.2f}s")
+            
+            # Signal distribution
+            st.markdown("---")
+            st.subheader("📊 Signal Distribution")
+            
+            col_x, col_y = st.columns([2, 1])
+            
+            with col_x:
+                # Create bar chart data
+                import pandas as pd
+                
+                chart_data = pd.DataFrame({
+                    'Signal': ['🟢 Bullish', '🔴 Bearish', '🟡 Neutral'],
+                    'Count': [result.bullish_count, result.bearish_count, result.neutral_count]
+                })
+                
+                st.bar_chart(chart_data.set_index('Signal'))
+            
+            with col_y:
+                st.markdown("**Summary:**")
+                st.write(f"🟢 Bullish: {result.bullish_count} ({result.bullish_count/result.total_signals*100:.1f}%)")
+                st.write(f"🔴 Bearish: {result.bearish_count} ({result.bearish_count/result.total_signals*100:.1f}%)")
+                st.write(f"🟡 Neutral: {result.neutral_count} ({result.neutral_count/result.total_signals*100:.1f}%)")
+                
+                st.markdown("---")
+                
+                # Interpretation
+                if result.bullish_count > result.bearish_count + result.neutral_count:
+                    st.success("📈 Very bullish strategy")
+                elif result.bearish_count > result.bullish_count + result.neutral_count:
+                    st.error("📉 Very bearish strategy")
+                elif result.neutral_count > result.bullish_count + result.bearish_count:
+                    st.info("🟡 Mostly neutral - conservative")
+                else:
+                    st.info("⚖️ Balanced strategy")
+            
+            # Detailed signals by ticker
+            st.markdown("---")
+            st.subheader("📝 Detailed Signals")
+            
+            for ticker, signals in result.signals_by_ticker.items():
+                with st.expander(f"**{ticker}** ({len(signals)} signal(s))"):
+                    for i, sig in enumerate(signals, 1):
+                        direction_emoji = {
+                            'bullish': '🟢',
+                            'bearish': '🔴',
+                            'neutral': '🟡'
+                        }[sig['direction']]
+                        
+                        st.markdown(f"**Signal {i}:** {direction_emoji} {sig['direction'].upper()}")
+                        st.write(f"Confidence: {sig['confidence']:.1%}")
+                        st.caption(f"Reasoning: {sig['reasoning']}")
+                        
+                        if i < len(signals):
+                            st.markdown("---")
+            
+            # Learning tips
+            st.markdown("---")
+            st.info("""
+            💡 **How to Use These Results:**
+            
+            1. **High Bullish %:** Your rules favor buying - good for bull markets
+            2. **High Bearish %:** Your rules favor selling - good for bear markets
+            3. **High Neutral %:** Very conservative - may miss opportunities
+            4. **Low Confidence:** Rules might be too vague - refine thresholds
+            5. **High Confidence:** Rules are very specific - might miss edge cases
+            
+            **Next Steps:**
+            - Adjust your rules based on these insights
+            - Run backtest again to see improvements
+            - Compare different agent strategies
+            - Remember: This is for learning, not real trading!
+            """)
+            
+        else:
+            st.error(f"❌ Backtest Failed: {error}")
+            st.info("🛈 **Troubleshooting:**\n- Make sure agent file exists\n- Check agent code for errors\n- Try with mock data first")
 
 
 if __name__ == "__main__":

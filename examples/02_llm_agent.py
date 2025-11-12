@@ -5,6 +5,9 @@ This example shows how to:
 2. Customize temperature per agent (conservative vs aggressive)
 3. Customize max_tokens per agent (brief vs detailed)
 4. Handle LLM errors with fallback logic
+
+⚠️ DISCLAIMER: This is educational code for learning purposes only.
+Do NOT use for real trading. Not financial advice. See DISCLAIMER.md for full terms.
 """
 
 import asyncio

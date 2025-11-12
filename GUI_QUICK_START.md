@@ -123,6 +123,47 @@ Detailed Insights:
 - PDF upload support
 - Extract insights from text
 
+## Backtest Your Agent (NEW)
+
+### Navigate
+Click "📈 Backtest Agent" in sidebar
+
+### Select Agent
+```
+Select Agent: ValueAgent
+Data Source: Mock Data (Scenarios)
+```
+
+### Run Backtest
+Click "🚀 Run Backtest"
+
+### Results
+```
+Total Signals: 5
+Avg Confidence: 75%
+Bullish Signals: 60%
+
+Signal Distribution:
+🟢 Bullish: 3 (60%)
+🔴 Bearish: 1 (20%)
+🟡 Neutral: 1 (20%)
+
+Interpretation: Balanced strategy
+```
+
+### What Backtesting Shows:
+- ✅ How your rules perform on different scenarios
+- ✅ Signal distribution (bullish/bearish/neutral)
+- ✅ Average confidence of signals
+- ✅ Detailed reasoning for each signal
+
+### What It Does NOT Show:
+- ❌ Actual profit/loss (no price movements)
+- ❌ Transaction costs or slippage
+- ❌ Real market conditions
+
+⚠️ **Remember:** This is for learning! Past performance doesn't guarantee future results.
+
 ## Verify Setup
 
 ```bash

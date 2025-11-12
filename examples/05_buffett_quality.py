@@ -11,6 +11,10 @@ Strategy:
 
 Score >= 4: Bullish (high quality company)
 Score <= 1: Bearish (low quality)
+
+⚠️ DISCLAIMER: This is educational code demonstrating investment concepts.
+Inspired by Warren Buffett's philosophy but NOT endorsed by him or Berkshire Hathaway.
+Do NOT use for real trading. Not financial advice. See DISCLAIMER.md for full terms.
 """
 
 import asyncio

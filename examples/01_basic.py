@@ -1,4 +1,8 @@
-"""Example 1: Simple agent with PostgreSQL database and dependency injection."""
+"""Example 1: Simple agent with PostgreSQL database and dependency injection.
+
+⚠️ DISCLAIMER: This is educational code for learning purposes only.
+Do NOT use for real trading. Not financial advice. See DISCLAIMER.md for full terms.
+"""
 
 import asyncio
 import os
