@@ -11,7 +11,7 @@ from typing import List, Dict, Optional
 
 class AgentCreator:
     """Generates agent code from user specifications."""
-    
+
     def generate_agent_code(
         self,
         agent_name: str,
@@ -24,10 +24,10 @@ class AgentCreator:
         system_prompt: Optional[str] = None,
         chunk_size: Optional[int] = None,
         chunk_overlap: Optional[int] = None,
-        top_k: Optional[int] = None
+        top_k: Optional[int] = None,
     ) -> str:
         """Generate complete agent code.
-        
+
         Args:
             agent_name: Agent class name
             description: Agent description
@@ -40,7 +40,7 @@ class AgentCreator:
             chunk_size: RAG chunk size
             chunk_overlap: RAG chunk overlap
             top_k: RAG top k results
-            
+
         Returns:
             Complete Python code for the agent
         """
@@ -48,71 +48,71 @@ class AgentCreator:
             return self._generate_rule_based_agent(agent_name, description, rules)
         elif agent_type == "LLM-Powered":
             return self._generate_llm_agent(
-                agent_name, description, llm_provider,
-                temperature, max_tokens, system_prompt
+                agent_name, description, llm_provider, temperature, max_tokens, system_prompt
             )
         elif agent_type == "RAG-Powered":
             return self._generate_rag_agent(
-                agent_name, description, llm_provider,
-                temperature, max_tokens, system_prompt,
-                chunk_size, chunk_overlap, top_k
+                agent_name,
+                description,
+                llm_provider,
+                temperature,
+                max_tokens,
+                system_prompt,
+                chunk_size,
+                chunk_overlap,
+                top_k,
             )
         else:  # Hybrid
             return self._generate_hybrid_agent(
-                agent_name, description, rules, llm_provider,
-                temperature, max_tokens, system_prompt
+                agent_name, description, rules, llm_provider, temperature, max_tokens, system_prompt
             )
-    
+
     def _generate_rule_based_agent(
-        self,
-        agent_name: str,
-        description: str,
-        rules: List[Dict]
+        self, agent_name: str, description: str, rules: List[Dict]
     ) -> str:
         """Generate rule-based agent code."""
-        
+
         if not rules:
             return self._generate_empty_agent(agent_name, description)
-        
+
         # Determine rule type
-        rule_type = rules[0].get('type', 'simple')
-        
-        if rule_type == 'simple':
+        rule_type = rules[0].get("type", "simple")
+
+        if rule_type == "simple":
             return self._generate_simple_rules_agent(agent_name, description, rules)
-        elif rule_type == 'advanced':
+        elif rule_type == "advanced":
             return self._generate_advanced_rules_agent(agent_name, description, rules)
-        elif rule_type == 'score':
+        elif rule_type == "score":
             return self._generate_score_based_agent(agent_name, description, rules[0])
         else:
             return self._generate_simple_rules_agent(agent_name, description, rules)
-    
+
     def _generate_simple_rules_agent(
-        self,
-        agent_name: str,
-        description: str,
-        rules: List[Dict]
+        self, agent_name: str, description: str, rules: List[Dict]
     ) -> str:
         """Generate simple single-condition rules agent."""
-        
+
         # Generate rule logic
         rule_conditions = []
         for i, rule in enumerate(rules or []):
-            metric = rule['metric']
-            operator = rule['operator']
-            threshold = rule['threshold']
-            direction = rule['direction']
-            confidence = rule['confidence']
-            
-            rule_conditions.append(f"""
+            metric = rule["metric"]
+            operator = rule["operator"]
+            threshold = rule["threshold"]
+            direction = rule["direction"]
+            confidence = rule["confidence"]
+
+            rule_conditions.append(
+                f"""
         if data.get('{metric}', 0) {operator} {threshold}:
             return Signal(
                 direction='{direction}',
                 confidence={confidence},
                 reasoning=f"{metric.replace('_', ' ').title()} {{{metric}:.1f}} is {direction}"
-            )""")
-        
+            )"""
+            )
+
         rules_code = "".join(rule_conditions)
-        
+
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -180,59 +180,60 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 '''
-    
+
     def _generate_advanced_rules_agent(
-        self,
-        agent_name: str,
-        description: str,
-        rules: List[Dict]
+        self, agent_name: str, description: str, rules: List[Dict]
     ) -> str:
         """Generate agent with multi-condition rules (AND/OR logic)."""
-        
+
         # Generate rule logic with AND/OR
         rule_conditions = []
         for i, rule in enumerate(rules):
-            conditions = rule['conditions']
-            logic = rule['logic']
-            direction = rule['direction']
-            confidence = rule['confidence']
-            
+            conditions = rule["conditions"]
+            logic = rule["logic"]
+            direction = rule["direction"]
+            confidence = rule["confidence"]
+
             # Build condition string
             cond_parts = []
             for cond in conditions:
-                metric = cond['metric']
-                operator = cond['operator']
-                threshold = cond['threshold']
-                
+                metric = cond["metric"]
+                operator = cond["operator"]
+                threshold = cond["threshold"]
+
                 # Handle calculated metrics
-                if metric == 'peg_ratio':
+                if metric == "peg_ratio":
                     cond_parts.append(
                         f"(pe_ratio / max(revenue_growth, 0.1) {operator} {threshold})"
                     )
-                elif metric == 'quality_score':
+                elif metric == "quality_score":
                     cond_parts.append(
                         f"((roe * 0.4 + profit_margin * 0.3 + (1.0 / max(debt_to_equity, 0.1)) * 0.3) {operator} {threshold})"
                     )
                 else:
                     cond_parts.append(f"(data.get('{metric}', 0) {operator} {threshold})")
-            
+
             logic_op = " and " if logic == "AND" else " or "
             full_condition = logic_op.join(cond_parts)
-            
+
             # Build reasoning string
-            cond_desc = f" {logic} ".join([f"{c['metric']} {c['operator']} {c['threshold']}" for c in conditions])
-            
-            rule_conditions.append(f"""
+            cond_desc = f" {logic} ".join(
+                [f"{c['metric']} {c['operator']} {c['threshold']}" for c in conditions]
+            )
+
+            rule_conditions.append(
+                f"""
         # Rule {i+1}: {cond_desc}
         if {full_condition}:
             return Signal(
                 direction='{direction}',
                 confidence={confidence},
                 reasoning=f"{{'{direction}'.capitalize()}} signal: {cond_desc}"
-            )""")
-        
+            )"""
+            )
+
         rules_code = "".join(rule_conditions)
-        
+
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -307,37 +308,36 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 '''
-    
+
     def _generate_score_based_agent(
-        self,
-        agent_name: str,
-        description: str,
-        rule_config: Dict
+        self, agent_name: str, description: str, rule_config: Dict
     ) -> str:
-        \"\"\"Generate score-based agent.\"\"\"
-        
-        criteria = rule_config['criteria']
-        bullish_threshold = rule_config['bullish_threshold']
-        bullish_confidence = rule_config['bullish_confidence']
-        bearish_threshold = rule_config['bearish_threshold']
-        bearish_confidence = rule_config['bearish_confidence']
-        
+        """Generate score-based agent."""
+
+        criteria = rule_config["criteria"]
+        bullish_threshold = rule_config["bullish_threshold"]
+        bullish_confidence = rule_config["bullish_confidence"]
+        bearish_threshold = rule_config["bearish_threshold"]
+        bearish_confidence = rule_config["bearish_confidence"]
+
         # Generate scoring logic
         score_checks = []
         for criterion in criteria:
-            metric = criterion['metric']
-            operator = criterion['operator']
-            threshold = criterion['threshold']
-            points = criterion['points']
-            
-            score_checks.append(f"""
+            metric = criterion["metric"]
+            operator = criterion["operator"]
+            threshold = criterion["threshold"]
+            points = criterion["points"]
+
+            score_checks.append(
+                f"""
         # {metric} {operator} {threshold} = {points:+d} points
         if data.get('{metric}', 0) {operator} {threshold}:
             score += {points}
-            reasons.append(f\"{metric.replace('_', ' ').title()} {{{metric}:.1f}} {operator} {threshold} ({points:+d} pts)\")""")
-        
+            reasons.append(f\"{metric.replace('_', ' ').title()} {{{metric}:.1f}} {operator} {threshold} ({points:+d} pts)\")"""
+            )
+
         score_code = "".join(score_checks)
-        
+
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -424,7 +424,7 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 '''
-    
+
     def _generate_llm_agent(
         self,
         agent_name: str,
@@ -432,10 +432,10 @@ if __name__ == "__main__":
         llm_provider: str,
         temperature: float,
         max_tokens: int,
-        system_prompt: str
+        system_prompt: str,
     ) -> str:
         """Generate LLM-powered agent code."""
-        
+
         return f'''"""Auto-generated LLM-powered agent: {agent_name}
 
 {description}
@@ -562,7 +562,7 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 '''
-    
+
     def _generate_rag_agent(
         self,
         agent_name: str,
@@ -573,10 +573,10 @@ if __name__ == "__main__":
         system_prompt: str,
         chunk_size: int,
         chunk_overlap: int,
-        top_k: int
+        top_k: int,
     ) -> str:
         """Generate RAG-powered agent code."""
-        
+
         return f'''"""Auto-generated RAG-powered agent: {agent_name}
 
 {description}
@@ -740,7 +740,7 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 '''
-    
+
     def _generate_hybrid_agent(
         self,
         agent_name: str,
@@ -749,23 +749,21 @@ if __name__ == "__main__":
         llm_provider: str,
         temperature: float,
         max_tokens: int,
-        system_prompt: str
+        system_prompt: str,
     ) -> str:
         """Generate hybrid agent with both rules and LLM."""
-        
+
         # Generate rule checks
         rule_checks = []
         for rule in rules or []:
-            metric = rule['metric']
-            operator = rule['operator']
-            threshold = rule['threshold']
-            
-            rule_checks.append(
-                f"data.get('{metric}', 0) {operator} {threshold}"
-            )
-        
+            metric = rule["metric"]
+            operator = rule["operator"]
+            threshold = rule["threshold"]
+
+            rule_checks.append(f"data.get('{metric}', 0) {operator} {threshold}")
+
         rules_condition = " or ".join(rule_checks) if rule_checks else "False"
-        
+
         return f'''"""Auto-generated hybrid agent: {agent_name}
 
 {description}
@@ -883,21 +881,21 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 '''
-    
+
     def _generate_metric_extraction(self, rules: List[Dict]) -> str:
         """Generate metric extraction code for simple rules."""
         if not rules:
             return "# No metrics to extract"
-        
-        metrics = set(rule.get('metric') for rule in rules if rule.get('metric'))
+
+        metrics = set(rule.get("metric") for rule in rules if rule.get("metric"))
         extractions = [f"{m} = data.get('{m}', 0)" for m in metrics]
         return "\n        ".join(extractions)
-    
+
     def _generate_metric_extraction_for_score(self, criteria: List[Dict]) -> str:
         """Generate metric extraction code for score-based rules."""
         if not criteria:
             return "# No metrics to extract"
-        
-        metrics = set(c['metric'] for c in criteria)
+
+        metrics = set(c["metric"] for c in criteria)
         extractions = [f"{m} = data.get('{m}', 0)" for m in metrics]
         return "\n        ".join(extractions)
