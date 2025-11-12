@@ -130,10 +130,13 @@ Build agents visually with no coding required!
 **Features:**
 - 📋 Browse existing agents (search, filter, stats, duplicate, delete, export)
 - ➕ Create agents (Rule-Based, LLM-Powered, Hybrid, RAG-Powered)
+- 🤓 Educational tooltips for all financial metrics
+- ✅ Real-time rule validation and conflict detection
 - 🧪 Test agents with mock data or PDF upload
 - 💾 Save directly to `examples/`
 - 📄 Drag-and-drop PDF for RAG agents
 - 🛠️ Full agent management (duplicate, delete, export)
+- 🎯 Strategy examples (Buffett, Lynch, Graham)
 
 See **[GUI Quick Start](GUI_QUICK_START.md)** for details.
 

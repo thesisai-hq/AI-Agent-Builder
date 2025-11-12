@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
 from gui.agent_tester import AgentTester
+from gui.metrics import MetricDefinitions, RuleValidator
 
 # Page configuration
 st.set_page_config(
@@ -20,6 +21,12 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide"
 )
+
+# Cache metric definitions for performance
+@st.cache_data
+def get_metric_definitions():
+    """Cache metric definitions to avoid repeated calls."""
+    return MetricDefinitions.get_all_metrics()
 
 def main():
     """Main application entry point."""
@@ -280,21 +287,50 @@ def show_create_page():
         if rule_style == "Simple Rules":
             num_rules = st.number_input("Number of Rules", 1, 5, 2)
             rules = []
+            validation_warnings = []
             
             for i in range(num_rules):
                 with st.expander(f"Rule {i+1}"):
                     col_a, col_b, col_c = st.columns(3)
+                    
                     with col_a:
                         metric = st.selectbox(
                             "Metric",
                             ["pe_ratio", "revenue_growth", "profit_margin", "roe", 
                              "debt_to_equity", "dividend_yield", "pb_ratio", "current_ratio"],
-                            key=f"metric_{i}"
+                            key=f"metric_{i}",
+                            help="Hover over threshold field for metric details"
                         )
+                    
                     with col_b:
                         operator = st.selectbox("Operator", ["<", ">", "<=", ">=", "=="], key=f"op_{i}")
+                    
                     with col_c:
-                        threshold = st.number_input("Threshold", key=f"thresh_{i}")
+                        # Get metric definition for tooltip
+                        metrics = get_metric_definitions()
+                        metric_def = metrics.get(metric, {})
+                        
+                        threshold = st.number_input(
+                            "Threshold",
+                            key=f"thresh_{i}",
+                            help=metric_def.get('tooltip', 'Enter threshold value')
+                        )
+                        
+                        # Validate threshold
+                        is_valid, error_msg = MetricDefinitions.validate_value(metric, threshold)
+                        if not is_valid:
+                            st.error(error_msg)
+                            validation_warnings.append(f"Rule {i+1}: {error_msg}")
+                        
+                        # Check threshold logic
+                        logic_warning = RuleValidator.validate_threshold_logic(metric, operator, threshold)
+                        if logic_warning:
+                            st.warning(logic_warning)
+                        
+                        # Get suggestion
+                        suggestion = MetricDefinitions.get_suggestion(metric, threshold, operator)
+                        if suggestion:
+                            st.info(suggestion)
                     
                     direction = st.selectbox("Signal", ["bullish", "bearish", "neutral"], key=f"dir_{i}")
                     confidence = st.slider("Confidence", 0.0, 1.0, 0.7, 0.1, key=f"conf_{i}")
@@ -307,6 +343,13 @@ def show_create_page():
                         "direction": direction,
                         "confidence": confidence
                     })
+            
+            # Check for conflicts
+            conflicts = RuleValidator.check_conflicts(rules)
+            if conflicts:
+                st.warning("**Rule Conflicts Detected:**")
+                for conflict in conflicts:
+                    st.warning(conflict)
         
         elif rule_style == "Advanced Rules":
             num_rules = st.number_input("Number of Rules", 1, 3, 1)
@@ -320,18 +363,33 @@ def show_create_page():
                     conditions = []
                     for j in range(num_conditions):
                         col_a, col_b, col_c = st.columns(3)
+                        
                         with col_a:
                             metric = st.selectbox(
                                 "Metric",
                                 ["pe_ratio", "revenue_growth", "profit_margin", "roe",
                                  "debt_to_equity", "dividend_yield", "pb_ratio", "current_ratio",
                                  "peg_ratio", "quality_score"],
-                                key=f"adv_metric_{i}_{j}"
+                                key=f"adv_metric_{i}_{j}",
+                                help="Hover over Value field for details"
                             )
+                        
                         with col_b:
                             operator = st.selectbox("Op", ["<", ">", "<=", ">=", "=="], key=f"adv_op_{i}_{j}")
+                        
                         with col_c:
-                            threshold = st.number_input("Value", key=f"adv_thresh_{i}_{j}")
+                            metrics = get_metric_definitions()
+                            metric_def = metrics.get(metric, {})
+                            threshold = st.number_input(
+                                "Value",
+                                key=f"adv_thresh_{i}_{j}",
+                                help=metric_def.get('tooltip', 'Enter value')
+                            )
+                            
+                            # Validate
+                            is_valid, error_msg = MetricDefinitions.validate_value(metric, threshold)
+                            if not is_valid:
+                                st.error(error_msg)
                         
                         conditions.append({"metric": metric, "operator": operator, "threshold": threshold})
                     
@@ -361,14 +419,34 @@ def show_create_page():
                             "Metric",
                             ["pe_ratio", "revenue_growth", "profit_margin", "roe",
                              "debt_to_equity", "dividend_yield", "pb_ratio", "current_ratio"],
-                            key=f"score_metric_{i}"
+                            key=f"score_metric_{i}",
+                            help="Hover over Value for details"
                         )
+                    
                     with col_b:
                         operator = st.selectbox("Op", ["<", ">", "<=", ">="], key=f"score_op_{i}")
+                    
                     with col_c:
-                        threshold = st.number_input("Value", key=f"score_thresh_{i}")
+                        metrics = get_metric_definitions()
+                        metric_def = metrics.get(metric, {})
+                        threshold = st.number_input(
+                            "Value",
+                            key=f"score_thresh_{i}",
+                            help=metric_def.get('tooltip', 'Enter value')
+                        )
+                        
+                        # Validate
+                        is_valid, error_msg = MetricDefinitions.validate_value(metric, threshold)
+                        if not is_valid:
+                            st.error(error_msg)
+                    
                     with col_d:
-                        points = st.number_input("Points", -5, 5, 1, key=f"score_pts_{i}")
+                        points = st.number_input(
+                            "Points",
+                            -5, 5, 1,
+                            key=f"score_pts_{i}",
+                            help="Positive points for good, negative for bad. Typical: +1 or +2 for positive factors, -1 or -2 for red flags"
+                        )
                     
                     criteria.append({
                         "metric": metric,
@@ -513,19 +591,59 @@ def show_test_page():
         uploaded_file = None
         
         if use_mock:
+            # Mock data inputs with tooltips
             st.subheader("Mock Financial Data")
+            
+            # Get metric definitions (cached)
+            metrics = get_metric_definitions()
+            
             mock_data = {}
             
             col_a, col_b, col_c = st.columns(3)
             with col_a:
-                mock_data['pe_ratio'] = st.number_input("PE Ratio", 5.0, 100.0, 20.0)
-                mock_data['revenue_growth'] = st.number_input("Revenue Growth (%)", -20.0, 100.0, 15.0)
+                pe_def = metrics['pe_ratio']
+                mock_data['pe_ratio'] = st.number_input(
+                    "PE Ratio",
+                    5.0, 100.0, 20.0,
+                    help=pe_def['tooltip']
+                )
+                
+                growth_def = metrics['revenue_growth']
+                mock_data['revenue_growth'] = st.number_input(
+                    "Revenue Growth (%)",
+                    -20.0, 100.0, 15.0,
+                    help=growth_def['tooltip']
+                )
+            
             with col_b:
-                mock_data['profit_margin'] = st.number_input("Profit Margin (%)", -10.0, 50.0, 12.0)
-                mock_data['roe'] = st.number_input("ROE (%)", -20.0, 50.0, 15.0)
+                margin_def = metrics['profit_margin']
+                mock_data['profit_margin'] = st.number_input(
+                    "Profit Margin (%)",
+                    -10.0, 50.0, 12.0,
+                    help=margin_def['tooltip']
+                )
+                
+                roe_def = metrics['roe']
+                mock_data['roe'] = st.number_input(
+                    "ROE (%)",
+                    -20.0, 50.0, 15.0,
+                    help=roe_def['tooltip']
+                )
+            
             with col_c:
-                mock_data['debt_to_equity'] = st.number_input("Debt/Equity", 0.0, 5.0, 0.8)
-                mock_data['dividend_yield'] = st.number_input("Dividend Yield (%)", 0.0, 10.0, 2.0)
+                debt_def = metrics['debt_to_equity']
+                mock_data['debt_to_equity'] = st.number_input(
+                    "Debt/Equity",
+                    0.0, 5.0, 0.8,
+                    help=debt_def['tooltip']
+                )
+                
+                div_def = metrics['dividend_yield']
+                mock_data['dividend_yield'] = st.number_input(
+                    "Dividend Yield (%)",
+                    0.0, 10.0, 2.0,
+                    help=div_def['tooltip']
+                )
         else:
             mock_data = None
     

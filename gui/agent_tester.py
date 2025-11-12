@@ -131,15 +131,34 @@ class AgentTester:
             # Extract text from PDF
             pdf_reader = PdfReader(uploaded_file)
             document_text = ""
+            pages_with_text = 0
             
             for page_num, page in enumerate(pdf_reader.pages):
                 page_text = page.extract_text()
-                document_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+                
+                # Check if page has actual text (not scanned image)
+                if page_text and len(page_text.strip()) > 50:
+                    document_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+                    pages_with_text += 1
             
+            # Validate extracted text
             if not document_text.strip():
                 return {
                     'success': False,
-                    'error': 'No text could be extracted from PDF'
+                    'error': 'No text could be extracted from PDF. This PDF may be a scanned image. Try a text-based PDF with selectable text.'
+                }
+            
+            if len(document_text.strip()) < 100:
+                return {
+                    'success': False,
+                    'error': f'Only {len(document_text)} characters extracted. PDF may be scanned or corrupted. Try a different PDF.'
+                }
+            
+            if pages_with_text < len(pdf_reader.pages) * 0.5:
+                # Less than 50% of pages have text
+                return {
+                    'success': False,
+                    'error': f'Only {pages_with_text}/{len(pdf_reader.pages)} pages contain text. This PDF may be partially scanned. Try a fully text-based PDF.'
                 }
             
             # Run async analysis
@@ -158,7 +177,7 @@ class AgentTester:
                 },
                 'execution_time': execution_time,
                 'ticker': ticker,
-                'pages_processed': len(pdf_reader.pages),
+                'pages_processed': pages_with_text,
                 'text_length': len(document_text)
             }
             
@@ -170,7 +189,7 @@ class AgentTester:
         except Exception as e:
             return {
                 'success': False,
-                'error': f'RAG analysis error: {str(e)}'
+                'error': f'PDF analysis error: {str(e)}. Check that the PDF contains selectable text (not a scanned image).'
             }
     
     def _find_agent_class(self, module):
