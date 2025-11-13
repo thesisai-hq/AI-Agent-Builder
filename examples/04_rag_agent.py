@@ -156,23 +156,44 @@ Be thorough but concise. Extract what matters most for investment decisions."""
                     print(f"  ✓ Generated insight ({len(response)} chars)")
                 except Exception as e:
                     print(f"  ⚠️  LLM query failed: {e}")
-                    # Fallback: Use the raw context
-                    insights.append(f"[Context excerpt] {context[:300]}...")
+                    # Don't add fallback insights - we need LLM for RAG
+                    # If LLM fails, the entire RAG analysis should fail
+                    raise Exception(f"LLM failed on query '{query[:30]}...': {e}")
             
-            # STEP 5: Synthesize overall signal
+            # STEP 5: Synthesize overall signal from LLM insights
+            # Only reached if ALL LLM queries succeeded
             full_analysis = "\n\n".join(insights)
-            direction, confidence = calculate_sentiment_score(full_analysis)
             
-            # Clear RAG system for next document
-            self.rag.clear()
-            
-            # Return Signal with insights in metadata
-            return Signal(
-                direction=direction,
-                confidence=confidence,
-                reasoning=full_analysis[:400] + "..." if len(full_analysis) > 400 else full_analysis,
-                metadata={'insights': insights}
-            )
+            # Use LLM to synthesize final signal from insights
+            try:
+                synthesis_prompt = f"""Based on these document insights about {ticker}:
+
+{full_analysis}
+
+Provide an investment recommendation.
+Format: DIRECTION|CONFIDENCE|REASONING"""
+                
+                synthesis = self.llm.chat(synthesis_prompt)
+                
+                # Parse LLM synthesis
+                from agent_framework import parse_llm_signal
+                signal = parse_llm_signal(synthesis, full_analysis[:400])
+                
+                # Clear RAG system for next document
+                self.rag.clear()
+                
+                # Return with insights in metadata
+                return Signal(
+                    direction=signal.direction,
+                    confidence=signal.confidence,
+                    reasoning=signal.reasoning,
+                    metadata={'insights': insights, 'full_analysis': full_analysis}
+                )
+                
+            except Exception as e:
+                print(f"  ⚠️  LLM synthesis failed: {e}")
+                # Can't synthesize without LLM
+                raise Exception(f"LLM synthesis failed: {e}")
         
         except Exception as e:
             print(f"  ❌ RAG analysis failed: {e}")
