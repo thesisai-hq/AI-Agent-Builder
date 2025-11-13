@@ -231,7 +231,7 @@ docker compose down
 docker compose up -d postgres
 ```
 
-See [Database Guide](docs/DATABASE_SETUP.md) for more troubleshooting.
+**For complete troubleshooting:** See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ## Optional: Ultra-Fast Installation with uv
 
@@ -271,9 +271,22 @@ pip install -e ".[dev]"              # Install dev tools
 
 ## Need Help?
 
-- **Full documentation:** [docs/](docs/)
+- **Troubleshooting:** [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues
+- **Documentation:** [docs/](docs/) - Complete guides
+- **Examples:** [examples/](examples/) - Learning path
 - **Issues:** [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
-- **Examples:** [examples/](examples/)
+
+---
+
+## ⚖️ Legal
+
+**Educational use only.** This software is for learning purposes and does NOT provide financial advice.
+
+- **Disclaimer:** [DISCLAIMER.md](DISCLAIMER.md) - Complete legal terms
+- **License:** [LICENSE](LICENSE) - MIT License
+- **Not for real trading** without professional advice
+
+**For production:** [thesis-app](https://thesisai.app)
 
 ---
 

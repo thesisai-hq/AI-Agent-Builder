@@ -446,6 +446,7 @@ def show_create_page():
         st.session_state.current_filename = None
 
     creator = AgentCreator()
+    loader = st.session_state.agent_loader  # ✅ Get loader for validation
 
     # Agent configuration
     col1, col2 = st.columns(2)
@@ -466,9 +467,21 @@ def show_create_page():
             help="File will be saved in examples/ directory",
         )
 
+        # Real-time filename validation
         if filename:
             save_path = st.session_state.examples_dir / filename
-            st.caption(f"Will save to: `{save_path}`")
+            
+            # Validate filename
+            if not filename.endswith(".py"):
+                st.error("❌ Filename must end with .py")
+            elif not loader._is_valid_filename(filename):
+                st.error("❌ Invalid filename. Use only letters, numbers, and underscores (e.g., my_agent.py, value_strategy_v2.py)")
+                st.caption("Valid: `my_agent.py`, `value_v2.py` | Invalid: `my-agent.py`, `my agent.py`, `1agent.py`")
+            elif (st.session_state.examples_dir / filename).exists():
+                st.warning(f"⚠️ File `{filename}` already exists. Choose a different name or delete the existing file first.")
+            else:
+                st.success(f"✅ Valid filename: will save to `examples/{filename}`")
+                st.caption(f"Full path: `{save_path}`")
 
     with col2:
         st.subheader("Agent Type")
@@ -894,17 +907,24 @@ def show_create_page():
         col1, col2, col3 = st.columns([1, 1, 3])
         with col1:
             if st.button("💾 Save Agent"):
+                # Use current filename from text input, not cached session state
+                current_filename = filename  # This is from the text_input above
+                
                 loader = st.session_state.agent_loader
                 success, message = loader.save_agent(
-                    st.session_state.current_filename, st.session_state.generated_code
+                    current_filename, st.session_state.generated_code
                 )
                 if success:
                     st.success(message)
                     st.balloons()
+                    # Clear session state
                     st.session_state.generated_code = None
                     st.session_state.current_filename = None
+                    st.rerun()
                 else:
+                    # Show error and keep code visible for editing filename
                     st.error(message)
+                    st.info("💡 **Tip:** Change the filename above and try saving again. Valid filenames use only letters, numbers, and underscores.")
 
         with col2:
             if st.button("🗑️ Clear"):

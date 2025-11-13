@@ -227,18 +227,7 @@ class MyStrategy(Agent):
 # Add async main() for testing
 ```
 
----
 
-## 🚨 **Current Status: Migration Needed**
-
-The following old example files need updating:
-
-- ~~`03_rag_agent.py`~~ → Replaced with `04_rag_agent.py`
-- `04_custom_llm_config.py` → Check if still needed
-
-**These files may have multiple agents or outdated patterns.**
-
-**Recommendation:** Use the new examples (01-04) as they follow best practices.
 
 ---
 
@@ -298,6 +287,22 @@ python 04_rag_agent.py  # Requires: ollama + llama3.2 + sentence-transformers
 
 **Start here:** `python 01_basic.py` and progress through the examples! 🚀
 
+**Having issues?** See [TROUBLESHOOTING.md](../docs/TROUBLESHOOTING.md)
+
 ---
 
-**Built for learning. Not financial advice. See DISCLAIMER.md for full terms.**
+## ⚖️ Disclaimer
+
+**Educational use only.** Not financial advice. Do not use for real trading.
+
+See [DISCLAIMER.md](../DISCLAIMER.md) for complete legal terms.
+
+**For production systems:** [thesis-app](https://thesisai.app)
+
+---
+
+## 📜 License
+
+MIT License - See [LICENSE](../LICENSE) for details.
+
+Copyright (c) 2025 ThesisAI LLC

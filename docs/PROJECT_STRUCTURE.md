@@ -18,8 +18,8 @@ AI-Agent-Builder/
 ├── examples/                 # Working examples
 │   ├── 01_basic.py          # Simple agents
 │   ├── 02_llm_agent.py      # LLM agents
-│   ├── 03_rag_agent.py      # RAG agents
-│   └── 04_custom_llm_config.py  # LLM customization
+│   ├── 03_hybrid.py         # Hybrid agents
+│   └── 04_rag_agent.py      # RAG agents
 │
 ├── tests/                    # Test suite
 │   └── test_framework.py    # Tests
@@ -29,7 +29,6 @@ AI-Agent-Builder/
 │   ├── CONFIGURATION.md     # Environment config
 │   ├── LLM_CUSTOMIZATION.md # LLM per-agent config
 │   ├── DATABASE_SETUP.md    # Database details
-│   ├── TESTING.md           # Testing guide
 │   └── PROJECT_STRUCTURE.md # This file
 │
 ├── docker-compose.yml        # PostgreSQL setup
