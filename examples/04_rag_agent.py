@@ -28,7 +28,7 @@ Then download the model:
 
 import asyncio
 from agent_framework import (
-    Agent, AgentConfig, RAGConfig, LLMConfig,
+    Agent, Signal, AgentConfig, RAGConfig, LLMConfig,
     Database, Config, calculate_sentiment_score
 )
 
@@ -94,15 +94,10 @@ Be thorough but concise. Extract what matters most for investment decisions."""
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict) -> dict:
-        """Not used - RAG agents use analyze_async for async document processing."""
-        raise NotImplementedError(
-            "RAG agents must use analyze_async() for document analysis. "
-            "Call: result = await agent.analyze_async(ticker, document_text)"
-        )
-    
-    async def analyze_async(self, ticker: str, document_text: str) -> dict:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze financial document using RAG + LLM.
+        
+        For RAG agents, 'data' parameter can be document text or dict with 'document' key.
         
         Process:
         1. Chunk document into 300-character pieces
@@ -113,18 +108,24 @@ Be thorough but concise. Extract what matters most for investment decisions."""
         
         Args:
             ticker: Stock ticker symbol
-            document_text: Full document text (10-K filing, news, etc.)
+            data: Document text (10-K filing, news, etc.) or dict with 'document' key
             
         Returns:
-            Dict with direction, confidence, reasoning, and detailed insights
+            Signal with direction, confidence, reasoning, and insights in metadata
         """
+        # Handle both string and dict input
+        if isinstance(data, dict):
+            document_text = data.get('document', '')
+        else:
+            document_text = str(data)
+        
         if not document_text or len(document_text) < 100:
-            return {
-                'direction': 'neutral',
-                'confidence': 0.3,
-                'reasoning': 'Document too short or empty for RAG analysis',
-                'insights': []
-            }
+            return Signal(
+                direction='neutral',
+                confidence=0.3,
+                reasoning='Document too short or empty for RAG analysis',
+                metadata={'insights': []}
+            )
         
         try:
             # STEP 1: Add document to RAG system (chunking + embedding)
@@ -165,21 +166,22 @@ Be thorough but concise. Extract what matters most for investment decisions."""
             # Clear RAG system for next document
             self.rag.clear()
             
-            return {
-                'direction': direction,
-                'confidence': confidence,
-                'reasoning': full_analysis[:400] + "..." if len(full_analysis) > 400 else full_analysis,
-                'insights': insights
-            }
+            # Return Signal with insights in metadata
+            return Signal(
+                direction=direction,
+                confidence=confidence,
+                reasoning=full_analysis[:400] + "..." if len(full_analysis) > 400 else full_analysis,
+                metadata={'insights': insights}
+            )
         
         except Exception as e:
             print(f"  ❌ RAG analysis failed: {e}")
-            return {
-                'direction': 'neutral',
-                'confidence': 0.3,
-                'reasoning': f'RAG analysis error: {str(e)}',
-                'insights': []
-            }
+            return Signal(
+                direction='neutral',
+                confidence=0.3,
+                reasoning=f'RAG analysis error: {str(e)}',
+                metadata={'insights': []}
+            )
 
 
 async def main():
@@ -253,7 +255,7 @@ async def main():
             
             # Run RAG analysis
             print(f"\n🧠 Analyzing SEC filing with RAG...")
-            result = await agent.analyze_async(ticker, filing)
+            result = await agent.analyze(ticker, filing)
             
             # Display result
             emoji = {'bullish': '🟢', 'bearish': '🔴', 'neutral': '🟡'}[result['direction']]

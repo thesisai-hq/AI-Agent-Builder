@@ -316,8 +316,8 @@ async def analyze(
                 detail=f"No data available for {request.ticker}"
             )
         
-        # Run analysis
-        signal = agent.analyze(request.ticker, data)
+        # Run analysis (now async)
+        signal = await agent.analyze(request.ticker, data)
         
         return SignalResponse(
             direction=signal.direction,

@@ -245,22 +245,21 @@ class AgentLoader:
     
     @staticmethod
     def _has_rule_logic(content: str) -> bool:
-        """Detect if agent has rule-based logic in analyze method.
+        """Detect if agent has intentional rule-based logic in analyze method.
         
-        Looks for common patterns:
-        - if/elif/else statements checking data.get()
-        - Comparison operators on metrics
-        - Direct Signal returns based on conditions
+        Distinguishes between:
+        - Primary rule-based logic (hybrid agent)
+        - Fallback exception handling (LLM agent safety net)
         
         Args:
             content: File content
             
         Returns:
-            True if rule-based logic detected
+            True if intentional rule-based logic detected (not just fallback)
         """
         # Look for analyze method
         analyze_match = re.search(
-            r'def analyze\(self.*?\):.*?(?=\n    def |\n\nclass |\n\nasync |$)',
+            r'async def analyze\(self.*?\):.*?(?=\n    def |\n\nclass |\n\nasync |$)',
             content,
             re.DOTALL
         )
@@ -270,6 +269,10 @@ class AgentLoader:
         
         analyze_code = analyze_match.group(0)
         
+        # Check if rules are in try/except block (fallback, not primary logic)
+        # If there's a try block before the rules, it's likely fallback
+        has_try_block = 'try:' in analyze_code
+        
         # Check for rule patterns
         rule_patterns = [
             r"if\s+.*?data\.get\(",           # if data.get('pe_ratio')
@@ -278,8 +281,27 @@ class AgentLoader:
             r"data\.get\(['\"]\w+['\"].*?[<>=!]",  # data.get('pe') < 15
         ]
         
-        # If analyze method has conditional logic on metrics, it's rule-based
-        return any(re.search(pattern, analyze_code) for pattern in rule_patterns)
+        has_rules = any(re.search(pattern, analyze_code) for pattern in rule_patterns)
+        
+        if not has_rules:
+            return False
+        
+        # If has try block, check if rules are BEFORE the try (primary logic)
+        # or INSIDE except (fallback logic)
+        if has_try_block:
+            # Split into try and except sections
+            try_match = re.search(r'try:(.*?)except', analyze_code, re.DOTALL)
+            if try_match:
+                try_section = try_match.group(1)
+                # If rules are in try section (before LLM call), it's hybrid
+                # If rules are NOT in try section (in except), it's just fallback
+                return any(re.search(pattern, try_section) for pattern in rule_patterns)
+            
+            # Has try but couldn't parse - assume it's fallback (LLM agent)
+            return False
+        
+        # No try block - rules are primary logic (hybrid or rule-based)
+        return True
 
     @staticmethod
     def _is_valid_filename(filename: str) -> bool:

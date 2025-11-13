@@ -84,7 +84,7 @@ Be thorough but concise. Focus on what matters most."""
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using LLM with quality-focused personality.
         
         Args:
@@ -223,7 +223,7 @@ async def main():
             
             # Run LLM analysis
             print(f"\n🧠 Analyzing with AI...")
-            signal = agent.analyze(ticker, data)
+            signal = await agent.analyze(ticker, data)
             
             # Display result
             emoji = {'bullish': '🟢', 'bearish': '🔴', 'neutral': '🟡'}[signal.direction]

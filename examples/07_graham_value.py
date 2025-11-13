@@ -20,7 +20,7 @@ from agent_framework import Agent, Signal, Database, Config
 class GrahamValueAgent(Agent):
     """Benjamin Graham value investing: Low PE, low PB, margin of safety"""
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using score-based strategy.
         
         Args:
@@ -107,7 +107,7 @@ async def main():
                 print(f"⚠️  No data for {ticker}")
                 continue
             
-            signal = agent.analyze(ticker, data)
+            signal = await agent.analyze(ticker, data)
             print(f"📊 {ticker}: {signal.direction.upper()} ({signal.confidence:.0%})")
             print(f"   {signal.reasoning}\n")
     

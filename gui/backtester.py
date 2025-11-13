@@ -141,7 +141,7 @@ class Backtester:
             # Run agent on each data point
             for ticker, data in data_points:
                 try:
-                    signal = agent.analyze(ticker, data)
+                    signal = await agent.analyze(ticker, data)  # Await async method
                     result.add_signal(ticker, signal)
                 except Exception as e:
                     return False, result, f"Agent error on {ticker}: {str(e)}"

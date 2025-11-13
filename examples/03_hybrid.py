@@ -85,7 +85,7 @@ Be critical and thorough. Growth without quality is risky."""
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Two-stage hybrid analysis.
         
         Stage 1: Rule-based screening (fast)
@@ -221,7 +221,7 @@ async def main():
             print(f"   Growth: {data['revenue_growth']:.1f}% | Margin: {data['profit_margin']:.1f}%")
             
             # Run hybrid analysis (watch two-stage process)
-            signal = agent.analyze(ticker, data)
+            signal = await agent.analyze(ticker, data)
             
             # Track screening results
             if "passed" in signal.reasoning.lower():

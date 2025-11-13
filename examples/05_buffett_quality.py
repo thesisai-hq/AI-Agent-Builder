@@ -24,7 +24,7 @@ from agent_framework import Agent, Signal, Database, Config
 class BuffettQualityAgent(Agent):
     """Warren Buffett-style quality investing: High ROE, strong margins, low debt"""
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using score-based quality metrics.
         
         Args:
@@ -111,7 +111,7 @@ async def main():
                 print(f"⚠️  No data for {ticker}")
                 continue
             
-            signal = agent.analyze(ticker, data)
+            signal = await agent.analyze(ticker, data)
             print(f"📊 {ticker}: {signal.direction.upper()} ({signal.confidence:.0%})")
             print(f"   {signal.reasoning}\n")
     

@@ -16,7 +16,7 @@ from agent_framework import Agent, Signal, Database, Config
 class LynchGARPAgent(Agent):
     """Peter Lynch GARP: Growth at reasonable price with PEG ratio focus"""
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using advanced multi-condition rules.
         
         Args:
@@ -77,7 +77,7 @@ async def main():
                 print(f"⚠️  No data for {ticker}")
                 continue
             
-            signal = agent.analyze(ticker, data)
+            signal = await agent.analyze(ticker, data)
             print(f"📊 {ticker}: {signal.direction.upper()} ({signal.confidence:.0%})")
             print(f"   {signal.reasoning}\n")
     

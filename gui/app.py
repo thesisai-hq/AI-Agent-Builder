@@ -5,6 +5,7 @@ Simple, maintainable interface for creating and managing AI agents.
 
 import streamlit as st
 import sys
+import asyncio
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -1059,12 +1060,13 @@ def show_test_page():
             return
 
         with st.spinner("Running analysis..."):
+            # test_agent() is sync (handles async internally)
             result = tester.test_agent(
                 agent_filename, 
                 ticker, 
                 mock_data, 
                 uploaded_file,
-                agent_class_name  # Pass the specific class name!
+                agent_class_name
             )
 
         if result["success"]:

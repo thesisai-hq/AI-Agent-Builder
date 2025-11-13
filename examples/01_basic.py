@@ -5,12 +5,14 @@ This example demonstrates the simplest form of investment agent:
 - Fast execution (milliseconds)
 - Deterministic (same input = same output)
 - No dependencies beyond core framework
+- Uses async analyze() for consistency with framework
 
 Learning Focus:
 - Understanding the Agent base class
 - Working with financial data from PostgreSQL
 - Creating simple if/then investment rules
 - Returning Signal objects
+- Using async/await pattern (even for simple logic)
 
 ⚠️ DISCLAIMER: This is educational code for learning purposes only.
 Do NOT use for real trading. Not financial advice. See DISCLAIMER.md for full terms.
@@ -29,9 +31,10 @@ class ValueAgent(Agent):
     - Basic rule-based logic
     - Simple thresholds
     - Clear reasoning
+    - Async function (no await needed for simple logic)
     """
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze based on PE ratio threshold.
         
         Investment Logic:
@@ -45,6 +48,10 @@ class ValueAgent(Agent):
             
         Returns:
             Signal with direction, confidence, and reasoning
+            
+        Note:
+            This is async but doesn't use await (simple logic).
+            Async is for API consistency - no performance penalty.
         """
         pe = data.get('pe_ratio', 0)
         
@@ -76,6 +83,7 @@ async def main():
     print("\n📚 Learning: Simple if/then rules, no AI needed")
     print("⚡ Speed: Very fast (milliseconds)")
     print("💰 Cost: Free (no LLM calls)")
+    print("🔄 Async: Uses async for consistency (no overhead)")
     
     # Connect to database
     connection_string = Config.get_database_url()
@@ -110,8 +118,8 @@ async def main():
             print(f"   PE Ratio: {data['pe_ratio']:.1f}")
             print(f"   Sector: {data['sector']}")
             
-            # Run analysis
-            signal = agent.analyze(ticker, data)
+            # Run analysis (async)
+            signal = await agent.analyze(ticker, data)
             
             # Display result
             emoji = {'bullish': '🟢', 'bearish': '🔴', 'neutral': '🟡'}[signal.direction]
@@ -124,6 +132,7 @@ async def main():
         print("   • Rule-based agents are fast and deterministic")
         print("   • Perfect for clear investment criteria")
         print("   • No LLM dependencies needed")
+        print("   • Async design allows parallel execution in orchestrators")
         print("   • Great foundation for understanding the framework")
         print("\n📖 Next: Try 02_llm_agent.py for AI-powered analysis")
         print("=" * 60)

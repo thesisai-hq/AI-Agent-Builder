@@ -55,13 +55,16 @@ class AgentTester:
             # Create agent instance
             agent = agent_class()
 
-            # Check if RAG agent (has analyze_async method)
-            is_rag_agent = hasattr(agent, "analyze_async") and callable(
-                getattr(agent, "analyze_async")
+            # Check if RAG agent by looking at config
+            is_rag_agent = (
+                hasattr(agent, 'config') and 
+                agent.config and 
+                hasattr(agent.config, 'rag') and 
+                agent.config.rag is not None
             )
 
             if is_rag_agent and uploaded_file:
-                # RAG agent - extract PDF text and analyze
+                # RAG agent with special analyze_async(ticker, document_text)
                 return self._test_rag_agent(agent, ticker, uploaded_file)
 
             elif is_rag_agent:
@@ -74,9 +77,9 @@ class AgentTester:
             else:
                 data = self._get_default_mock_data(ticker)
 
-            # Run analysis with timing
+            # Run analysis with timing (ALL AGENTS NOW ASYNC)
             start_time = time.time()
-            signal = agent.analyze(ticker, data)
+            signal = asyncio.run(agent.analyze(ticker, data))
             execution_time = time.time() - start_time
             
             # Check if this was a fallback signal (LLM error)
@@ -154,19 +157,38 @@ class AgentTester:
                     "error": f"Only {pages_with_text}/{len(pdf_reader.pages)} pages contain text. This PDF may be partially scanned. Try a fully text-based PDF.",
                 }
 
-            # Run async analysis
+            # Run async analysis (RAG agents now return Signal, not dict)
             start_time = time.time()
-            result_dict = asyncio.run(agent.analyze_async(ticker, document_text))
+            
+            try:
+                signal = asyncio.run(agent.analyze(ticker, document_text))
+            except Exception as analyze_error:
+                # Better error message if analyze() fails
+                return {
+                    "success": False,
+                    "error": f"RAG analysis failed: {str(analyze_error)}. Ensure sentence-transformers is installed: pip install sentence-transformers"
+                }
+            
             execution_time = time.time() - start_time
 
-            # Return RAG results (dict format, not Signal)
+            # Verify we got a Signal object
+            if not hasattr(signal, 'metadata'):
+                return {
+                    "success": False,
+                    "error": f"Agent returned {type(signal).__name__} instead of Signal object. Check agent code."
+                }
+
+            # Extract insights from signal metadata
+            insights = signal.metadata.get('insights', []) if isinstance(signal.metadata, dict) else []
+
+            # Return results
             return {
                 "success": True,
                 "signal": {
-                    "direction": result_dict.get("direction", "neutral"),
-                    "confidence": result_dict.get("confidence", 0.5),
-                    "reasoning": result_dict.get("reasoning", "No reasoning provided"),
-                    "insights": result_dict.get("insights", []),
+                    "direction": signal.direction,
+                    "confidence": signal.confidence,
+                    "reasoning": signal.reasoning,
+                    "insights": insights,
                 },
                 "execution_time": execution_time,
                 "ticker": ticker,

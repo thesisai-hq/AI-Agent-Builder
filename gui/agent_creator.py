@@ -50,7 +50,13 @@ class AgentCreator:
             return self._generate_rule_based_agent(agent_name, description, rules)
         elif agent_type == "LLM-Powered":
             return self._generate_llm_agent(
-                agent_name, description, llm_provider, llm_model, temperature, max_tokens, system_prompt
+                agent_name,
+                description,
+                llm_provider,
+                llm_model,
+                temperature,
+                max_tokens,
+                system_prompt,
             )
         elif agent_type == "RAG-Powered":
             return self._generate_rag_agent(
@@ -67,7 +73,14 @@ class AgentCreator:
             )
         else:  # Hybrid
             return self._generate_hybrid_agent(
-                agent_name, description, rules, llm_provider, llm_model, temperature, max_tokens, system_prompt
+                agent_name,
+                description,
+                rules,
+                llm_provider,
+                llm_model,
+                temperature,
+                max_tokens,
+                system_prompt,
             )
 
     def _generate_rule_based_agent(
@@ -130,7 +143,7 @@ from agent_framework import Agent, Signal, Database, Config
 class {agent_name}(Agent):
     """{description}"""
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze based on defined rules.
         
         Args:
@@ -172,7 +185,7 @@ async def main():
                 print(f"⚠️  No data for {{ticker}}")
                 continue
             
-            signal = agent.analyze(ticker, data)
+            signal = await agent.analyze(ticker, data)
             print(f"📊 {{ticker}}: {{signal.direction.upper()}} ({{signal.confidence:.0%}})")
             print(f"   {{signal.reasoning}}\\n")
     
@@ -251,7 +264,7 @@ from agent_framework import Agent, Signal, Database, Config
 class {agent_name}(Agent):
     """{description}"""
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using advanced multi-condition rules.
         
         Args:
@@ -357,7 +370,7 @@ from agent_framework import Agent, Signal, Database, Config
 class {agent_name}(Agent):
     """{description}"""
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using score-based strategy.
         
         Args:
@@ -480,7 +493,7 @@ class {agent_name}(Agent):
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using LLM with configured personality.
         
         Args:
@@ -600,7 +613,7 @@ To check installed providers:
 
 import asyncio
 from agent_framework import (
-    Agent, AgentConfig, LLMConfig, RAGConfig,
+    Agent, AgentConfig, LLMConfig, RAGConfig, Signal,
     Database, Config, calculate_sentiment_score
 )
 
@@ -631,27 +644,31 @@ class {agent_name}(Agent):
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict):
-        """Not used - RAG agents use analyze_async."""
-        raise NotImplementedError("Use analyze_async for RAG-powered analysis")
-    
-    async def analyze_async(self, ticker: str, document_text: str) -> dict:
+    async def analyze(self, ticker: str, data: dict) -> dict:
         """Analyze document using RAG.
+        
+        For RAG agents, 'data' can be document text string or dict with 'document' key.
         
         Args:
             ticker: Stock ticker symbol
-            document_text: Document to analyze (SEC filing, news, etc.)
+            data: Document text (SEC filing, news, etc.) or dict with 'document' key
             
         Returns:
             Dict with direction, confidence, reasoning, and insights
         """
-        if not document_text:
-            return {{
-                'direction': 'neutral',
-                'confidence': 0.3,
-                'reasoning': 'No document text provided',
-                'insights': []
-            }}
+        # Handle both string and dict input
+        if isinstance(data, dict):
+            document_text = data.get('document', '')
+        else:
+            document_text = str(data)
+        
+        if not document_text or len(document_text) < 100:
+            return Signal(
+                direction='neutral',
+                confidence=0.3,
+                reasoning='Document too short or empty for RAG analysis',
+                metadata={{'insights': []}}
+            )
         
         try:
             # Add document to RAG system
@@ -688,22 +705,22 @@ class {agent_name}(Agent):
             # Clear RAG for next document
             self.rag.clear()
             
-            return {{
-                'direction': direction,
-                'confidence': confidence,
-                'reasoning': full_analysis[:300] + "...",
-                'insights': insights
-            }}
+            # Return Signal with insights in metadata
+            return Signal(
+                direction=direction,
+                confidence=confidence,
+                reasoning=full_analysis[:400] + "..." if len(full_analysis) > 400 else full_analysis,
+                metadata={{'insights': insights}}
+            )
         
         except Exception as e:
             print(f"  ❌ RAG analysis failed: {{e}}")
-            return {{
-                'direction': 'neutral',
-                'confidence': 0.3,
-                'reasoning': f'Analysis error: {{str(e)}}',
-                'insights': []
-            }}
-
+            return Signal(
+                direction='neutral',
+                confidence=0.3,
+                reasoning=f'RAG analysis error: {{str(e)}}',
+                metadata={{'insights': []}}
+            )
 
 async def main():
     """Example usage of RAG agent."""
@@ -814,7 +831,7 @@ class {agent_name}(Agent):
         )
         super().__init__(config)
     
-    def analyze(self, ticker: str, data: dict) -> Signal:
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         """Hybrid analysis: rules first, then LLM for complex cases.
         
         Args:
