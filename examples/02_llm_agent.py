@@ -125,30 +125,13 @@ Example: bullish|75|Strong ROE of 25% indicates excellent management efficiency.
             print(f"⚠️  LLM error: {e}")
             print(f"    Error type: {type(e).__name__}")
             
-            # Fallback to rule-based logic
-            roe = data.get('roe', 0)
-            margin = data.get('profit_margin', 0)
-            debt = data.get('debt_to_equity', 0)
-            
-            # Simple quality check
-            if roe > 15 and margin > 15 and debt < 1.0:
-                return Signal(
-                    direction='bullish',
-                    confidence=0.7,
-                    reasoning=f'LLM unavailable ({type(e).__name__}), using fallback: Quality metrics strong (ROE={roe:.1f}%, Margin={margin:.1f}%, Debt={debt:.1f})'
-                )
-            elif roe < 10 or debt > 2.0:
-                return Signal(
-                    direction='bearish',
-                    confidence=0.6,
-                    reasoning=f'LLM unavailable ({type(e).__name__}), using fallback: Quality concerns (ROE={roe:.1f}%, Debt={debt:.1f})'
-                )
-            else:
-                return Signal(
-                    direction='neutral',
-                    confidence=0.5,
-                    reasoning=f'LLM unavailable ({type(e).__name__}), using fallback: Mixed quality signals'
-                )
+            # Minimal fallback - just report the error
+            # Don't use rules (that defeats the purpose of LLM agent)
+            return Signal(
+                direction='neutral',
+                confidence=0.3,
+                reasoning=f'LLM service unavailable ({type(e).__name__}). Cannot provide AI-powered analysis. Error: {str(e)[:100]}'
+            )
 
 
 async def main():

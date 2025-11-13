@@ -522,26 +522,12 @@ Example: bullish|75|Strong growth with healthy margins"""
         
         except Exception as e:
             print(f"⚠️  LLM error: {{e}}")
-            # Fallback to simple rule
-            pe = data.get('pe_ratio', 0)
-            growth = data.get('revenue_growth', 0)
-            
-            if pe < 20 and growth > 10:
-                return Signal(
-                    direction='bullish',
-                    confidence=0.6,
-                    reasoning=f'LLM unavailable ({{type(e).__name__}}), using fallback: PE={{pe:.1f}}, Growth={{growth:.1f}}%'
-                )
-            elif pe > 30:
-                return Signal(
-                    direction='bearish',
-                    confidence=0.5,
-                    reasoning=f'LLM unavailable ({{type(e).__name__}}), using fallback: High PE={{pe:.1f}}'
-                )
+            # LLM agents should NOT use rule-based fallback
+            # That defeats the purpose of using AI
             return Signal(
                 direction='neutral',
-                confidence=0.4,
-                reasoning=f'LLM unavailable ({{type(e).__name__}}), insufficient data for fallback'
+                confidence=0.2,
+                reasoning=f'LLM service unavailable ({{type(e).__name__}}). Cannot provide AI-powered analysis without LLM. Error: {{str(e)[:100]}}'
             )
 
 

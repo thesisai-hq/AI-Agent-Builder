@@ -154,22 +154,13 @@ Format: DIRECTION|CONFIDENCE|REASONING"""
         except Exception as e:
             print(f"  ⚠️  LLM error: {e}")
             
-            # Fallback: Simple quality check
-            roe = data.get('roe', 0)
-            debt = data.get('debt_to_equity', 0)
-            
-            if roe > 15 and debt < 1.0:
-                return Signal(
-                    direction='bullish',
-                    confidence=0.6,
-                    reasoning=f'LLM unavailable ({type(e).__name__}), using fallback: Growth + quality metrics (ROE={roe:.1f}%, Debt={debt:.1f})'
-                )
-            else:
-                return Signal(
-                    direction='neutral',
-                    confidence=0.5,
-                    reasoning=f'LLM unavailable ({type(e).__name__}), using fallback: Growth without strong quality metrics'
-                )
+            # Minimal fallback for hybrid agents
+            # Return neutral since we can't do the deep analysis
+            return Signal(
+                direction='neutral',
+                confidence=0.3,
+                reasoning=f'Passed growth screening but LLM unavailable ({type(e).__name__}). Cannot provide quality assessment.'
+            )
 
 
 async def main():

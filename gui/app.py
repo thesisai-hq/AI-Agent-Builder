@@ -882,41 +882,52 @@ def show_create_page():
     st.markdown("---")
     st.subheader("Preview Generated Code")
 
-    if st.button("Generate Code", type="primary"):
-        code = creator.generate_agent_code(
-            agent_name=agent_name,
-            description=description,
-            agent_type=agent_type,
-            rules=rules,
-            llm_provider=llm_provider,
-            llm_model=final_model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            system_prompt=system_prompt,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            top_k=top_k,
-        )
+    if st.button("Generate Code", type="primary", use_container_width=True):
+        with st.spinner("Generating agent code..."):
+            code = creator.generate_agent_code(
+                agent_name=agent_name,
+                description=description,
+                agent_type=agent_type,
+                rules=rules,
+                llm_provider=llm_provider,
+                llm_model=final_model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                system_prompt=system_prompt,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                top_k=top_k,
+            )
 
-        st.session_state.generated_code = code
-        st.session_state.current_filename = filename
+            st.session_state.generated_code = code
+            st.session_state.current_filename = filename
+        
+        # Show success message
+        st.success(f"✅ Agent code generated successfully! ({len(code)} characters)")
+        st.info(f"📝 Agent Type: **{agent_type}** | File: `{filename}`")
+        st.balloons()
 
     # Display generated code if available
     if st.session_state.generated_code:
-        st.code(st.session_state.generated_code, language="python")
-
-        col1, col2, col3 = st.columns([1, 1, 3])
+        # Show action buttons at TOP (no scrolling needed)
+        st.markdown("### 💾 Save Your Agent")
+        
+        col1, col2, col3 = st.columns([2, 2, 3])
         with col1:
-            if st.button("💾 Save Agent"):
+            if st.button("💾 Save Agent", type="primary", use_container_width=True, key="save_top"):
                 # Use current filename from text input, not cached session state
                 current_filename = filename  # This is from the text_input above
                 
                 loader = st.session_state.agent_loader
-                success, message = loader.save_agent(
-                    current_filename, st.session_state.generated_code
-                )
+                
+                with st.spinner(f"Saving {current_filename}..."):
+                    success, message = loader.save_agent(
+                        current_filename, st.session_state.generated_code
+                    )
+                
                 if success:
-                    st.success(message)
+                    st.success(f"✅ {message}")
+                    st.info(f"🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
                     st.balloons()
                     # Clear session state
                     st.session_state.generated_code = None
@@ -924,14 +935,81 @@ def show_create_page():
                     st.rerun()
                 else:
                     # Show error and keep code visible for editing filename
-                    st.error(message)
-                    st.info("💡 **Tip:** Change the filename above and try saving again. Valid filenames use only letters, numbers, and underscores.")
+                    st.error(f"❌ {message}")
+                    st.info("💡 **Tip:** Change the filename above and click 'Generate Code' again, then save.")
 
         with col2:
-            if st.button("🗑️ Clear"):
+            if st.button("🗑️ Clear & Start Over", use_container_width=True, key="clear_top"):
                 st.session_state.generated_code = None
                 st.session_state.current_filename = None
                 st.rerun()
+        
+        with col3:
+            st.download_button(
+                "⬇️ Download Code",
+                data=st.session_state.generated_code,
+                file_name=filename,
+                mime="text/x-python",
+                use_container_width=True,
+                key="download_top"
+            )
+        
+        st.markdown("---")
+        
+        # Show info about the generated code
+        col_info1, col_info2, col_info3 = st.columns(3)
+        with col_info1:
+            st.metric("Lines of Code", len(st.session_state.generated_code.split('\n')))
+        with col_info2:
+            st.metric("Characters", len(st.session_state.generated_code))
+        with col_info3:
+            st.metric("Status", "✅ Ready to Save")
+        
+        st.markdown("---")
+        
+        st.code(st.session_state.generated_code, language="python")
+
+        # Also show buttons at bottom for convenience after scrolling
+        st.markdown("---")
+        st.markdown("### 💾 Quick Actions")
+        
+        col1, col2, col3 = st.columns([2, 2, 3])
+        with col1:
+            if st.button("💾 Save Agent", type="primary", use_container_width=True, key="save_bottom"):
+                current_filename = filename
+                loader = st.session_state.agent_loader
+                
+                with st.spinner(f"Saving {current_filename}..."):
+                    success, message = loader.save_agent(
+                        current_filename, st.session_state.generated_code
+                    )
+                
+                if success:
+                    st.success(f"✅ {message}")
+                    st.info(f"🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
+                    st.balloons()
+                    st.session_state.generated_code = None
+                    st.session_state.current_filename = None
+                    st.rerun()
+                else:
+                    st.error(f"❌ {message}")
+                    st.info("💡 **Tip:** Scroll up to change the filename, then click 'Generate Code' again.")
+
+        with col2:
+            if st.button("🗑️ Clear & Start Over", use_container_width=True, key="clear_bottom"):
+                st.session_state.generated_code = None
+                st.session_state.current_filename = None
+                st.rerun()
+        
+        with col3:
+            st.download_button(
+                "⬇️ Download Code",
+                data=st.session_state.generated_code,
+                file_name=filename,
+                mime="text/x-python",
+                use_container_width=True,
+                key="download_bottom"
+            )
 
 
 def show_test_page():
