@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
 from gui.agent_tester import AgentTester
-from gui.backtester import Backtester, BacktestResult
+from gui.how_to_page import show_how_to_page
 from gui.metrics import MetricDefinitions, RuleValidator
 
 # Page configuration
@@ -206,7 +206,7 @@ def main():
 
     # Sidebar navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to:", ["📋 Browse Agents", "➕ Create Agent", "🧪 Test Agent", "📈 Backtest Agent"])
+    page = st.sidebar.radio("Go to:", ["📋 Browse Agents", "➕ Create Agent", "🧪 Test Agent", "📚 How to Use Agents"])
 
     # Show quick stats
     loader = st.session_state.agent_loader
@@ -264,8 +264,8 @@ def main():
         show_create_page()
     elif page == "🧪 Test Agent":
         show_test_page()
-    elif page == "📈 Backtest Agent":
-        show_backtest_page()
+    elif page == "📚 How to Use Agents":
+        show_how_to_page()
 
 
 def show_browse_page():
@@ -1034,6 +1034,11 @@ def show_test_page():
     st.info(f"Agent Type: **{agent_type}**")
 
     ticker = st.text_input("Ticker Symbol", value="AAPL")
+    
+    # Initialize variables
+    use_yfinance = False
+    mock_data = None
+    uploaded_file = None
 
     if agent_type == "RAG-Powered":
         st.subheader("📄 Document Upload")
@@ -1067,12 +1072,20 @@ def show_test_page():
                 except Exception as e:
                     st.error(f"Error reading PDF: {e}")
 
+        # RAG agents don't use financial data, only documents
         use_mock = False
-        mock_data = None
 
     else:
         st.subheader("Test Data")
-        use_mock = st.checkbox("Use Mock Data", value=True)
+        
+        data_source = st.radio(
+            "Data Source",
+            ["Mock Data", "Database", "YFinance (Real Market Data)"],
+            help="Mock: Fictional data for testing | Database: Sample data | YFinance: Real current market data"
+        )
+        
+        use_mock = (data_source == "Mock Data")
+        use_yfinance = (data_source == "YFinance (Real Market Data)")
         uploaded_file = None
 
         if use_mock:
@@ -1117,6 +1130,57 @@ def show_test_page():
                 mock_data["dividend_yield"] = st.number_input(
                     "Dividend Yield (%)", 0.0, 10.0, 2.0, help=div_def["tooltip"]
                 )
+        elif use_yfinance:
+            st.info("🌐 **Real Market Data:** Will fetch current data from Yahoo Finance")
+            st.caption(f"Data for: **{ticker}**")
+            
+            with st.spinner(f"Fetching real data for {ticker}..."):
+                try:
+                    import yfinance as yf
+                    
+                    stock = yf.Ticker(ticker)
+                    info = stock.info
+                    
+                    # Extract relevant fundamentals
+                    mock_data = {
+                        "name": info.get('longName', ticker),
+                        "pe_ratio": info.get('trailingPE', info.get('forwardPE', 0)) or 0,
+                        "pb_ratio": info.get('priceToBook', 0) or 0,
+                        "roe": (info.get('returnOnEquity', 0) or 0) * 100,
+                        "profit_margin": (info.get('profitMargins', 0) or 0) * 100,
+                        "revenue_growth": (info.get('revenueGrowth', 0) or 0) * 100,
+                        "debt_to_equity": info.get('debtToEquity', 0) or 0,
+                        "current_ratio": info.get('currentRatio', 0) or 0,
+                        "dividend_yield": (info.get('dividendYield', 0) or 0) * 100,
+                        "market_cap": info.get('marketCap', 0) or 0,
+                    }
+                    
+                    st.success("✅ Real data fetched successfully!")
+                    
+                    # Display fetched data
+                    with st.expander("📊 View Fetched Data"):
+                        col_a, col_b, col_c = st.columns(3)
+                        
+                        with col_a:
+                            st.metric("PE Ratio", f"{mock_data['pe_ratio']:.1f}")
+                            st.metric("Revenue Growth", f"{mock_data['revenue_growth']:.1f}%")
+                        
+                        with col_b:
+                            st.metric("Profit Margin", f"{mock_data['profit_margin']:.1f}%")
+                            st.metric("ROE", f"{mock_data['roe']:.1f}%")
+                        
+                        with col_c:
+                            st.metric("Debt/Equity", f"{mock_data['debt_to_equity']:.1f}")
+                            st.metric("Dividend Yield", f"{mock_data['dividend_yield']:.1f}%")
+                    
+                except ImportError:
+                    st.error("❌ yfinance not installed. Run: pip install yfinance")
+                    st.info("💡 Or run ./gui/setup.sh to install all dependencies")
+                    mock_data = None
+                except Exception as e:
+                    st.error(f"❌ Error fetching data for {ticker}: {str(e)}")
+                    st.info("💡 **Tips:**\n- Check ticker symbol is correct (e.g., AAPL not Apple)\n- Check internet connection\n- Try a different ticker")
+                    mock_data = None
         else:
             mock_data = None
 
@@ -1135,6 +1199,11 @@ def show_test_page():
 
         if agent_type == "RAG-Powered" and not uploaded_file:
             st.error("Please upload a PDF document to test RAG agent")
+            return
+        
+        # Check if yfinance data fetch failed
+        if use_yfinance and mock_data is None:
+            st.error("Cannot run analysis - data fetch failed. Please check the error message above.")
             return
 
         with st.spinner("Running analysis..."):

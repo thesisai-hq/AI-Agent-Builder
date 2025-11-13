@@ -1,11 +1,11 @@
-# GUI Requirements - Full Installation
-# All dependencies for complete GUI functionality
-
 # GUI Framework
 streamlit>=1.28.0
 
 # PDF Processing  
 pypdf2>=3.0.0
+
+# Real market data (optional but recommended)
+yfinance>=0.2.0
 
 # LLM Providers (all installed for full functionality)
 ollama>=0.1.0           # Free local LLM
