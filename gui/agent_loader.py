@@ -1,4 +1,10 @@
-"""Agent Loader - Load and manage agents from examples/ directory"""
+"""Agent Loader - Load and manage agents from examples/ directory
+
+DESIGN PRINCIPLE: One agent class per file for maximum clarity.
+
+This simplifies loading, testing, and management while providing
+the best educational experience for students.
+"""
 
 import os
 import re
@@ -7,7 +13,10 @@ from typing import List, Dict, Optional, Tuple
 
 
 class AgentLoader:
-    """Loads and manages agents from the examples directory."""
+    """Loads and manages agents from the examples directory.
+    
+    Expects ONE agent class per file for simplicity and clarity.
+    """
 
     def __init__(self, examples_dir: Path):
         """Initialize loader with examples directory path.
@@ -21,6 +30,8 @@ class AgentLoader:
 
     def list_agents(self) -> List[Dict[str, str]]:
         """List all agent files in examples/ directory.
+        
+        Returns ONE agent per file (first Agent class found).
 
         Returns:
             List of dicts with agent info (name, filename, type)
@@ -32,7 +43,7 @@ class AgentLoader:
             if file_path.name.startswith("_"):
                 continue
 
-            # Parse file to extract agent info
+            # Parse file to extract agent info (first agent only)
             agent_info = self._parse_agent_file(file_path)
             if agent_info:
                 agents.append(agent_info)
@@ -173,35 +184,102 @@ class AgentLoader:
             return False, f"Error duplicating file: {e}"
 
     def _parse_agent_file(self, file_path: Path) -> Optional[Dict[str, str]]:
-        """Parse agent file to extract metadata.
+        """Parse agent file to extract metadata for ONE agent class.
+        
+        DESIGN: One agent per file for clarity and simplicity.
+        If multiple agents found, returns FIRST one only with warning.
 
         Args:
             file_path: Path to agent file
 
         Returns:
-            Dict with agent info or None if parsing fails
+            Dict with agent info, or None if parsing fails
         """
         try:
             content = file_path.read_text()
 
-            # Extract agent class name (first class that inherits from Agent)
-            class_match = re.search(r"class\s+(\w+)\(Agent\)", content)
-            if not class_match:
+            # Find FIRST agent class (one per file principle)
+            match = re.search(r"class\s+(\w+)\(Agent\)", content)
+            
+            if not match:
+                return None
+            
+            agent_name = match.group(1)
+            
+            # Skip base/abstract classes
+            if agent_name in ['BaseAgent', 'AbstractAgent']:
                 return None
 
-            agent_name = class_match.group(1)
-
             # Determine agent type based on code patterns
-            if "RAGConfig" in content or "self.rag" in content:
+            # Check in order: RAG → Hybrid → LLM → Rule-Based
+            
+            has_rag = "RAGConfig" in content or "self.rag" in content
+            has_llm = "LLMConfig" in content or "self.llm" in content
+            has_rules = self._has_rule_logic(content)
+            
+            if has_rag:
                 agent_type = "RAG-Powered"
-            elif "LLMConfig" in content or "self.llm" in content:
+            elif has_llm and has_rules:
+                agent_type = "Hybrid"  # Both LLM and rules!
+            elif has_llm:
                 agent_type = "LLM-Powered"
             else:
                 agent_type = "Rule-Based"
 
-            return {"name": agent_name, "filename": file_path.name, "type": agent_type}
+            # Check if file has multiple agents (warning case)
+            all_matches = re.findall(r"class\s+(\w+)\(Agent\)", content)
+            agent_count = len([name for name in all_matches if name not in ['BaseAgent', 'AbstractAgent']])
+            
+            if agent_count > 1:
+                # Multiple agents found - add warning to name
+                agent_name = f"{agent_name} ⚠️ (+{agent_count-1} more in file)"
+
+            return {
+                "name": agent_name, 
+                "filename": file_path.name, 
+                "type": agent_type
+            }
+            
         except Exception:
             return None
+    
+    @staticmethod
+    def _has_rule_logic(content: str) -> bool:
+        """Detect if agent has rule-based logic in analyze method.
+        
+        Looks for common patterns:
+        - if/elif/else statements checking data.get()
+        - Comparison operators on metrics
+        - Direct Signal returns based on conditions
+        
+        Args:
+            content: File content
+            
+        Returns:
+            True if rule-based logic detected
+        """
+        # Look for analyze method
+        analyze_match = re.search(
+            r'def analyze\(self.*?\):.*?(?=\n    def |\n\nclass |\n\nasync |$)',
+            content,
+            re.DOTALL
+        )
+        
+        if not analyze_match:
+            return False
+        
+        analyze_code = analyze_match.group(0)
+        
+        # Check for rule patterns
+        rule_patterns = [
+            r"if\s+.*?data\.get\(",           # if data.get('pe_ratio')
+            r"elif\s+.*?data\.get\(",         # elif data.get('growth')
+            r"if\s+\w+\s*[<>=!]+\s*\d+",      # if pe < 15
+            r"data\.get\(['\"]\w+['\"].*?[<>=!]",  # data.get('pe') < 15
+        ]
+        
+        # If analyze method has conditional logic on metrics, it's rule-based
+        return any(re.search(pattern, analyze_code) for pattern in rule_patterns)
 
     @staticmethod
     def _is_valid_filename(filename: str) -> bool:

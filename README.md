@@ -106,6 +106,8 @@ async def main():
 asyncio.run(main())
 ```
 
+**Try it:** `python examples/01_basic.py`
+
 ## Installation Options
 
 ### Core Dependencies Only
@@ -173,28 +175,67 @@ Build agents visually with no coding required!
 - 🤓 Educational tooltips for all financial metrics
 - ✅ Real-time rule validation and conflict detection
 - 🧪 Test agents with mock data or PDF upload
+- 📈 Backtest agents on multiple scenarios (NEW!)
 - 💾 Save directly to `examples/`
 - 📄 Drag-and-drop PDF for RAG agents
 - 🛠️ Full agent management (duplicate, delete, export)
 - 🎯 Strategy examples (Buffett, Lynch, Graham)
 
+**File Organization:**  
+GUI creates **one agent per file** for simplicity. See [Agent File Guidelines](docs/AGENT_FILE_GUIDELINES.md) for details.
+
 See **[GUI Quick Start](GUI_QUICK_START.md)** for details.
+
+## Choosing the Right Agent Type
+
+The framework supports **4 agent types**. Choose based on your needs:
+
+| Type | Best For | Speed | Cost | Example |
+|------|----------|-------|------|--------|
+| **Rule-Based** | Clear criteria, fast screening | ⚡⚡⚡⚡⚡ | Free | Screen 1000s of stocks for PE < 15 |
+| **LLM-Powered** | Deep analysis, small datasets | ⚡⚡☆☆☆ | $$ | Analyze top 10 portfolio candidates |
+| **Hybrid** | Large-scale + depth | ⚡⚡⚡⚡☆ | $ | Screen 500 → Analyze top 25 |
+| **RAG-Powered** | Document analysis (PDFs) | ⚡☆☆☆☆ | $$ | Extract insights from SEC filings |
+
+**Quick Guide:**
+- Need speed? → **Rule-Based**
+- Need intelligence? → **LLM-Powered**
+- Need both? → **Hybrid**
+- Have documents? → **RAG-Powered**
+
+**Learn more:** [Choosing Agent Type Guide](docs/CHOOSING_AGENT_TYPE.md)
+
+**Try all 4 types:**
+```bash
+python examples/01_basic.py      # Rule-Based
+python examples/02_llm_agent.py  # LLM-Powered  
+python examples/03_hybrid.py     # Hybrid
+python examples/04_rag_agent.py  # RAG-Powered
+```
 
 ## Documentation
 
-### Quick Start Guides
-- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder (5 min)
-- **[Quick Start](QUICK_START.md)** - Framework setup (5 min)
+### Quick Start
+- **[Quick Start](QUICK_START.md)** - Get running in 5 minutes (copy-paste commands)
+- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder, no coding required
 
-### Framework Documentation
-- **[Getting Started](docs/GETTING_STARTED.md)** - Detailed installation
-- **[Configuration](docs/CONFIGURATION.md)** - Environment settings
-- **[Database Guide](docs/DATABASE_SETUP.md)** - Database setup
-- **[LLM Customization](docs/LLM_CUSTOMIZATION.md)** - AI configuration
-- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Architecture
+### Complete Guides
+- **[Getting Started](docs/GETTING_STARTED.md)** - Complete installation with conda/venv/system Python
+- **[Choosing Agent Type](docs/CHOOSING_AGENT_TYPE.md)** - When to use Rule-Based vs LLM vs Hybrid vs RAG
+- **[Configuration](docs/CONFIGURATION.md)** - Environment variables and settings
+- **[Database Setup](docs/DATABASE_SETUP.md)** - PostgreSQL setup and usage
+- **[LLM Customization](docs/LLM_CUSTOMIZATION.md)** - AI model configuration (OpenAI, Anthropic, Ollama)
 
-### GUI Documentation
-- **[GUI README](gui/README.md)** - Complete GUI guide
+### Advanced Topics
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Code organization and architecture
+- **[Agent File Guidelines](docs/AGENT_FILE_GUIDELINES.md)** - Best practices (one agent per file)
+- **[Hybrid Agents](docs/HYBRID_AGENTS.md)** - Understanding hybrid agents (rules + LLM)
+
+### Reference
+- **[Examples Guide](examples/README.md)** - Guide to example agents
+- **[Disclaimer](DISCLAIMER.md)** - Legal terms and educational use
+- **[Contributing](CONTRIBUTING.md)** - How to contribute
+- **[Changelog](CHANGELOG.md)** - Version history
 
 ## Project Structure
 
@@ -218,11 +259,15 @@ AI-Agent-Builder/
 │   ├── agent_tester.py   # Test agents
 │   └── README.md         # GUI documentation
 │
-├── examples/              # Working examples
-│   ├── 01_basic.py        # Simple rule-based agents
-│   ├── 02_llm_agent.py    # AI-powered agents
-│   ├── 03_rag_agent.py    # Document analysis
-│   └── 04_custom_llm_config.py  # LLM customization
+├── examples/              # Progressive learning examples
+│   ├── 01_basic.py        # ⭐ Start: Rule-based agent (no AI)
+│   ├── 02_llm_agent.py    # ⭐⭐ LLM-powered with full config
+│   ├── 03_hybrid.py       # ⭐⭐⭐ Hybrid (rules + LLM)
+│   ├── 04_rag_agent.py    # ⭐⭐⭐⭐ Document analysis (RAG)
+│   ├── 05_buffett_quality.py  # Warren Buffett strategy
+│   ├── 06_lynch_garp.py       # Peter Lynch strategy
+│   ├── 07_graham_value.py     # Benjamin Graham strategy
+│   └── README.md          # Learning path guide
 │
 ├── docs/                  # Documentation
 ├── tests/                 # Test suite
@@ -241,9 +286,16 @@ source venv/bin/activate                # If using venv
 # Start database
 docker compose up -d postgres
 
-# Run examples
-python examples/01_basic.py
-python examples/02_llm_agent.py
+# Run examples (in learning order)
+python examples/01_basic.py      # ⭐ Start: Rule-based
+python examples/02_llm_agent.py  # ⭐⭐ LLM-powered
+python examples/03_hybrid.py     # ⭐⭐⭐ Hybrid (rules + LLM)
+python examples/04_rag_agent.py  # ⭐⭐⭐⭐ Document analysis
+
+# Try famous investor strategies
+python examples/05_buffett_quality.py  # Warren Buffett
+python examples/06_lynch_garp.py       # Peter Lynch
+python examples/07_graham_value.py     # Benjamin Graham
 
 # Run tests
 pytest tests/

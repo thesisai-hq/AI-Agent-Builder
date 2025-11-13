@@ -106,7 +106,8 @@ class Backtester:
         self,
         agent_filename: str,
         tickers: List[str],
-        use_database: bool = True
+        use_database: bool = True,
+        agent_class_name: Optional[str] = None,
     ) -> Tuple[bool, BacktestResult, Optional[str]]:
         """Run basic backtest on historical data.
         
@@ -114,6 +115,7 @@ class Backtester:
             agent_filename: Path to agent file
             tickers: List of tickers to test
             use_database: Whether to use database (False = mock data)
+            agent_class_name: Optional specific agent class name (for files with multiple agents)
             
         Returns:
             Tuple of (success, BacktestResult, error_message)
@@ -123,9 +125,12 @@ class Backtester:
         
         try:
             # Load agent
-            agent = self._load_agent(agent_filename)
+            agent = self._load_agent(agent_filename, agent_class_name)
             if not agent:
-                return False, result, "Failed to load agent"
+                if agent_class_name:
+                    return False, result, f"Agent class '{agent_class_name}' not found in {agent_filename}"
+                else:
+                    return False, result, "Failed to load agent"
             
             # Get data
             if use_database:
@@ -150,8 +155,16 @@ class Backtester:
         except Exception as e:
             return False, result, f"Backtest error: {str(e)}"
     
-    def _load_agent(self, agent_filename: str):
-        """Load agent from file."""
+    def _load_agent(self, agent_filename: str, agent_class_name: Optional[str] = None):
+        """Load agent from file.
+        
+        Args:
+            agent_filename: Agent filename
+            agent_class_name: Optional specific class name (for multi-agent files)
+            
+        Returns:
+            Agent instance or None
+        """
         try:
             examples_dir = Path(__file__).parent.parent / "examples"
             agent_path = examples_dir / agent_filename
@@ -164,12 +177,27 @@ class Backtester:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             
-            # Find agent class (look for class that inherits from Agent)
+            # Import Agent base class
+            from agent_framework import Agent
+            
+            # If specific class name requested, find that one
+            if agent_class_name:
+                for item_name in dir(module):
+                    if item_name == agent_class_name:
+                        item = getattr(module, item_name)
+                        # Verify it's an Agent subclass
+                        if isinstance(item, type) and issubclass(item, Agent) and item is not Agent:
+                            return item()
+                # Class not found
+                print(f"Agent class '{agent_class_name}' not found in {agent_filename}")
+                return None
+            
+            # Otherwise, find first Agent subclass (backward compatibility)
             for item_name in dir(module):
                 item = getattr(module, item_name)
                 if (isinstance(item, type) and 
-                    hasattr(item, 'analyze') and 
-                    item_name != 'Agent'):
+                    issubclass(item, Agent) and 
+                    item is not Agent):
                     return item()
             
             return None

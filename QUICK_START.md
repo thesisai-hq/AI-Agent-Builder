@@ -93,50 +93,67 @@ python seed_data.py
 ## Run Your First Agent
 
 ```bash
+# Start with the basic rule-based agent (no AI needed!)
 python examples/01_basic.py
 ```
 
 **Expected output:**
 ```
-AI Agent Framework - Basic Example
+Example 1: Basic Rule-Based Agent
 ====================================
 
 📊 Analyzing AAPL - Apple Inc.
-PE Ratio: 28.5
-Revenue Growth: 8.5%
+   PE Ratio: 28.5
 
-💡 Value Agent:
-   Direction: NEUTRAL
-   Confidence: 60%
-   Reasoning: PE ratio 28.5 is fairly valued
+🟡 NEUTRAL (60%)
+   PE ratio 28.5 is fairly valued (between 15-30)
 ```
 
 ## What's Next?
 
-**Run more examples:**
+**Follow the learning path:**
 ```bash
-python examples/02_llm_agent.py    # AI-powered analysis (requires LLM)
-python examples/03_rag_agent.py    # Document analysis (requires RAG)
+# 1. Rule-based (you just ran this!)
+python examples/01_basic.py    # ⭐ Rules only, fast
+
+# 2. LLM-powered (AI analysis)
+python examples/02_llm_agent.py  # ⭐⭐ Requires: ollama + llama3.2
+
+# 3. Hybrid (rules + AI)
+python examples/03_hybrid.py     # ⭐⭐⭐ Best of both worlds
+
+# 4. RAG document analysis
+python examples/04_rag_agent.py  # ⭐⭐⭐⭐ Analyze PDFs, filings
+
+# 5. Famous investor strategies
+python examples/05_buffett_quality.py  # Warren Buffett
+python examples/06_lynch_garp.py       # Peter Lynch  
+python examples/07_graham_value.py     # Benjamin Graham
 ```
 
-**Create your own agent:**
+**For LLM examples (02-04), install dependencies:**
 ```bash
-# Copy an example
-cp examples/01_basic.py my_agent.py
+# Install Ollama package
+pip install ollama
 
-# Edit and customize
-nano my_agent.py
+# Download llama3.2 model
+ollama pull llama3.2
 
-# Run it
-python my_agent.py
+# Start Ollama service
+ollama serve
+```
+
+**Or use the visual GUI (no coding!):**
+```bash
+./gui/launch.sh
 ```
 
 **Read detailed guides:**
-- [Getting Started](docs/GETTING_STARTED.md) - Complete installation details
-- [Environment Setup](docs/ENVIRONMENT_SETUP.md) - Conda/venv/system Python
+- [Getting Started](docs/GETTING_STARTED.md) - Complete installation with all environments
 - [Configuration](docs/CONFIGURATION.md) - Customize settings
-- [Database Guide](docs/DATABASE_SETUP.md) - Database details
-- [LLM Customization](docs/LLM_CUSTOMIZATION.md) - AI agent setup
+- [Database Guide](docs/DATABASE_SETUP.md) - PostgreSQL details
+- [LLM Customization](docs/LLM_CUSTOMIZATION.md) - AI setup
+- [Hybrid Agents](docs/HYBRID_AGENTS.md) - Advanced patterns
 
 ## Daily Workflow
 

@@ -1,229 +1,303 @@
-# Example Agents - Strategy Library
+# AI Agent Examples - Learning Path
 
-This directory contains both framework examples and investment strategy templates.
-
-## Framework Examples (Protected)
-
-These demonstrate the framework's capabilities:
-
-- **01_basic.py** - Simple rule-based agents (Value, Growth)
-- **02_llm_agent.py** - LLM-powered agents with different personas
-- **03_rag_agent.py** - RAG-powered document analysis
-- **04_custom_llm_config.py** - LLM customization
-
-**Protected:** Cannot be deleted from GUI
-
-## Investment Strategy Examples
-
-Learn from famous investors! These are ready-to-use strategies:
-
-### 05_buffett_quality.py
-**Warren Buffett's Quality Investing**
-
-```
-Strategy: Score-Based
-Focus: High-quality businesses
-
-Criteria:
-- ROE > 15%: +2 points (strong returns)
-- Profit Margin > 15%: +2 points (pricing power)
-- Debt < 0.5: +1 point (financial strength)
-- Growth > 10%: +1 point (expanding business)
-- Current Ratio > 1.5: +1 point (liquidity)
-
-Bullish if score >= 4 (excellent quality)
-```
-
-**Best for:** Long-term investors seeking quality companies
+This directory contains example agents that teach investment analysis concepts progressively.
 
 ---
 
-### 06_lynch_garp.py
-**Peter Lynch's Growth at Reasonable Price**
+## ⚠️ **Best Practice: One Agent Per File**
 
-```
-Strategy: Advanced Rules (Multi-Condition)
-Focus: Growth companies at fair valuations
+Each `.py` file contains exactly ONE agent class for clarity and ease of use.
 
-Rule 1 (AND):
-- PEG < 1.0 (undervalued growth)
-- Growth > 15% (strong expansion)
-- Margin > 10% (profitable)
-→ Bullish (90%)
+**Why:** Clear identity, easy testing, professional organization
 
-Rule 2 (AND):
-- Growth > 25% (high growth)
-- PE < 30 (reasonable valuation)
-→ Bullish (75%)
-```
-
-**Best for:** Growth investors seeking value
+See [Agent File Guidelines](../docs/AGENT_FILE_GUIDELINES.md) for details.
 
 ---
 
-### 07_graham_value.py
-**Benjamin Graham's Value Investing**
+## 📚 **Learning Path (Start Here!)**
 
+Follow these examples in order to learn the framework progressively:
+
+### 1. **01_basic.py** - Rule-Based Agent ⭐ START HERE
 ```
-Strategy: Score-Based
-Focus: Deep value with margin of safety
+Agent: ValueAgent
+Type: Rule-Based
+Dependencies: None (core framework only)
+Time: 2 minutes
+Difficulty: ★☆☆☆☆
 
-Criteria:
-- PE < 15: +2 points (undervalued)
-- PB < 1.5: +1 point (book value)
-- Debt < 1.0: +1 point (conservative)
-- Current Ratio > 2.0: +1 point (safety)
-- Dividend > 2%: +1 point (income)
+What You Learn:
+- Agent base class basics
+- Working with financial data
+- Simple if/then investment rules
+- Signal objects (direction, confidence, reasoning)
 
-Bullish if score >= 3 (strong value)
+Run: python 01_basic.py
 ```
 
-**Best for:** Conservative value investors
+### 2. **02_llm_agent.py** - LLM-Powered Agent ⭐⭐
+```
+Agent: QualityInvestorAgent  
+Type: LLM-Powered
+Dependencies: pip install ollama
+Setup: ollama pull llama3.2
+Time: 5 minutes
+Difficulty: ★★☆☆☆
+
+What You Learn:
+- AI-powered analysis with LLMs
+- System prompts for agent personality
+- Temperature and max_tokens configuration
+- Error handling with fallback logic
+- Natural language reasoning
+
+Run: python 02_llm_agent.py
+```
+
+### 3. **03_hybrid.py** - Hybrid Agent (Rules + LLM) ⭐⭐⭐
+```
+Agent: GrowthQualityHybrid
+Type: Hybrid
+Dependencies: pip install ollama
+Setup: ollama pull llama3.2
+Time: 7 minutes
+Difficulty: ★★★☆☆
+
+What You Learn:
+- Two-stage analysis (screening + deep dive)
+- Combining rules and AI for efficiency
+- Resource optimization (speed + cost)
+- When to use hybrid vs pure approaches
+
+Run: python 03_hybrid.py
+```
+
+### 4. **04_rag_agent.py** - RAG Document Analysis ⭐⭐⭐⭐
+```
+Agent: SECFilingAnalyst
+Type: RAG-Powered
+Dependencies: pip install ollama sentence-transformers
+Setup: ollama pull llama3.2
+Time: 10 minutes
+Difficulty: ★★★★☆
+
+What You Learn:
+- Document analysis with RAG
+- Semantic search and embeddings
+- Chunking long documents
+- Combining retrieval with LLM synthesis
+
+Run: python 04_rag_agent.py
+```
 
 ---
 
-## How to Use These Examples
+## 🎓 **Learning Progression**
 
-### 1. Browse & Learn
+```
+01_basic.py (Rules)
+    ↓
+    Learn: Basic agent structure
+    ↓
+02_llm_agent.py (AI)
+    ↓
+    Learn: LLM integration
+    ↓
+03_hybrid.py (Rules + AI)
+    ↓
+    Learn: Optimization strategies
+    ↓
+04_rag_agent.py (Documents + AI)
+    ↓
+    Learn: Advanced document analysis
+    ↓
+Ready to build your own! 🚀
+```
+
+---
+
+## 🌟 **Famous Investor Strategies**
+
+After completing the learning path, explore these strategy implementations:
+
+### 5. **05_buffett_quality.py** - Warren Buffett Quality
+```
+Strategy: Score-based quality metrics
+Focus: High ROE, strong margins, low debt
+Difficulty: ★★☆☆☆
+```
+
+### 6. **06_lynch_garp.py** - Peter Lynch GARP
+```
+Strategy: Growth at Reasonable Price
+Focus: PEG ratio, sustainable growth
+Difficulty: ★★☆☆☆
+```
+
+### 7. **07_graham_value.py** - Benjamin Graham Value
+```
+Strategy: Deep value with margin of safety
+Focus: Low PE, low PB, high dividend
+Difficulty: ★★☆☆☆
+```
+
+---
+
+## 🎯 **Quick Start**
+
+### First Time?
+```bash
+# 1. Ensure database is running
+cd ~/AI-Agent-Builder
+docker compose up -d postgres
+sleep 5
+
+# 2. Seed sample data (if not done)
+python seed_data.py
+
+# 3. Run examples in order
+python examples/01_basic.py          # Start here!
+python examples/02_llm_agent.py      # Then AI
+python examples/03_hybrid.py         # Then hybrid
+python examples/04_rag_agent.py      # Then RAG
+```
+
+### Dependencies by Agent Type:
+
+| Example | Core | LLM | RAG | Install Command |
+|---------|------|-----|-----|-----------------|
+| 01_basic.py | ✅ | ❌ | ❌ | `pip install -e .` |
+| 02_llm_agent.py | ✅ | ✅ | ❌ | `pip install -e ".[llm]"` |
+| 03_hybrid.py | ✅ | ✅ | ❌ | `pip install -e ".[llm]"` |
+| 04_rag_agent.py | ✅ | ✅ | ✅ | `pip install -e ".[llm,rag]"` |
+| 05-07 (strategies) | ✅ | ❌ | ❌ | `pip install -e .` |
+
+**Recommendation:** Install everything at once:
+```bash
+pip install -e ".[all]"
+```
+
+---
+
+## 📊 **Agent Type Comparison**
+
+| Type | Example | Speed | Cost | Depth | Best For |
+|------|---------|-------|------|-------|----------|
+| **Rule-Based** | 01 | ⚡⚡⚡⚡⚡ | Free | ★☆☆☆☆ | Clear criteria, quick screening |
+| **LLM-Powered** | 02 | ⚡⚡☆☆☆ | $ | ★★★★★ | Nuanced analysis, small datasets |
+| **Hybrid** | 03 | ⚡⚡⚡⚡☆ | $ | ★★★★☆ | Large-scale + depth |
+| **RAG-Powered** | 04 | ⚡☆☆☆☆ | $$ | ★★★★★ | Document analysis |
+
+---
+
+## 🔧 **Creating Your Own Agents**
+
+### Option 1: Use the GUI (Easiest)
+```bash
+./gui/launch.sh
+# Navigate to "➕ Create Agent"
+# Build visually, no coding needed!
+```
+
+### Option 2: Duplicate an Example
+```bash
+# Copy an example that's close to what you want
+cp 01_basic.py my_value_strategy.py
+
+# Edit and customize
+nano my_value_strategy.py
+
+# Test it
+python my_value_strategy.py
+```
+
+### Option 3: Write from Scratch
+```python
+"""My Custom Strategy"""
+
+from agent_framework import Agent, Signal
+
+class MyStrategy(Agent):
+    """Your strategy description"""
+    
+    def analyze(self, ticker: str, data: dict) -> Signal:
+        # Your logic here
+        return Signal('bullish', 0.8, 'Your reasoning')
+
+# Add async main() for testing
+```
+
+---
+
+## 🚨 **Current Status: Migration Needed**
+
+The following old example files need updating:
+
+- ~~`03_rag_agent.py`~~ → Replaced with `04_rag_agent.py`
+- `04_custom_llm_config.py` → Check if still needed
+
+**These files may have multiple agents or outdated patterns.**
+
+**Recommendation:** Use the new examples (01-04) as they follow best practices.
+
+---
+
+## 🧪 **Testing Examples**
 
 ```bash
-# Launch GUI
-./gui/launch.sh
+# Test each example
+python 01_basic.py     # Fast, should work immediately
+python 02_llm_agent.py  # Requires: ollama + llama3.2
+python 03_hybrid.py     # Requires: ollama + llama3.2
+python 04_rag_agent.py  # Requires: ollama + llama3.2 + sentence-transformers
 
-# Go to: Browse Agents
-# Click "👁️ View" on any strategy
-# Study the code
+# If LLM examples fail:
+# 1. Install dependencies: pip install 'ai-agent-framework[llm,rag]'
+# 2. Start Ollama: ollama serve
+# 3. Pull model: ollama pull llama3.2
 ```
-
-### 2. Duplicate & Customize
-
-```
-Browse → Find "BuffettQualityAgent"
-→ Click "📋 Copy"
-→ Name: "buffett_quality_aggressive.py"
-→ Duplicate!
-
-Now modify:
-- Lower thresholds for more signals
-- Add more criteria
-- Adjust confidence levels
-```
-
-### 3. Test with Different Data
-
-```
-Test Agent → Select "BuffettQualityAgent"
-
-Try different scenarios:
-- High quality: ROE=25%, Margin=20%, Debt=0.3
-- Low quality: ROE=8%, Margin=5%, Debt=2.0
-- Mixed: ROE=18%, Margin=12%, Debt=1.2
-
-See how the strategy responds!
-```
-
-### 4. Create Variations
-
-**From Buffett Quality, create:**
-- `buffett_quality_strict.py` - Higher thresholds (ROE > 20%)
-- `buffett_quality_relaxed.py` - Lower thresholds (ROE > 12%)
-- `buffett_quality_tech.py` - Adapted for tech stocks
-
-**From Lynch GARP, create:**
-- `lynch_garp_aggressive.py` - Accept higher PEG (< 1.5)
-- `lynch_garp_conservative.py` - Require lower PEG (< 0.8)
-
-**From Graham Value, create:**
-- `graham_deep_value.py` - Stricter criteria
-- `graham_income_focus.py` - Emphasize dividends
-
-## Comparison Table
-
-| Strategy | Type | Risk | Best For | Typical Returns |
-|----------|------|------|----------|-----------------|
-| Buffett Quality | Score | Medium | Long-term | Steady growth |
-| Lynch GARP | Advanced | Medium-High | Growth seekers | Higher growth |
-| Graham Value | Score | Low | Conservative | Value + income |
-
-## Learning Path
-
-**Beginner:**
-1. Start with 01_basic.py (simple rules)
-2. Study 05_buffett_quality.py (score-based)
-3. Duplicate and test variations
-
-**Intermediate:**
-1. Study 06_lynch_garp.py (advanced rules)
-2. Learn PEG ratio calculations
-3. Create multi-condition strategies
-
-**Advanced:**
-1. Study 02_llm_agent.py (AI-powered)
-2. Study 03_rag_agent.py (document analysis)
-3. Combine techniques (hybrid agents)
-
-## Strategy Philosophy Summary
-
-### Buffett (Quality)
-> "It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price."
-
-Focus on business quality over price.
-
-### Lynch (GARP)
-> "Find a growth company at a value price."
-
-Balance growth prospects with reasonable valuation.
-
-### Graham (Value)
-> "The margin of safety is always dependent on the price paid."
-
-Buy with significant discount to intrinsic value.
-
-## Tips for Customization
-
-### Adjusting Thresholds
-
-**More Aggressive (more signals):**
-- Lower quality thresholds (ROE > 12% instead of 15%)
-- Accept higher PE ratios
-- Reduce required score
-
-**More Conservative (fewer, better signals):**
-- Raise quality thresholds (ROE > 20%)
-- Require lower PE ratios
-- Increase required score
-
-### Adding Criteria
-
-**Risk Metrics:**
-- Add beta < 1.0 for lower volatility
-- Add cash flow positive
-- Add earnings stability
-
-**Growth Metrics:**
-- Add earnings growth > revenue growth
-- Add market share expansion
-- Add new product launches
-
-### Combining Strategies
-
-```python
-# Duplicate Buffett Quality
-# Add Lynch GARP PEG criterion
-# Create "Buffett-Lynch Hybrid"
-
-if peg < 1.0 and quality_score >= 4:
-    return Signal('bullish', 0.95, 'Quality + GARP')
-```
-
-## Next Steps
-
-1. **Browse** these examples in the GUI
-2. **Test** them with different mock data
-3. **Duplicate** to create your own variations
-4. **Study** the code to understand the strategies
-5. **Build** your own strategy combining ideas
 
 ---
 
-**Remember:** These are educational examples based on published investment principles. Not financial advice. Always do your own research!
+## 💡 **Tips**
+
+### For Beginners:
+1. **Start with 01_basic.py** - No dependencies, pure rules
+2. **Then 02_llm_agent.py** - Add AI intelligence
+3. **Skip to strategies** - Try Buffett, Lynch, Graham approaches
+4. **Return to 03-04** when ready for advanced techniques
+
+### For Experienced:
+1. Jump to strategies (05-07) for implementation patterns
+2. Review 03_hybrid.py for optimization techniques
+3. Check 04_rag_agent.py for document analysis
+
+### For Production:
+- Rule-based: Ready to use
+- LLM: Configure API keys in .env, add error handling
+- Hybrid: Perfect for scale (screen → analyze workflow)
+- RAG: Use vector database (pgvector) for production
+
+---
+
+## 📖 **Additional Resources**
+
+- **Framework Documentation:** [README.md](../README.md)
+- **Agent Guidelines:** [AGENT_FILE_GUIDELINES.md](../docs/AGENT_FILE_GUIDELINES.md)
+- **Hybrid Agents:** [HYBRID_AGENTS.md](../docs/HYBRID_AGENTS.md)
+- **LLM Setup:** [LLM_CUSTOMIZATION.md](../docs/LLM_CUSTOMIZATION.md)
+
+---
+
+## ✅ **Summary**
+
+**Total Examples:** 7+ agents
+**Learning Path:** 4 progressive examples (01-04)
+**Strategy Examples:** 3 famous investor approaches (05-07)
+**Organization:** One agent per file (clear, professional)
+
+**Start here:** `python 01_basic.py` and progress through the examples! 🚀
+
+---
+
+**Built for learning. Not financial advice. See DISCLAIMER.md for full terms.**

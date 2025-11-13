@@ -69,9 +69,64 @@ def show_disclaimer():
         st.stop()
 
 
+def show_code_viewer():
+    """Display agent code in full screen."""
+    viewing_file = st.session_state.get("current_viewing_file")
+    
+    if not viewing_file:
+        st.error("No file selected")
+        return
+    
+    st.title(f"👁️ Viewing: {viewing_file}")
+    
+    # Back button at top
+    if st.button("← Back to Browse", type="primary"):
+        st.session_state.current_viewing_file = None
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Load and display code
+    loader = st.session_state.agent_loader
+    code = loader.get_agent_code(viewing_file)
+    
+    # Display in full-width container
+    st.code(code, language="python", line_numbers=True)
+    
+    # Action buttons at bottom
+    st.markdown("---")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("← Back to Browse", use_container_width=True):
+            st.session_state.current_viewing_file = None
+            st.rerun()
+    
+    with col2:
+        st.download_button(
+            "⬇️ Download",
+            data=code,
+            file_name=viewing_file,
+            mime="text/x-python",
+            use_container_width=True
+        )
+    
+    with col3:
+        # Copy to clipboard (show code snippet)
+        if st.button("📋 Copy Path", use_container_width=True):
+            st.code(f"examples/{viewing_file}", language="bash")
+
+
 def show_license_modal():
     """Display full MIT License."""
     st.title("📄 MIT License")
+    
+    # Back button at top
+    if st.button("← Back to Application", type="primary"):
+        st.session_state.show_license = False
+        st.rerun()
+    
+    st.markdown("---")
     
     st.markdown("""
     ### AI-Agent-Builder Framework
@@ -127,10 +182,6 @@ def show_license_modal():
     - Open an issue on [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
     - Email: support@thesisai.app
     """)
-    
-    if st.button("← Back to Application", type="primary"):
-        st.session_state.show_license = False
-        st.rerun()
 
 
 def main():
@@ -200,6 +251,11 @@ def main():
         show_license_modal()
         return
     
+    # Code viewer modal
+    if st.session_state.get("current_viewing_file"):
+        show_code_viewer()
+        return
+    
     # Page routing
     if page == "📋 Browse Agents":
         show_browse_page()
@@ -214,8 +270,18 @@ def main():
 def show_browse_page():
     """Display agent browsing interface."""
     st.header("Browse Existing Agents")
-
+    
+    # Check if we need to show the View button click handler
     loader = st.session_state.agent_loader
+    
+    # Handle file viewing
+    for key in list(st.session_state.keys()):
+        if key.startswith("viewing_") and st.session_state[key]:
+            filename = key.replace("viewing_", "")
+            st.session_state.current_viewing_file = filename
+            del st.session_state[key]  # Clean up the trigger
+            st.rerun()
+    
     agents = loader.list_agents()
 
     if not agents:
@@ -268,8 +334,8 @@ def show_browse_page():
                     if st.button(
                         "👁️ View", key=f"view_{agent_info['filename']}", use_container_width=True
                     ):
-                        code = loader.get_agent_code(agent_info["filename"])
-                        st.code(code, language="python")
+                        st.session_state[f"viewing_{agent_info['filename']}"] = True
+                        st.rerun()
 
                 with col_b:
                     if st.button(
@@ -409,10 +475,94 @@ def show_create_page():
         agent_type = st.selectbox(
             "Template", ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
         )
+        
+        # Show explanation of Hybrid
+        if agent_type == "Hybrid":
+            st.info("""
+            🧑‍💻 **What is a Hybrid Agent?**
+            
+            Combines rules + LLM:
+            1. **Rules:** Fast screening (filter stocks)
+            2. **LLM:** Deep analysis (only on filtered stocks)
+            
+            **Use when:** You want to screen thousands of stocks quickly,
+            then use AI for detailed analysis on candidates.
+            """)
 
         if agent_type in ["LLM-Powered", "Hybrid", "RAG-Powered"]:
             st.markdown("**LLM Configuration**")
-            llm_provider = st.selectbox("Provider", ["ollama", "openai", "anthropic"])
+            
+            # Provider selection
+            llm_provider = st.selectbox(
+                "Provider", 
+                ["ollama", "openai", "anthropic"],
+                help="LLM service provider. Ollama is free and local, OpenAI and Anthropic require API keys."
+            )
+            
+            # Model selection based on provider
+            model_options = {
+                "ollama": [
+                    "llama3.2",
+                    "llama3.1",
+                    "llama3",
+                    "llama2",
+                    "mistral",
+                    "mixtral",
+                    "phi",
+                    "gemma",
+                    "qwen",
+                    "custom (enter below)"
+                ],
+                "openai": [
+                    "gpt-4o",
+                    "gpt-4o-mini",
+                    "gpt-4-turbo",
+                    "gpt-4",
+                    "gpt-3.5-turbo",
+                    "custom (enter below)"
+                ],
+                "anthropic": [
+                    "claude-3-5-sonnet-20241022",
+                    "claude-3-5-haiku-20241022",
+                    "claude-3-opus-20240229",
+                    "claude-3-sonnet-20240229",
+                    "claude-3-haiku-20240307",
+                    "custom (enter below)"
+                ]
+            }
+            
+            selected_model = st.selectbox(
+                "Model",
+                model_options[llm_provider],
+                help=f"Specific {llm_provider} model to use. Different models have different capabilities and costs."
+            )
+            
+            # Custom model input if selected
+            if selected_model == "custom (enter below)":
+                custom_model = st.text_input(
+                    "Custom Model Name",
+                    placeholder=f"Enter exact model name for {llm_provider}",
+                    help="Enter the exact model identifier (e.g., 'llama3.2:70b' for Ollama)"
+                )
+                final_model = custom_model if custom_model else model_options[llm_provider][0]
+            else:
+                final_model = selected_model
+            
+            # Show model info
+            model_info = {
+                "llama3.2": "💡 Latest Llama model, good balance of speed and quality",
+                "gpt-4o": "💡 Latest GPT-4 with vision, fastest GPT-4 model",
+                "gpt-4o-mini": "💡 Cost-effective GPT-4, 60% cheaper than GPT-4o",
+                "claude-3-5-sonnet-20241022": "💡 Latest Claude, best for analysis and coding",
+                "claude-3-5-haiku-20241022": "💡 Fastest Claude, good for simple tasks",
+                "mistral": "💡 Good open-source alternative, fast inference",
+                "gpt-4": "💡 Original GPT-4, very capable but slower",
+                "gpt-3.5-turbo": "💡 Fast and cheap, good for simple analysis"
+            }
+            
+            if selected_model in model_info:
+                st.caption(model_info[selected_model])
+            
             temperature = st.slider("Temperature", 0.0, 1.0, 0.5, 0.1)
             max_tokens = st.number_input("Max Tokens", 100, 4000, 1000, 100)
             system_prompt = st.text_area(
@@ -420,6 +570,7 @@ def show_create_page():
             )
         else:
             llm_provider = None
+            final_model = None
             temperature = None
             max_tokens = None
             system_prompt = None
@@ -443,8 +594,13 @@ def show_create_page():
     # Analysis Logic
     st.subheader("Analysis Logic")
 
-    if agent_type == "Rule-Based":
-        st.markdown("Define your investment strategy:")
+    if agent_type == "Rule-Based" or agent_type == "Hybrid":
+        # Show different header for hybrid
+        if agent_type == "Hybrid":
+            st.markdown("🎯 **Screening Rules (Step 1: Filter Stocks)**")
+            st.caption("Define rules to filter which stocks get LLM analysis")
+        else:
+            st.markdown("Define your investment strategy:")
 
         rule_style = st.radio(
             "Rule Style",
@@ -703,9 +859,10 @@ def show_create_page():
     elif agent_type == "RAG-Powered":
         rules = None
         st.info("📄 RAG agents analyze documents/text using retrieval and embeddings")
-    else:
+    elif agent_type == "LLM-Powered":
         rules = None
-        st.info("LLM-powered agents use natural language prompts instead of explicit rules")
+        st.info("🤖 LLM-powered agents use natural language prompts instead of explicit rules")
+    # Hybrid agents already have rules defined above
 
     # Generate and preview code
     st.markdown("---")
@@ -718,6 +875,7 @@ def show_create_page():
             agent_type=agent_type,
             rules=rules,
             llm_provider=llm_provider,
+            llm_model=final_model,
             temperature=temperature,
             max_tokens=max_tokens,
             system_prompt=system_prompt,
@@ -771,6 +929,7 @@ def show_test_page():
 
     agent_info = next(a for a in agents if a["name"] == selected_agent)
     agent_filename = agent_info["filename"]
+    agent_class_name = agent_info["name"]  # Store the class name
     agent_type = agent_info["type"]
 
     st.info(f"Agent Type: **{agent_type}**")
@@ -880,10 +1039,142 @@ def show_test_page():
             return
 
         with st.spinner("Running analysis..."):
-            result = tester.test_agent(agent_filename, ticker, mock_data, uploaded_file)
+            result = tester.test_agent(
+                agent_filename, 
+                ticker, 
+                mock_data, 
+                uploaded_file,
+                agent_class_name  # Pass the specific class name!
+            )
 
         if result["success"]:
-            st.success("Analysis Complete!")
+            # Check if LLM fallback occurred
+            if result.get("is_fallback", False):
+                st.warning("⚠️ **LLM Service Unavailable - Using Fallback Logic**")
+                
+                llm_error = result.get("llm_error_info", {})
+                error_type = llm_error.get("error_type")
+                
+                # Show specific error message based on type
+                if error_type == "missing_package":
+                    st.error(f"""
+                    ❌ **Missing LLM Package**
+                    
+                    **Problem:** {llm_error.get('description')}
+                    
+                    **Solution:** Install the required package:
+                    ```bash
+                    {llm_error.get('install_command')}
+                    ```
+                    
+                    Or install all LLM providers:
+                    ```bash
+                    pip install 'ai-agent-framework[llm]'
+                    ```
+                    """)
+                
+                elif error_type == "model_not_found":
+                    model_name = llm_error.get('model', 'llama3.2')
+                    st.error(f"""
+                    ❌ **Model Not Available**
+                    
+                    **Problem:** Model '{model_name}' not downloaded
+                    
+                    **Solution:** Download the model with Ollama:
+                    ```bash
+                    {llm_error.get('install_command')}
+                    ```
+                    
+                    **Available Models:** Check with `ollama list`
+                    
+                    **Popular Models:**
+                    - `ollama pull llama3.2` (recommended)
+                    - `ollama pull mistral`
+                    - `ollama pull phi`
+                    """)
+                
+                elif error_type == "connection_error":
+                    st.error("""
+                    ❌ **Ollama Service Not Running**
+                    
+                    **Problem:** Can't connect to Ollama service
+                    
+                    **Solution:** Start Ollama in a terminal:
+                    ```bash
+                    ollama serve
+                    ```
+                    
+                    Or if Ollama is not installed:
+                    ```bash
+                    # Install Ollama
+                    curl https://ollama.ai/install.sh | sh
+                    
+                    # Download a model
+                    ollama pull llama3.2
+                    
+                    # Start service
+                    ollama serve
+                    ```
+                    """)
+                
+                elif error_type == "missing_api_key":
+                    provider = llm_error.get('provider', 'unknown')
+                    env_var = f"{provider.upper()}_API_KEY" if provider != 'unknown' else 'API_KEY'
+                    
+                    st.error(f"""
+                    ❌ **API Key Not Configured**
+                    
+                    **Problem:** {llm_error.get('description')}
+                    
+                    **Solution:** Add your API key to the `.env` file:
+                    ```bash
+                    # Edit .env file
+                    nano .env
+                    
+                    # Add this line:
+                    {env_var}=your-api-key-here
+                    ```
+                    
+                    **Get an API Key:**
+                    - OpenAI: https://platform.openai.com/api-keys
+                    - Anthropic: https://console.anthropic.com/
+                    """)
+                
+                elif error_type == "rate_limit":
+                    st.error("""
+                    ❌ **Rate Limit Exceeded**
+                    
+                    **Problem:** Too many API requests
+                    
+                    **Solution:**
+                    - Wait 1-2 minutes and try again
+                    - Or use Ollama (free, no rate limits)
+                    - Or upgrade your API plan
+                    """)
+                
+                else:
+                    st.error(f"""
+                    ❌ **LLM Error Occurred**
+                    
+                    **Problem:** {llm_error.get('description', 'LLM service error')}
+                    
+                    **Using Fallback:** Agent used simple rules instead of LLM analysis
+                    
+                    **To Fix:**
+                    - Check that LLM service is running
+                    - Verify configuration in .env file
+                    - Try a different provider or model
+                    """)
+                
+                st.info("""
+                🛠️ **Fallback Mode Active**
+                
+                The agent used simple rule-based logic instead of LLM analysis.
+                Results shown below are from fallback logic, not AI reasoning.
+                """)
+            
+            # Show results (even with fallback)
+            st.success("Analysis Complete!" if not result.get("is_fallback") else "Fallback Analysis Complete")
 
             col1, col2, col3 = st.columns(3)
 
@@ -940,6 +1231,7 @@ def show_backtest_page():
         
         agent_info = next(a for a in agents if a["name"] == selected_agent)
         agent_filename = agent_info["filename"]
+        agent_class_name = agent_info["name"]  # Store the class name
         agent_type = agent_info["type"]
         
         st.caption(f"Type: **{agent_type}**")
@@ -1007,7 +1299,8 @@ def show_backtest_page():
                 backtester.run_backtest(
                     agent_filename,
                     tickers,
-                    use_database=(use_database == "Database (Sample Stocks)")
+                    use_database=(use_database == "Database (Sample Stocks)"),
+                    agent_class_name=agent_class_name  # Pass specific class name!
                 )
             )
         

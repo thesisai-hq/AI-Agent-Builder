@@ -1,77 +1,83 @@
-"""Example 1: Simple agent with PostgreSQL database and dependency injection.
+"""Example 1: Basic Rule-Based Agent
+
+This example demonstrates the simplest form of investment agent:
+- Pure rule-based logic (no AI, no LLM)
+- Fast execution (milliseconds)
+- Deterministic (same input = same output)
+- No dependencies beyond core framework
+
+Learning Focus:
+- Understanding the Agent base class
+- Working with financial data from PostgreSQL
+- Creating simple if/then investment rules
+- Returning Signal objects
 
 ⚠️ DISCLAIMER: This is educational code for learning purposes only.
 Do NOT use for real trading. Not financial advice. See DISCLAIMER.md for full terms.
 """
 
 import asyncio
-import os
-from agent_framework import Agent, Signal, Config
-from agent_framework.database import Database
+from agent_framework import Agent, Signal, Database, Config
 
 
 class ValueAgent(Agent):
-    """Simple value investing agent using PE ratio."""
+    """Simple value investing agent using PE ratio.
+    
+    Strategy: Buy when stocks are cheap relative to earnings (PE < 15)
+    
+    This demonstrates:
+    - Basic rule-based logic
+    - Simple thresholds
+    - Clear reasoning
+    """
     
     def analyze(self, ticker: str, data: dict) -> Signal:
-        """Analyze based on PE ratio threshold."""
+        """Analyze based on PE ratio threshold.
+        
+        Investment Logic:
+        - PE < 15: Undervalued → Bullish
+        - PE > 30: Overvalued → Bearish
+        - PE 15-30: Fair value → Neutral
+        
+        Args:
+            ticker: Stock ticker symbol
+            data: Financial data dictionary
+            
+        Returns:
+            Signal with direction, confidence, and reasoning
+        """
         pe = data.get('pe_ratio', 0)
         
         if pe < 15:
             return Signal(
                 direction='bullish',
                 confidence=0.8,
-                reasoning=f"PE ratio {pe:.1f} indicates undervaluation"
+                reasoning=f"PE ratio {pe:.1f} indicates undervaluation (value threshold: <15)"
             )
         elif pe > 30:
             return Signal(
                 direction='bearish',
                 confidence=0.7,
-                reasoning=f"PE ratio {pe:.1f} indicates overvaluation"
+                reasoning=f"PE ratio {pe:.1f} indicates overvaluation (overvalued threshold: >30)"
             )
         else:
             return Signal(
                 direction='neutral',
                 confidence=0.6,
-                reasoning=f"PE ratio {pe:.1f} is fairly valued"
-            )
-
-
-class GrowthAgent(Agent):
-    """Growth investing agent using revenue growth."""
-    
-    def analyze(self, ticker: str, data: dict) -> Signal:
-        """Analyze based on revenue growth."""
-        growth = data.get('revenue_growth', 0)
-        margin = data.get('profit_margin', 0)
-        
-        if growth > 20 and margin > 15:
-            return Signal(
-                direction='bullish',
-                confidence=0.9,
-                reasoning=f"Strong growth ({growth:.1f}%) with healthy margins ({margin:.1f}%)"
-            )
-        elif growth < 5:
-            return Signal(
-                direction='bearish',
-                confidence=0.6,
-                reasoning=f"Low growth rate ({growth:.1f}%)"
-            )
-        else:
-            return Signal(
-                direction='neutral',
-                confidence=0.5,
-                reasoning=f"Moderate growth ({growth:.1f}%)"
+                reasoning=f"PE ratio {pe:.1f} is fairly valued (between 15-30)"
             )
 
 
 async def main():
-    """Run example agents on PostgreSQL data."""
+    """Example usage of rule-based agent."""
     print("=" * 60)
-    print("AI Agent Framework - Basic Example")
+    print("Example 1: Basic Rule-Based Agent")
     print("=" * 60)
+    print("\n📚 Learning: Simple if/then rules, no AI needed")
+    print("⚡ Speed: Very fast (milliseconds)")
+    print("💰 Cost: Free (no LLM calls)")
     
-    # Connect to database using config helper
+    # Connect to database
     connection_string = Config.get_database_url()
     
     print("\n📌 Connecting to database...")
@@ -81,18 +87,17 @@ async def main():
         await db.connect()
         print("✅ Connected!")
         
-        # Create agents
-        value_agent = ValueAgent()
-        growth_agent = GrowthAgent()
+        # Create agent
+        agent = ValueAgent()
+        print(f"\n🤖 Agent: {agent.config.name}")
+        print(f"📝 Strategy: {agent.__doc__.split('Strategy:')[1].split('This')[0].strip()}")
         
         # Analyze all tickers
         tickers = await db.list_tickers()
-        print(f"\n📊 Found {len(tickers)} tickers: {', '.join(tickers)}\n")
+        print(f"\n📊 Analyzing {len(tickers)} stocks: {', '.join(tickers)}")
         
         for ticker in tickers:
-            print(f"\n{'='*60}")
-            print(f"📊 Analyzing {ticker}")
-            print("=" * 60)
+            print(f"\n{'─'*60}")
             
             # Get data
             data = await db.get_fundamentals(ticker)
@@ -100,27 +105,27 @@ async def main():
                 print(f"⚠️  No data available for {ticker}")
                 continue
             
-            print(f"Company: {data['name']}")
-            print(f"PE Ratio: {data['pe_ratio']:.1f}")
-            print(f"Revenue Growth: {data['revenue_growth']:.1f}%")
-            print(f"Profit Margin: {data['profit_margin']:.1f}%")
+            # Show company info
+            print(f"📈 {ticker} - {data['name']}")
+            print(f"   PE Ratio: {data['pe_ratio']:.1f}")
+            print(f"   Sector: {data['sector']}")
             
-            # Value agent analysis
-            value_signal = value_agent.analyze(ticker, data)
-            print(f"\n💡 Value Agent:")
-            print(f"   Direction: {value_signal.direction.upper()}")
-            print(f"   Confidence: {value_signal.confidence:.1%}")
-            print(f"   Reasoning: {value_signal.reasoning}")
+            # Run analysis
+            signal = agent.analyze(ticker, data)
             
-            # Growth agent analysis
-            growth_signal = growth_agent.analyze(ticker, data)
-            print(f"\n🚀 Growth Agent:")
-            print(f"   Direction: {growth_signal.direction.upper()}")
-            print(f"   Confidence: {growth_signal.confidence:.1%}")
-            print(f"   Reasoning: {growth_signal.reasoning}")
+            # Display result
+            emoji = {'bullish': '🟢', 'bearish': '🔴', 'neutral': '🟡'}[signal.direction]
+            print(f"\n   {emoji} {signal.direction.upper()} ({signal.confidence:.0%})")
+            print(f"   {signal.reasoning}")
         
         print("\n" + "=" * 60)
         print("✅ Example completed successfully!")
+        print("\n💡 Key Takeaways:")
+        print("   • Rule-based agents are fast and deterministic")
+        print("   • Perfect for clear investment criteria")
+        print("   • No LLM dependencies needed")
+        print("   • Great foundation for understanding the framework")
+        print("\n📖 Next: Try 02_llm_agent.py for AI-powered analysis")
         print("=" * 60)
         
     except Exception as e:

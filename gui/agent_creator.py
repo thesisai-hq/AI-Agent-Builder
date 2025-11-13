@@ -19,6 +19,7 @@ class AgentCreator:
         agent_type: str,
         rules: Optional[List[Dict]] = None,
         llm_provider: Optional[str] = None,
+        llm_model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         system_prompt: Optional[str] = None,
@@ -34,6 +35,7 @@ class AgentCreator:
             agent_type: Type of agent
             rules: List of rules for rule-based logic
             llm_provider: LLM provider
+            llm_model: Specific LLM model (e.g., gpt-4, claude-3-5-sonnet, llama3.2)
             temperature: LLM temperature
             max_tokens: LLM max tokens
             system_prompt: LLM system prompt
@@ -48,13 +50,14 @@ class AgentCreator:
             return self._generate_rule_based_agent(agent_name, description, rules)
         elif agent_type == "LLM-Powered":
             return self._generate_llm_agent(
-                agent_name, description, llm_provider, temperature, max_tokens, system_prompt
+                agent_name, description, llm_provider, llm_model, temperature, max_tokens, system_prompt
             )
         elif agent_type == "RAG-Powered":
             return self._generate_rag_agent(
                 agent_name,
                 description,
                 llm_provider,
+                llm_model,
                 temperature,
                 max_tokens,
                 system_prompt,
@@ -64,7 +67,7 @@ class AgentCreator:
             )
         else:  # Hybrid
             return self._generate_hybrid_agent(
-                agent_name, description, rules, llm_provider, temperature, max_tokens, system_prompt
+                agent_name, description, rules, llm_provider, llm_model, temperature, max_tokens, system_prompt
             )
 
     def _generate_rule_based_agent(
@@ -430,6 +433,7 @@ if __name__ == "__main__":
         agent_name: str,
         description: str,
         llm_provider: str,
+        llm_model: str,
         temperature: float,
         max_tokens: int,
         system_prompt: str,
@@ -468,6 +472,7 @@ class {agent_name}(Agent):
             description="{description}",
             llm=LLMConfig(
                 provider='{llm_provider}',
+                model='{llm_model}',
                 temperature={temperature},
                 max_tokens={max_tokens},
                 system_prompt="""{system_prompt or 'You are a financial analyst.'}"""
@@ -568,6 +573,7 @@ if __name__ == "__main__":
         agent_name: str,
         description: str,
         llm_provider: str,
+        llm_model: str,
         temperature: float,
         max_tokens: int,
         system_prompt: str,
@@ -617,6 +623,7 @@ class {agent_name}(Agent):
             ),
             llm=LLMConfig(
                 provider='{llm_provider}',
+                model='{llm_model}',
                 temperature={temperature},
                 max_tokens={max_tokens},
                 system_prompt="""{system_prompt or 'You are a financial document analyst.'}"""
@@ -747,6 +754,7 @@ if __name__ == "__main__":
         description: str,
         rules: List[Dict],
         llm_provider: str,
+        llm_model: str,
         temperature: float,
         max_tokens: int,
         system_prompt: str,
@@ -798,6 +806,7 @@ class {agent_name}(Agent):
             description="{description}",
             llm=LLMConfig(
                 provider='{llm_provider}',
+                model='{llm_model}',
                 temperature={temperature},
                 max_tokens={max_tokens},
                 system_prompt="""{system_prompt or 'You are a financial analyst.'}"""
