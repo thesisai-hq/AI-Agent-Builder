@@ -28,41 +28,48 @@ Then download the model:
 """
 
 import asyncio
+
 from agent_framework import (
-    Agent, Signal, AgentConfig, LLMConfig,
-    Database, Config, parse_llm_signal, format_fundamentals
+    Agent,
+    AgentConfig,
+    Config,
+    Database,
+    LLMConfig,
+    Signal,
+    format_fundamentals,
+    parse_llm_signal,
 )
 
 
 class QualityInvestorAgent(Agent):
     """AI-powered quality investor using Ollama LLM.
-    
+
     Strategy: Uses AI to analyze company quality holistically
-    
+
     Configuration:
     - Provider: Ollama (free, local, private)
     - Model: llama3.2 (latest Llama model)
     - Temperature: 0.5 (balanced between focused and creative)
     - Max Tokens: 1500 (detailed responses)
     - System Prompt: Defines agent personality as quality-focused investor
-    
+
     This demonstrates:
     - Full LLM configuration
     - Custom system prompt for personality
     - Error handling with fallback
     - Natural language reasoning
     """
-    
+
     def __init__(self):
         """Initialize agent with complete LLM configuration."""
         config = AgentConfig(
             name="Quality Investor Agent",
             description="AI-powered quality investor focusing on strong fundamentals",
             llm=LLMConfig(
-                provider='ollama',           # Free, local AI
-                model='llama3.2',            # Latest Llama model
-                temperature=0.5,             # Balanced (0=focused, 1=creative)
-                max_tokens=1500,             # Detailed responses
+                provider="ollama",  # Free, local AI
+                model="llama3.2",  # Latest Llama model
+                temperature=0.5,  # Balanced (0=focused, 1=creative)
+                max_tokens=1500,  # Detailed responses
                 system_prompt="""You are a quality-focused investment analyst inspired by Warren Buffett.
 
 Your investment philosophy:
@@ -79,24 +86,24 @@ Analyze companies systematically:
 3. Growth prospects (sustainable revenue growth)
 4. Valuation (is it reasonably priced?)
 
-Be thorough but concise. Focus on what matters most."""
-            )
+Be thorough but concise. Focus on what matters most.""",
+            ),
         )
         super().__init__(config)
-    
+
     async def analyze(self, ticker: str, data: dict) -> Signal:
         """Analyze using LLM with quality-focused personality.
-        
+
         Args:
             ticker: Stock ticker symbol
             data: Financial data dictionary
-            
+
         Returns:
             Signal with AI-generated reasoning
         """
         # Format fundamentals for LLM
         fundamentals_text = format_fundamentals(data)
-        
+
         # Build analysis prompt
         prompt = f"""Analyze {ticker} as a quality investment:
 
@@ -113,24 +120,24 @@ Where:
 - REASONING: 2-3 sentences explaining your analysis
 
 Example: bullish|75|Strong ROE of 25% indicates excellent management efficiency. Low debt-to-equity of 0.3 provides financial safety. Growing revenue at 15% shows sustainable expansion."""
-        
+
         try:
             # Query LLM (uses system prompt automatically)
             response = self.llm.chat(prompt)
-            
+
             # Parse LLM response
             return parse_llm_signal(response, f"Quality analysis of {ticker}")
-        
+
         except Exception as e:
             print(f"⚠️  LLM error: {e}")
             print(f"    Error type: {type(e).__name__}")
-            
+
             # Minimal fallback - just report the error
             # Don't use rules (that defeats the purpose of LLM agent)
             return Signal(
-                direction='neutral',
+                direction="neutral",
                 confidence=0.3,
-                reasoning=f'LLM service unavailable ({type(e).__name__}). Cannot provide AI-powered analysis. Error: {str(e)[:100]}'
+                reasoning=f"LLM service unavailable ({type(e).__name__}). Cannot provide AI-powered analysis. Error: {str(e)[:100]}",
             )
 
 
@@ -143,22 +150,24 @@ async def main():
     print("⚡ Speed: Slower (2-5 seconds per stock due to LLM)")
     print("💰 Cost: Free with Ollama (local), or API costs with OpenAI/Anthropic")
     print("🧠 Intelligence: Nuanced, context-aware analysis")
-    
+
     # Check dependencies
     print("\n🔍 Checking dependencies...")
     try:
         import ollama
+
         print("✅ Ollama package installed")
-        
+
         # Try to connect to Ollama
         try:
             import requests
+
             response = requests.get("http://localhost:11434/api/tags", timeout=2)
             if response.status_code == 200:
                 print("✅ Ollama service running")
-                models = response.json().get('models', [])
-                model_names = [m['name'] for m in models]
-                if 'llama3.2' in str(model_names):
+                models = response.json().get("models", [])
+                model_names = [m["name"] for m in models]
+                if "llama3.2" in str(model_names):
                     print("✅ llama3.2 model available")
                 else:
                     print("⚠️  llama3.2 not found. Run: ollama pull llama3.2")
@@ -170,17 +179,17 @@ async def main():
         print("⚠️  Ollama package not installed")
         print("   Install with: pip install ollama")
         print("   Or install all LLM providers: pip install 'ai-agent-framework[llm]'")
-    
+
     # Connect to database
     connection_string = Config.get_database_url()
-    
+
     print("\n📌 Connecting to database...")
     db = Database(connection_string)
-    
+
     try:
         await db.connect()
         print("✅ Connected!")
-        
+
         # Create agent
         print("\n🤖 Initializing Quality Investor Agent...")
         agent = QualityInvestorAgent()
@@ -189,30 +198,32 @@ async def main():
         print("   Temperature: 0.5 (balanced)")
         print("   Max Tokens: 1500 (detailed)")
         print("   Personality: Quality-focused (Warren Buffett style)")
-        
+
         # Analyze stocks
-        for ticker in ['AAPL', 'TSLA', 'JPM']:
-            print(f"\n{'='*70}")
-            
+        for ticker in ["AAPL", "TSLA", "JPM"]:
+            print(f"\n{'=' * 70}")
+
             data = await db.get_fundamentals(ticker)
             if not data:
                 print(f"⚠️  No data for {ticker}")
                 continue
-            
+
             # Show company info
             print(f"📊 {ticker} - {data['name']}")
             print(f"   Sector: {data['sector']}")
-            print(f"   PE: {data['pe_ratio']:.1f} | ROE: {data['roe']:.1f}% | Margin: {data['profit_margin']:.1f}% | Debt/Equity: {data['debt_to_equity']:.1f}")
-            
+            print(
+                f"   PE: {data['pe_ratio']:.1f} | ROE: {data['roe']:.1f}% | Margin: {data['profit_margin']:.1f}% | Debt/Equity: {data['debt_to_equity']:.1f}"
+            )
+
             # Run LLM analysis
-            print(f"\n🧠 Analyzing with AI...")
+            print("\n🧠 Analyzing with AI...")
             signal = await agent.analyze(ticker, data)
-            
+
             # Display result
-            emoji = {'bullish': '🟢', 'bearish': '🔴', 'neutral': '🟡'}[signal.direction]
+            emoji = {"bullish": "🟢", "bearish": "🔴", "neutral": "🟡"}[signal.direction]
             print(f"\n   {emoji} {signal.direction.upper()} ({signal.confidence:.0%})")
             print(f"   Reasoning: {signal.reasoning}")
-        
+
         print("\n" + "=" * 70)
         print("✅ Example completed!")
         print("\n💡 Key Takeaways:")
@@ -228,10 +239,11 @@ async def main():
         print("   • System Prompt: Define personality and approach")
         print("\n📖 Next: Try 03_hybrid.py for rules + LLM combination")
         print("=" * 70)
-        
+
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         await db.disconnect()

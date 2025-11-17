@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Test script to verify GUI setup and file saving."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
+from gui.agent_loader import AgentLoader
 
 
 def test_setup():
@@ -36,7 +36,7 @@ def test_setup():
     # Test 2: Initialize loader
     print("Test 2: Initialize AgentLoader...")
     loader = AgentLoader(examples_dir)
-    print(f"  Loader created")
+    print("  Loader created")
     print(f"  Examples dir: {loader.examples_dir}")
     print("  ✓ Pass")
     print()

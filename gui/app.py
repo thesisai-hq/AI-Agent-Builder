@@ -3,18 +3,20 @@
 Simple, maintainable interface for creating and managing AI agents.
 """
 
-import streamlit as st
 import sys
-import asyncio
 from pathlib import Path
+
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from gui.agent_loader import AgentLoader
 from gui.agent_creator import AgentCreator
+from gui.agent_loader import AgentLoader
 from gui.agent_tester import AgentTester
+from gui.code_viewer import CodeViewer  # ✅ Educational code viewer
 from gui.how_to_page import show_how_to_page
+from gui.llm_setup_wizard import show_llm_setup_wizard  # ✅ Already imported
 from gui.metrics import MetricDefinitions, RuleValidator
 
 # Page configuration
@@ -32,120 +34,92 @@ def show_disclaimer():
     """Show disclaimer on first visit."""
     if "disclaimer_accepted" not in st.session_state:
         st.session_state.disclaimer_accepted = False
-    
+
     if not st.session_state.disclaimer_accepted:
         st.error("⚠️ IMPORTANT DISCLAIMER - PLEASE READ")
-        
+
         st.markdown("""
         ### Educational Use Only
-        
+
         This software is for **learning purposes only** and is **NOT intended for real trading**.
-        
+
         **By using this application, you acknowledge that:**
-        
+
         - ❌ **NOT FINANCIAL ADVICE:** This tool does not provide investment recommendations
         - ❌ **NO WARRANTIES:** Software provided "as is" with no guarantees of accuracy
         - ❌ **THEORETICAL ONLY:** Agents have not been validated for real trading
         - ❌ **SAMPLE DATA:** All included data is synthetic or simplified
         - ⚠️ **INVESTMENT RISKS:** All investments carry risk of loss
         - ✅ **EDUCATIONAL PURPOSE:** For learning investment concepts only
-        
+
         **You should:**
         - Consult licensed financial advisors before making investment decisions
         - Never trade with money you cannot afford to lose
         - Understand that past performance does not guarantee future results
         - Review the full [DISCLAIMER.md](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md) for complete legal terms
-        
+
         ---
-        
+
         **For production trading tools with proper risk management, see [thesis-app](https://thesisai.app)**
         """)
-        
+
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("✅ I Understand - Continue to Application", type="primary", use_container_width=True):
+            if st.button(
+                "✅ I Understand - Continue to Application",
+                type="primary",
+                use_container_width=True,
+            ):
                 st.session_state.disclaimer_accepted = True
                 st.rerun()
-        
+
         st.stop()
 
 
 def show_code_viewer():
-    """Display agent code in full screen."""
+    """Display agent code with educational annotations."""
     viewing_file = st.session_state.get("current_viewing_file")
-    
+
     if not viewing_file:
         st.error("No file selected")
         return
-    
-    st.title(f"👁️ Viewing: {viewing_file}")
-    
-    # Back button at top
-    if st.button("← Back to Browse", type="primary"):
-        st.session_state.current_viewing_file = None
-        st.rerun()
-    
-    st.markdown("---")
-    
-    # Load and display code
+
+    # Load code
     loader = st.session_state.agent_loader
     code = loader.get_agent_code(viewing_file)
-    
-    # Display in full-width container
-    st.code(code, language="python", line_numbers=True)
-    
-    # Action buttons at bottom
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("← Back to Browse", use_container_width=True):
-            st.session_state.current_viewing_file = None
-            st.rerun()
-    
-    with col2:
-        st.download_button(
-            "⬇️ Download",
-            data=code,
-            file_name=viewing_file,
-            mime="text/x-python",
-            use_container_width=True
-        )
-    
-    with col3:
-        # Copy to clipboard (show code snippet)
-        if st.button("📋 Copy Path", use_container_width=True):
-            st.code(f"examples/{viewing_file}", language="bash")
+
+    # Use educational code viewer with annotations
+    CodeViewer.show_with_annotations(code, viewing_file)
 
 
 def show_license_modal():
     """Display full MIT License."""
     st.title("📄 MIT License")
-    
+
     # Back button at top
     if st.button("← Back to Application", type="primary"):
         st.session_state.show_license = False
         st.rerun()
-    
+
     st.markdown("---")
-    
+
     st.markdown("""
     ### AI-Agent-Builder Framework
-    
+
     **Copyright (c) 2025 ThesisAI LLC**
-    
+
     ---
-    
+
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
     in the Software without restriction, including without limitation the rights
     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
     copies of the Software, and to permit persons to whom the Software is
     furnished to do so, subject to the following conditions:
-    
+
     The above copyright notice and this permission notice shall be included in all
     copies or substantial portions of the Software.
-    
+
     **THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -153,32 +127,32 @@ def show_license_modal():
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.**
-    
+
     ---
-    
+
     ### What This Means
-    
+
     The MIT License is one of the most permissive open source licenses. You can:
-    
+
     - ✅ Use this software for any purpose (personal, academic, commercial)
     - ✅ Modify the code however you want
     - ✅ Distribute your modified or unmodified versions
     - ✅ Sublicense or sell copies
-    
+
     **Your only obligations:**
-    
+
     - Include the copyright notice and license text in any copies
     - Accept that the software comes with no warranties
-    
+
     ### Additional Legal Terms
-    
+
     While the MIT License covers software usage, please also review:
-    
+
     - **[DISCLAIMER.md](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)** - Educational use and financial advice disclaimers
     - **[CONTRIBUTING.md](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/CONTRIBUTING.md)** - Guidelines for contributing
-    
+
     ### Questions?
-    
+
     For questions about licensing or usage, please:
     - Open an issue on [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
     - Email: support@thesisai.app
@@ -189,12 +163,14 @@ def main():
     """Main application entry point."""
     # Show disclaimer first
     show_disclaimer()
-    
+
     st.title("🤖 AI Agent Builder")
     st.markdown("Create and manage AI investment agents")
-    
+
     # Show reminder banner
-    st.warning("📚 **Educational Tool** | Not for real trading | [Read Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)")
+    st.warning(
+        "📚 **Educational Tool** | Not for real trading | [Read Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)"
+    )
 
     # Initialize session state
     if "agent_loader" not in st.session_state:
@@ -206,7 +182,16 @@ def main():
 
     # Sidebar navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to:", ["📋 Browse Agents", "➕ Create Agent", "🧪 Test Agent", "📚 How to Use Agents"])
+    page = st.sidebar.radio(
+        "Go to:",
+        [
+            "📋 Browse Agents",
+            "➕ Create Agent",
+            "🧪 Test Agent",
+            "📚 How to Use Agents",
+            "⚙️ LLM Setup",
+        ],
+    )  # ✅ Already integrated
 
     # Show quick stats
     loader = st.session_state.agent_loader
@@ -218,7 +203,7 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Save Location")
     st.sidebar.caption(f"`{st.session_state.examples_dir}`")
-    
+
     # Disclaimer reminder in sidebar
     st.sidebar.markdown("---")
     st.sidebar.error("⚠️ **Educational Use Only**")
@@ -227,22 +212,24 @@ def main():
     Do not use for real trading.
     [Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)
     """)
-    
+
     # Link to thesis-app
     st.sidebar.markdown("---")
     st.sidebar.info("""
     🚀 **Ready for Production?**
-    
+
     Check out [thesis-app](https://thesisai.app) for:
     - Real-time market data
     - Multi-agent orchestration
     - Risk management
     - Production support
     """)
-    
+
     st.sidebar.markdown("---")
-    st.sidebar.caption("**AI-Agent-Builder v1.0.0**  \nMIT License | [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder)")
-    
+    st.sidebar.caption(
+        "**AI-Agent-Builder v1.0.0**  \nMIT License | [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder)"
+    )
+
     # License link
     if st.sidebar.button("📄 View License", use_container_width=True):
         st.session_state.show_license = True
@@ -251,12 +238,12 @@ def main():
     if st.session_state.get("show_license", False):
         show_license_modal()
         return
-    
+
     # Code viewer modal
     if st.session_state.get("current_viewing_file"):
         show_code_viewer()
         return
-    
+
     # Page routing
     if page == "📋 Browse Agents":
         show_browse_page()
@@ -266,15 +253,17 @@ def main():
         show_test_page()
     elif page == "📚 How to Use Agents":
         show_how_to_page()
+    elif page == "⚙️ LLM Setup":
+        show_llm_setup_wizard()
 
 
 def show_browse_page():
     """Display agent browsing interface."""
     st.header("Browse Existing Agents")
-    
+
     # Check if we need to show the View button click handler
     loader = st.session_state.agent_loader
-    
+
     # Handle file viewing
     for key in list(st.session_state.keys()):
         if key.startswith("viewing_") and st.session_state[key]:
@@ -282,7 +271,7 @@ def show_browse_page():
             st.session_state.current_viewing_file = filename
             del st.session_state[key]  # Clean up the trigger
             st.rerun()
-    
+
     agents = loader.list_agents()
 
     if not agents:
@@ -407,7 +396,7 @@ def show_browse_page():
                 # Handle delete confirmation
                 if st.session_state.get(f"deleting_{agent_info['filename']}"):
                     st.markdown("---")
-                    st.warning(f"⚠️ **Confirm Deletion**")
+                    st.warning("⚠️ **Confirm Deletion**")
                     st.markdown(f"Are you sure you want to delete `{agent_info['filename']}`?")
                     st.caption("This action cannot be undone.")
 
@@ -471,15 +460,21 @@ def show_create_page():
         # Real-time filename validation
         if filename:
             save_path = st.session_state.examples_dir / filename
-            
+
             # Validate filename
             if not filename.endswith(".py"):
                 st.error("❌ Filename must end with .py")
             elif not loader._is_valid_filename(filename):
-                st.error("❌ Invalid filename. Use only letters, numbers, and underscores (e.g., my_agent.py, value_strategy_v2.py)")
-                st.caption("Valid: `my_agent.py`, `value_v2.py` | Invalid: `my-agent.py`, `my agent.py`, `1agent.py`")
+                st.error(
+                    "❌ Invalid filename. Use only letters, numbers, and underscores (e.g., my_agent.py, value_strategy_v2.py)"
+                )
+                st.caption(
+                    "Valid: `my_agent.py`, `value_v2.py` | Invalid: `my-agent.py`, `my agent.py`, `1agent.py`"
+                )
             elif (st.session_state.examples_dir / filename).exists():
-                st.warning(f"⚠️ File `{filename}` already exists. Choose a different name or delete the existing file first.")
+                st.warning(
+                    f"⚠️ File `{filename}` already exists. Choose a different name or delete the existing file first."
+                )
             else:
                 st.success(f"✅ Valid filename: will save to `examples/{filename}`")
                 st.caption(f"Full path: `{save_path}`")
@@ -489,30 +484,30 @@ def show_create_page():
         agent_type = st.selectbox(
             "Template", ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
         )
-        
+
         # Show explanation of Hybrid
         if agent_type == "Hybrid":
             st.info("""
             🧑‍💻 **What is a Hybrid Agent?**
-            
+
             Combines rules + LLM:
             1. **Rules:** Fast screening (filter stocks)
             2. **LLM:** Deep analysis (only on filtered stocks)
-            
+
             **Use when:** You want to screen thousands of stocks quickly,
             then use AI for detailed analysis on candidates.
             """)
 
         if agent_type in ["LLM-Powered", "Hybrid", "RAG-Powered"]:
             st.markdown("**LLM Configuration**")
-            
+
             # Provider selection
             llm_provider = st.selectbox(
-                "Provider", 
+                "Provider",
                 ["ollama", "openai", "anthropic"],
-                help="LLM service provider. Ollama is free and local, OpenAI and Anthropic require API keys."
+                help="LLM service provider. Ollama is free and local, OpenAI and Anthropic require API keys.",
             )
-            
+
             # Model selection based on provider
             model_options = {
                 "ollama": [
@@ -525,7 +520,7 @@ def show_create_page():
                     "phi",
                     "gemma",
                     "qwen",
-                    "custom (enter below)"
+                    "custom (enter below)",
                 ],
                 "openai": [
                     "gpt-4o",
@@ -533,7 +528,7 @@ def show_create_page():
                     "gpt-4-turbo",
                     "gpt-4",
                     "gpt-3.5-turbo",
-                    "custom (enter below)"
+                    "custom (enter below)",
                 ],
                 "anthropic": [
                     "claude-3-5-sonnet-20241022",
@@ -541,27 +536,27 @@ def show_create_page():
                     "claude-3-opus-20240229",
                     "claude-3-sonnet-20240229",
                     "claude-3-haiku-20240307",
-                    "custom (enter below)"
-                ]
+                    "custom (enter below)",
+                ],
             }
-            
+
             selected_model = st.selectbox(
                 "Model",
                 model_options[llm_provider],
-                help=f"Specific {llm_provider} model to use. Different models have different capabilities and costs."
+                help=f"Specific {llm_provider} model to use. Different models have different capabilities and costs.",
             )
-            
+
             # Custom model input if selected
             if selected_model == "custom (enter below)":
                 custom_model = st.text_input(
                     "Custom Model Name",
                     placeholder=f"Enter exact model name for {llm_provider}",
-                    help="Enter the exact model identifier (e.g., 'llama3.2:70b' for Ollama)"
+                    help="Enter the exact model identifier (e.g., 'llama3.2:70b' for Ollama)",
                 )
                 final_model = custom_model if custom_model else model_options[llm_provider][0]
             else:
                 final_model = selected_model
-            
+
             # Show model info
             model_info = {
                 "llama3.2": "💡 Latest Llama model, good balance of speed and quality",
@@ -571,23 +566,63 @@ def show_create_page():
                 "claude-3-5-haiku-20241022": "💡 Fastest Claude, good for simple tasks",
                 "mistral": "💡 Good open-source alternative, fast inference",
                 "gpt-4": "💡 Original GPT-4, very capable but slower",
-                "gpt-3.5-turbo": "💡 Fast and cheap, good for simple analysis"
+                "gpt-3.5-turbo": "💡 Fast and cheap, good for simple analysis",
             }
-            
+
             if selected_model in model_info:
                 st.caption(model_info[selected_model])
-            
+
             temperature = st.slider("Temperature", 0.0, 1.0, 0.5, 0.1)
             max_tokens = st.number_input("Max Tokens", 100, 4000, 1000, 100)
+
+            st.markdown("**Prompts (AI Instructions)**")
+
             system_prompt = st.text_area(
-                "System Prompt", height=100, help="Define the agent's personality and approach"
+                "System Prompt (Agent Personality)",
+                height=120,
+                help="Defines who the AI is and its overall approach. This sets the agent's personality.",
+                placeholder="Example: You are a value investor inspired by Warren Buffett. Focus on business quality, competitive advantages, and margin of safety.",
             )
+
+            # NEW: User prompt instructions
+            with st.expander("➕ Add Custom Analysis Instructions (Optional)", expanded=False):
+                st.info("""
+                **What are User Prompt Instructions?**
+
+                Add specific questions or analysis requirements beyond the standard recommendation.
+                The data and output format are handled automatically - just add your custom instructions!
+
+                **Examples:**
+                - "Focus specifically on dividend safety and payout sustainability"
+                - "Assess the competitive moat and barriers to entry"
+                - "Evaluate management capital allocation decisions"
+                - "Compare to industry peers and explain relative valuation"
+
+                **Leave empty for standard analysis.**
+                """)
+
+                user_prompt_instructions = st.text_area(
+                    "Custom Analysis Instructions",
+                    height=80,
+                    placeholder="Example: Focus on dividend safety. Evaluate payout ratio sustainability and free cash flow coverage.",
+                    help="Optional: Add specific analysis requirements or questions",
+                )
+
+                if user_prompt_instructions:
+                    st.success(
+                        f"✅ Custom instructions added ({len(user_prompt_instructions)} characters)"
+                    )
+
+            # Store for later use
+            if "user_prompt_instructions" not in locals():
+                user_prompt_instructions = None
         else:
             llm_provider = None
             final_model = None
             temperature = None
             max_tokens = None
             system_prompt = None
+            user_prompt_instructions = None
 
         if agent_type == "RAG-Powered":
             st.markdown("**RAG Configuration**")
@@ -607,6 +642,47 @@ def show_create_page():
 
     # Analysis Logic
     st.subheader("Analysis Logic")
+    
+    # Add confidence explanation
+    with st.expander("📊 How Confidence Levels Are Calculated", expanded=False):
+        st.markdown("""
+        **Enhanced Confidence System:**
+        
+        Confidence is not hardcoded - it's calculated based on signal strength!
+        
+        **For Rule-Based Agents:**
+        - **Barely met** (within 5% of threshold): ~60% confidence
+        - **Moderately met** (5-15% from threshold): ~70% confidence
+        - **Strongly met** (15-30% from threshold): ~80% confidence
+        - **Very strongly met** (>30% from threshold): ~90% confidence
+        
+        **Example:** PE Ratio rule (buy if PE < 15)
+        - PE = 14.5 (barely under) → 60% confidence
+        - PE = 12.0 (moderately under) → 70% confidence
+        - PE = 10.0 (strongly under) → 80% confidence
+        - PE = 5.0 (very strongly under) → 90% confidence
+        
+        **For Score-Based Agents:**
+        - Confidence based on how far past the threshold
+        - Score of 6 when threshold is 5 → Different than score of 10
+        - Margin percentage affects final confidence
+        
+        **For LLM Agents:**
+        - AI provides base confidence
+        - Adjusted if reasoning is vague or lacks specifics
+        - Detailed, specific reasoning → Higher confidence
+        - Vague or short reasoning → Lower confidence
+        
+        **Data Quality Adjustment:**
+        - Missing data reduces confidence
+        - Extreme/unreliable values reduce confidence
+        - Complete, clean data → No reduction
+        
+        **Why This Matters:**
+        - More accurate confidence = Better decisions
+        - Barely meeting criteria ≠ Strong signal
+        - Confidence reflects true signal strength
+        """)
 
     if agent_type == "Rule-Based" or agent_type == "Hybrid":
         # Show different header for hybrid
@@ -628,7 +704,7 @@ def show_create_page():
             validation_warnings = []
 
             for i in range(num_rules):
-                with st.expander(f"Rule {i+1}"):
+                with st.expander(f"Rule {i + 1}"):
                     col_a, col_b, col_c = st.columns(3)
 
                     with col_a:
@@ -668,7 +744,7 @@ def show_create_page():
                         is_valid, error_msg = MetricDefinitions.validate_value(metric, threshold)
                         if not is_valid:
                             st.error(error_msg)
-                            validation_warnings.append(f"Rule {i+1}: {error_msg}")
+                            validation_warnings.append(f"Rule {i + 1}: {error_msg}")
 
                         # Check threshold logic
                         logic_warning = RuleValidator.validate_threshold_logic(
@@ -710,7 +786,7 @@ def show_create_page():
             rules = []
 
             for i in range(num_rules):
-                with st.expander(f"Advanced Rule {i+1}"):
+                with st.expander(f"Advanced Rule {i + 1}"):
                     num_conditions = st.number_input(
                         "Number of Conditions", 1, 5, 2, key=f"num_cond_{i}"
                     )
@@ -790,7 +866,7 @@ def show_create_page():
             criteria = []
 
             for i in range(num_criteria):
-                with st.expander(f"Criterion {i+1}"):
+                with st.expander(f"Criterion {i + 1}"):
                     col_a, col_b, col_c, col_d = st.columns(4)
 
                     with col_a:
@@ -894,6 +970,7 @@ def show_create_page():
                 temperature=temperature,
                 max_tokens=max_tokens,
                 system_prompt=system_prompt,
+                user_prompt_instructions=user_prompt_instructions,
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 top_k=top_k,
@@ -901,7 +978,7 @@ def show_create_page():
 
             st.session_state.generated_code = code
             st.session_state.current_filename = filename
-        
+
         # Show success message
         st.success(f"✅ Agent code generated successfully! ({len(code)} characters)")
         st.info(f"📝 Agent Type: **{agent_type}** | File: `{filename}`")
@@ -911,23 +988,23 @@ def show_create_page():
     if st.session_state.generated_code:
         # Show action buttons at TOP (no scrolling needed)
         st.markdown("### 💾 Save Your Agent")
-        
+
         col1, col2, col3 = st.columns([2, 2, 3])
         with col1:
             if st.button("💾 Save Agent", type="primary", use_container_width=True, key="save_top"):
                 # Use current filename from text input, not cached session state
                 current_filename = filename  # This is from the text_input above
-                
+
                 loader = st.session_state.agent_loader
-                
+
                 with st.spinner(f"Saving {current_filename}..."):
                     success, message = loader.save_agent(
                         current_filename, st.session_state.generated_code
                     )
-                
+
                 if success:
                     st.success(f"✅ {message}")
-                    st.info(f"🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
+                    st.info("🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
                     st.balloons()
                     # Clear session state
                     st.session_state.generated_code = None
@@ -936,14 +1013,16 @@ def show_create_page():
                 else:
                     # Show error and keep code visible for editing filename
                     st.error(f"❌ {message}")
-                    st.info("💡 **Tip:** Change the filename above and click 'Generate Code' again, then save.")
+                    st.info(
+                        "💡 **Tip:** Change the filename above and click 'Generate Code' again, then save."
+                    )
 
         with col2:
             if st.button("🗑️ Clear & Start Over", use_container_width=True, key="clear_top"):
                 st.session_state.generated_code = None
                 st.session_state.current_filename = None
                 st.rerun()
-        
+
         with col3:
             st.download_button(
                 "⬇️ Download Code",
@@ -951,56 +1030,60 @@ def show_create_page():
                 file_name=filename,
                 mime="text/x-python",
                 use_container_width=True,
-                key="download_top"
+                key="download_top",
             )
-        
+
         st.markdown("---")
-        
+
         # Show info about the generated code
         col_info1, col_info2, col_info3 = st.columns(3)
         with col_info1:
-            st.metric("Lines of Code", len(st.session_state.generated_code.split('\n')))
+            st.metric("Lines of Code", len(st.session_state.generated_code.split("\n")))
         with col_info2:
             st.metric("Characters", len(st.session_state.generated_code))
         with col_info3:
             st.metric("Status", "✅ Ready to Save")
-        
+
         st.markdown("---")
-        
+
         st.code(st.session_state.generated_code, language="python")
 
         # Also show buttons at bottom for convenience after scrolling
         st.markdown("---")
         st.markdown("### 💾 Quick Actions")
-        
+
         col1, col2, col3 = st.columns([2, 2, 3])
         with col1:
-            if st.button("💾 Save Agent", type="primary", use_container_width=True, key="save_bottom"):
+            if st.button(
+                "💾 Save Agent", type="primary", use_container_width=True, key="save_bottom"
+            ):
                 current_filename = filename
                 loader = st.session_state.agent_loader
-                
+
                 with st.spinner(f"Saving {current_filename}..."):
                     success, message = loader.save_agent(
                         current_filename, st.session_state.generated_code
                     )
-                
+
                 if success:
                     st.success(f"✅ {message}")
-                    st.info(f"🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
+                    st.info("🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
                     st.balloons()
                     st.session_state.generated_code = None
                     st.session_state.current_filename = None
                     st.rerun()
                 else:
                     st.error(f"❌ {message}")
-                    st.info("💡 **Tip:** Scroll up to change the filename, then click 'Generate Code' again.")
+                    st.info(
+                        "💡 **Tip:** Scroll up to change the filename, then click 'Generate Code' again."
+                    )
 
         with col2:
             if st.button("🗑️ Clear & Start Over", use_container_width=True, key="clear_bottom"):
                 st.session_state.generated_code = None
                 st.session_state.current_filename = None
                 st.rerun()
-        
+
         with col3:
             st.download_button(
                 "⬇️ Download Code",
@@ -1008,7 +1091,7 @@ def show_create_page():
                 file_name=filename,
                 mime="text/x-python",
                 use_container_width=True,
-                key="download_bottom"
+                key="download_bottom",
             )
 
 
@@ -1034,7 +1117,7 @@ def show_test_page():
     st.info(f"Agent Type: **{agent_type}**")
 
     ticker = st.text_input("Ticker Symbol", value="AAPL")
-    
+
     # Initialize variables
     use_yfinance = False
     mock_data = None
@@ -1077,15 +1160,15 @@ def show_test_page():
 
     else:
         st.subheader("Test Data")
-        
+
         data_source = st.radio(
             "Data Source",
             ["Mock Data", "Database", "YFinance (Real Market Data)"],
-            help="Mock: Fictional data for testing | Database: Sample data | YFinance: Real current market data"
+            help="Mock: Fictional data for testing | Database: Sample data | YFinance: Real current market data",
         )
-        
-        use_mock = (data_source == "Mock Data")
-        use_yfinance = (data_source == "YFinance (Real Market Data)")
+
+        use_mock = data_source == "Mock Data"
+        use_yfinance = data_source == "YFinance (Real Market Data)"
         uploaded_file = None
 
         if use_mock:
@@ -1133,53 +1216,55 @@ def show_test_page():
         elif use_yfinance:
             st.info("🌐 **Real Market Data:** Will fetch current data from Yahoo Finance")
             st.caption(f"Data for: **{ticker}**")
-            
+
             with st.spinner(f"Fetching real data for {ticker}..."):
                 try:
                     import yfinance as yf
-                    
+
                     stock = yf.Ticker(ticker)
                     info = stock.info
-                    
+
                     # Extract relevant fundamentals
                     mock_data = {
-                        "name": info.get('longName', ticker),
-                        "pe_ratio": info.get('trailingPE', info.get('forwardPE', 0)) or 0,
-                        "pb_ratio": info.get('priceToBook', 0) or 0,
-                        "roe": (info.get('returnOnEquity', 0) or 0) * 100,
-                        "profit_margin": (info.get('profitMargins', 0) or 0) * 100,
-                        "revenue_growth": (info.get('revenueGrowth', 0) or 0) * 100,
-                        "debt_to_equity": info.get('debtToEquity', 0) or 0,
-                        "current_ratio": info.get('currentRatio', 0) or 0,
-                        "dividend_yield": (info.get('dividendYield', 0) or 0) * 100,
-                        "market_cap": info.get('marketCap', 0) or 0,
+                        "name": info.get("longName", ticker),
+                        "pe_ratio": info.get("trailingPE", info.get("forwardPE", 0)) or 0,
+                        "pb_ratio": info.get("priceToBook", 0) or 0,
+                        "roe": (info.get("returnOnEquity", 0) or 0) * 100,
+                        "profit_margin": (info.get("profitMargins", 0) or 0) * 100,
+                        "revenue_growth": (info.get("revenueGrowth", 0) or 0) * 100,
+                        "debt_to_equity": info.get("debtToEquity", 0) or 0,
+                        "current_ratio": info.get("currentRatio", 0) or 0,
+                        "dividend_yield": (info.get("dividendYield", 0) or 0) * 100,
+                        "market_cap": info.get("marketCap", 0) or 0,
                     }
-                    
+
                     st.success("✅ Real data fetched successfully!")
-                    
+
                     # Display fetched data
                     with st.expander("📊 View Fetched Data"):
                         col_a, col_b, col_c = st.columns(3)
-                        
+
                         with col_a:
                             st.metric("PE Ratio", f"{mock_data['pe_ratio']:.1f}")
                             st.metric("Revenue Growth", f"{mock_data['revenue_growth']:.1f}%")
-                        
+
                         with col_b:
                             st.metric("Profit Margin", f"{mock_data['profit_margin']:.1f}%")
                             st.metric("ROE", f"{mock_data['roe']:.1f}%")
-                        
+
                         with col_c:
                             st.metric("Debt/Equity", f"{mock_data['debt_to_equity']:.1f}")
                             st.metric("Dividend Yield", f"{mock_data['dividend_yield']:.1f}%")
-                    
+
                 except ImportError:
                     st.error("❌ yfinance not installed. Run: pip install yfinance")
                     st.info("💡 Or run ./gui/setup.sh to install all dependencies")
                     mock_data = None
                 except Exception as e:
                     st.error(f"❌ Error fetching data for {ticker}: {str(e)}")
-                    st.info("💡 **Tips:**\n- Check ticker symbol is correct (e.g., AAPL not Apple)\n- Check internet connection\n- Try a different ticker")
+                    st.info(
+                        "💡 **Tips:**\n- Check ticker symbol is correct (e.g., AAPL not Apple)\n- Check internet connection\n- Try a different ticker"
+                    )
                     mock_data = None
         else:
             mock_data = None
@@ -1193,157 +1278,159 @@ def show_test_page():
     - Do not use these signals for real trading
     - Always consult financial professionals for investment decisions
     """)
-    
+
     if st.button("🚀 Run Analysis", type="primary"):
         tester = AgentTester()
 
         if agent_type == "RAG-Powered" and not uploaded_file:
             st.error("Please upload a PDF document to test RAG agent")
             return
-        
+
         # Check if yfinance data fetch failed
         if use_yfinance and mock_data is None:
-            st.error("Cannot run analysis - data fetch failed. Please check the error message above.")
+            st.error(
+                "Cannot run analysis - data fetch failed. Please check the error message above."
+            )
             return
 
         with st.spinner("Running analysis..."):
             # test_agent() is sync (handles async internally)
             result = tester.test_agent(
-                agent_filename, 
-                ticker, 
-                mock_data, 
-                uploaded_file,
-                agent_class_name
+                agent_filename, ticker, mock_data, uploaded_file, agent_class_name
             )
 
         if result["success"]:
             # Check if LLM fallback occurred
             if result.get("is_fallback", False):
                 st.warning("⚠️ **LLM Service Unavailable - Using Fallback Logic**")
-                
+
                 llm_error = result.get("llm_error_info", {})
                 error_type = llm_error.get("error_type")
-                
+
                 # Show specific error message based on type
                 if error_type == "missing_package":
                     st.error(f"""
                     ❌ **Missing LLM Package**
-                    
-                    **Problem:** {llm_error.get('description')}
-                    
+
+                    **Problem:** {llm_error.get("description")}
+
                     **Solution:** Install the required package:
                     ```bash
-                    {llm_error.get('install_command')}
+                    {llm_error.get("install_command")}
                     ```
-                    
+
                     Or install all LLM providers:
                     ```bash
                     pip install 'ai-agent-framework[llm]'
                     ```
                     """)
-                
+
                 elif error_type == "model_not_found":
-                    model_name = llm_error.get('model', 'llama3.2')
+                    model_name = llm_error.get("model", "llama3.2")
                     st.error(f"""
                     ❌ **Model Not Available**
-                    
+
                     **Problem:** Model '{model_name}' not downloaded
-                    
+
                     **Solution:** Download the model with Ollama:
                     ```bash
-                    {llm_error.get('install_command')}
+                    {llm_error.get("install_command")}
                     ```
-                    
+
                     **Available Models:** Check with `ollama list`
-                    
+
                     **Popular Models:**
                     - `ollama pull llama3.2` (recommended)
                     - `ollama pull mistral`
                     - `ollama pull phi`
                     """)
-                
+
                 elif error_type == "connection_error":
                     st.error("""
                     ❌ **Ollama Service Not Running**
-                    
+
                     **Problem:** Can't connect to Ollama service
-                    
+
                     **Solution:** Start Ollama in a terminal:
                     ```bash
                     ollama serve
                     ```
-                    
+
                     Or if Ollama is not installed:
                     ```bash
                     # Install Ollama
                     curl https://ollama.ai/install.sh | sh
-                    
+
                     # Download a model
                     ollama pull llama3.2
-                    
+
                     # Start service
                     ollama serve
                     ```
                     """)
-                
+
                 elif error_type == "missing_api_key":
-                    provider = llm_error.get('provider', 'unknown')
-                    env_var = f"{provider.upper()}_API_KEY" if provider != 'unknown' else 'API_KEY'
-                    
+                    provider = llm_error.get("provider", "unknown")
+                    env_var = f"{provider.upper()}_API_KEY" if provider != "unknown" else "API_KEY"
+
                     st.error(f"""
                     ❌ **API Key Not Configured**
-                    
-                    **Problem:** {llm_error.get('description')}
-                    
+
+                    **Problem:** {llm_error.get("description")}
+
                     **Solution:** Add your API key to the `.env` file:
                     ```bash
                     # Edit .env file
                     nano .env
-                    
+
                     # Add this line:
                     {env_var}=your-api-key-here
                     ```
-                    
+
                     **Get an API Key:**
                     - OpenAI: https://platform.openai.com/api-keys
                     - Anthropic: https://console.anthropic.com/
                     """)
-                
+
                 elif error_type == "rate_limit":
                     st.error("""
                     ❌ **Rate Limit Exceeded**
-                    
+
                     **Problem:** Too many API requests
-                    
+
                     **Solution:**
                     - Wait 1-2 minutes and try again
                     - Or use Ollama (free, no rate limits)
                     - Or upgrade your API plan
                     """)
-                
+
                 else:
                     st.error(f"""
                     ❌ **LLM Error Occurred**
-                    
-                    **Problem:** {llm_error.get('description', 'LLM service error')}
-                    
+
+                    **Problem:** {llm_error.get("description", "LLM service error")}
+
                     **Using Fallback:** Agent used simple rules instead of LLM analysis
-                    
+
                     **To Fix:**
                     - Check that LLM service is running
                     - Verify configuration in .env file
                     - Try a different provider or model
                     """)
-                
+
                 st.info("""
                 🛠️ **Fallback Mode Active**
-                
+
                 The agent used simple rule-based logic instead of LLM analysis.
                 Results shown below are from fallback logic, not AI reasoning.
                 """)
-            
+
             # Show results (even with fallback)
-            st.success("Analysis Complete!" if not result.get("is_fallback") else "Fallback Analysis Complete")
+            st.success(
+                "Analysis Complete!"
+                if not result.get("is_fallback")
+                else "Fallback Analysis Complete"
+            )
 
             col1, col2, col3 = st.columns(3)
 
@@ -1374,54 +1461,56 @@ def show_test_page():
 def show_backtest_page():
     """Display backtesting interface."""
     st.header("📈 Backtest Agent")
-    
+
     st.info("""
     🎯 **What is Backtesting?**
-    
+
     Backtesting shows how your agent would have performed on historical data.
     This helps you understand if your rules would have been profitable.
-    
+
     **⚠️ Important:** Past performance does NOT guarantee future results!
     """)
-    
+
     loader = st.session_state.agent_loader
     agents = loader.list_agents()
-    
+
     if not agents:
         st.info("No agents available to backtest. Create one first!")
         return
-    
+
     # Agent selection
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         agent_names = [a["name"] for a in agents]
         selected_agent = st.selectbox("🤖 Select Agent to Backtest", agent_names)
-        
+
         agent_info = next(a for a in agents if a["name"] == selected_agent)
         agent_filename = agent_info["filename"]
         agent_class_name = agent_info["name"]  # Store the class name
         agent_type = agent_info["type"]
-        
+
         st.caption(f"Type: **{agent_type}**")
-    
+
     with col2:
         st.markdown("### Quick Info")
-        st.caption("ℹ️ Backtesting runs your agent on multiple scenarios to see signal distribution.")
-    
+        st.caption(
+            "ℹ️ Backtesting runs your agent on multiple scenarios to see signal distribution."
+        )
+
     # Data source selection
     st.markdown("---")
     st.subheader("📊 Data Source")
-    
+
     col_a, col_b = st.columns(2)
-    
+
     with col_a:
         use_database = st.radio(
             "Data Source",
             ["Mock Data (Scenarios)", "Database (Sample Stocks)"],
-            help="Mock data tests various financial scenarios. Database uses actual sample data."
+            help="Mock data tests various financial scenarios. Database uses actual sample data.",
         )
-    
+
     with col_b:
         if use_database == "Database (Sample Stocks)":
             st.info("📁 Uses: AAPL, MSFT, TSLA, JPM from database")
@@ -1429,99 +1518,107 @@ def show_backtest_page():
         else:
             st.info("🎲 Tests 5 scenarios: undervalued, growth, overvalued, balanced, high-debt")
             tickers = ["SCENARIO_1", "SCENARIO_2", "SCENARIO_3", "SCENARIO_4", "SCENARIO_5"]
-    
+
     # Educational disclaimer
     st.markdown("---")
     st.warning("""
     📚 **Educational Backtesting**
-    
+
     This is a simplified backtest for learning purposes:
-    
+
     **What it does:**
     - ✅ Shows signal distribution (bullish/bearish/neutral)
     - ✅ Calculates average confidence
     - ✅ Shows reasoning for each signal
     - ✅ Helps you understand your rules
-    
+
     **What it does NOT do:**
     - ❌ No real price movements
     - ❌ No profit/loss calculation
     - ❌ No transaction costs
     - ❌ No market impact simulation
-    
+
     For production backtesting, use:
     - Backtrader, Zipline, QuantConnect
     - Or thesis-app with real historical data
     """)
-    
+
     # Run backtest button
     st.markdown("---")
-    
+
     if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
         with st.spinner("Running backtest..."):
             import asyncio
-            
+
             backtester = Backtester()
-            
+
             # Run async backtest
             success, result, error = asyncio.run(
                 backtester.run_backtest(
                     agent_filename,
                     tickers,
                     use_database=(use_database == "Database (Sample Stocks)"),
-                    agent_class_name=agent_class_name  # Pass specific class name!
+                    agent_class_name=agent_class_name,  # Pass specific class name!
                 )
             )
-        
+
         if success:
             st.success("✅ Backtest Complete!")
-            
+
             # Display results
             st.markdown("---")
             st.subheader("📈 Backtest Results")
-            
+
             # Metrics row
             col1, col2, col3, col4 = st.columns(4)
-            
+
             with col1:
                 st.metric("Total Signals", result.total_signals)
-            
+
             with col2:
                 st.metric("Avg Confidence", f"{result.avg_confidence:.1%}")
-            
+
             with col3:
                 win_rate = result.get_win_rate()
                 st.metric("Bullish Signals", f"{win_rate:.1%}")
                 st.caption("(Simplified win rate)")
-            
+
             with col4:
                 st.metric("Execution Time", f"{result.execution_time:.2f}s")
-            
+
             # Signal distribution
             st.markdown("---")
             st.subheader("📊 Signal Distribution")
-            
+
             col_x, col_y = st.columns([2, 1])
-            
+
             with col_x:
                 # Create bar chart data
                 import pandas as pd
-                
-                chart_data = pd.DataFrame({
-                    'Signal': ['🟢 Bullish', '🔴 Bearish', '🟡 Neutral'],
-                    'Count': [result.bullish_count, result.bearish_count, result.neutral_count]
-                })
-                
-                st.bar_chart(chart_data.set_index('Signal'))
-            
+
+                chart_data = pd.DataFrame(
+                    {
+                        "Signal": ["🟢 Bullish", "🔴 Bearish", "🟡 Neutral"],
+                        "Count": [result.bullish_count, result.bearish_count, result.neutral_count],
+                    }
+                )
+
+                st.bar_chart(chart_data.set_index("Signal"))
+
             with col_y:
                 st.markdown("**Summary:**")
-                st.write(f"🟢 Bullish: {result.bullish_count} ({result.bullish_count/result.total_signals*100:.1f}%)")
-                st.write(f"🔴 Bearish: {result.bearish_count} ({result.bearish_count/result.total_signals*100:.1f}%)")
-                st.write(f"🟡 Neutral: {result.neutral_count} ({result.neutral_count/result.total_signals*100:.1f}%)")
-                
+                st.write(
+                    f"🟢 Bullish: {result.bullish_count} ({result.bullish_count / result.total_signals * 100:.1f}%)"
+                )
+                st.write(
+                    f"🔴 Bearish: {result.bearish_count} ({result.bearish_count / result.total_signals * 100:.1f}%)"
+                )
+                st.write(
+                    f"🟡 Neutral: {result.neutral_count} ({result.neutral_count / result.total_signals * 100:.1f}%)"
+                )
+
                 st.markdown("---")
-                
+
                 # Interpretation
                 if result.bullish_count > result.bearish_count + result.neutral_count:
                     st.success("📈 Very bullish strategy")
@@ -1531,48 +1628,48 @@ def show_backtest_page():
                     st.info("🟡 Mostly neutral - conservative")
                 else:
                     st.info("⚖️ Balanced strategy")
-            
+
             # Detailed signals by ticker
             st.markdown("---")
             st.subheader("📝 Detailed Signals")
-            
+
             for ticker, signals in result.signals_by_ticker.items():
                 with st.expander(f"**{ticker}** ({len(signals)} signal(s))"):
                     for i, sig in enumerate(signals, 1):
-                        direction_emoji = {
-                            'bullish': '🟢',
-                            'bearish': '🔴',
-                            'neutral': '🟡'
-                        }[sig['direction']]
-                        
+                        direction_emoji = {"bullish": "🟢", "bearish": "🔴", "neutral": "🟡"}[
+                            sig["direction"]
+                        ]
+
                         st.markdown(f"**Signal {i}:** {direction_emoji} {sig['direction'].upper()}")
                         st.write(f"Confidence: {sig['confidence']:.1%}")
                         st.caption(f"Reasoning: {sig['reasoning']}")
-                        
+
                         if i < len(signals):
                             st.markdown("---")
-            
+
             # Learning tips
             st.markdown("---")
             st.info("""
             💡 **How to Use These Results:**
-            
+
             1. **High Bullish %:** Your rules favor buying - good for bull markets
             2. **High Bearish %:** Your rules favor selling - good for bear markets
             3. **High Neutral %:** Very conservative - may miss opportunities
             4. **Low Confidence:** Rules might be too vague - refine thresholds
             5. **High Confidence:** Rules are very specific - might miss edge cases
-            
+
             **Next Steps:**
             - Adjust your rules based on these insights
             - Run backtest again to see improvements
             - Compare different agent strategies
             - Remember: This is for learning, not real trading!
             """)
-            
+
         else:
             st.error(f"❌ Backtest Failed: {error}")
-            st.info("🛈 **Troubleshooting:**\n- Make sure agent file exists\n- Check agent code for errors\n- Try with mock data first")
+            st.info(
+                "🛈 **Troubleshooting:**\n- Make sure agent file exists\n- Check agent code for errors\n- Try with mock data first"
+            )
 
 
 if __name__ == "__main__":

@@ -1,452 +1,403 @@
-# AI Agent Framework
-
-Build AI-powered investment analysis agents in Python.
+# AI Agent Builder - Learn Investment Analysis with AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![For Education](https://img.shields.io/badge/use-education%20only-orange.svg)](DISCLAIMER.md)
+
+**Build AI-powered stock analysis agents** - No coding experience required!
+
+Perfect for:
+- 📚 Finance students learning investment analysis
+- 🎓 University courses on quantitative finance
+- 🤖 Anyone curious about AI in investing
 
 ---
 
-## ⚠️ IMPORTANT DISCLAIMER
+## ⚠️ Educational Tool Only
 
-**THIS IS AN EDUCATIONAL TOOL FOR LEARNING PURPOSES ONLY**
+This is a **learning tool for finance education**. Not for real trading.
 
-This software does NOT provide financial advice. All outputs are for educational demonstration only. DO NOT use for real trading without consulting qualified financial professionals. See [DISCLAIMER.md](DISCLAIMER.md) for complete legal terms.
-
-**For production-ready investment tools:** See [thesis-app](https://thesisai.app)
-
----
-
-## 🚀 Quick Start
-
-**Get running in 5 minutes:**
-
-```bash
-# Install
-git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
-cd AI-Agent-Builder
-pip install -e ".[all]"
-
-# Setup database
-cp .env.example .env
-docker compose up -d postgres
-sleep 10
-python seed_data.py
-
-# Run first example
-python examples/01_basic.py
-```
-
-**Detailed guides:**
-- **[5-minute setup](QUICK_START.md)** - Copy-paste commands
-- **[Complete installation](docs/GETTING_STARTED.md)** - Conda/venv/system Python options
-- **[Visual GUI](GUI_QUICK_START.md)** - No-code agent builder
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-
----
-
-## 📚 What Is This?
-
-A lightweight Python framework for creating AI agents that analyze stocks and make investment recommendations. Think of it as LEGO blocks for building custom stock analysts.
-
-### Key Features
-
-- 🤖 **Rule-based or AI-powered agents** - Start simple, add AI when needed
-- 🎨 **Visual GUI** - Build agents without coding (Streamlit)
-- 📊 **PostgreSQL database** - Sample stock data included
-- 🔌 **Flexible LLM support** - OpenAI, Anthropic, or local Ollama
-- 🚀 **Production-ready API** - FastAPI REST server
-- 📦 **Conda/venv/system Python** - Use your preferred environment
-
-### Agent Types
-
-| Type | Speed | Cost | Best For | Example |
-|------|-------|------|----------|---------|
-| **Rule-Based** | ⚡⚡⚡⚡⚡ | Free | Clear criteria, fast screening | Screen 1000s for PE < 15 |
-| **LLM-Powered** | ⚡⚡☆☆☆ | $$ | Deep analysis, small datasets | Analyze top 10 candidates |
-| **Hybrid** | ⚡⚡⚡⚡☆ | $ | Large-scale + depth | Screen 500 → Analyze top 25 |
-| **RAG-Powered** | ⚡☆☆☆☆ | $$ | Document analysis | Extract insights from SEC filings |
-
-**Learn more:** [Choosing Agent Type Guide](docs/CHOOSING_AGENT_TYPE.md)
-
----
-
-## 💡 Simple Example
-
-```python
-from agent_framework import Agent, Signal, Database, Config
-import asyncio
-
-class ValueAgent(Agent):
-    """Buy undervalued stocks (PE < 15)"""
-    
-    def analyze(self, ticker, data):
-        pe = data.get('pe_ratio', 0)
-        
-        if pe < 15:
-            return Signal('bullish', 0.8, f'Undervalued at PE={pe:.1f}')
-        elif pe > 30:
-            return Signal('bearish', 0.7, f'Overvalued at PE={pe:.1f}')
-        else:
-            return Signal('neutral', 0.5, 'Fair value')
-
-async def main():
-    db = Database(Config.get_database_url())
-    await db.connect()
-    
-    agent = ValueAgent()
-    data = await db.get_fundamentals('AAPL')
-    signal = agent.analyze('AAPL', data)
-    
-    print(f"{signal.direction.upper()}: {signal.reasoning}")
-    await db.disconnect()
-
-asyncio.run(main())
-```
-
-**Try it:** `python examples/01_basic.py`
-
----
-
-## 📖 Documentation
-
-### Getting Started
-- **[Quick Start](QUICK_START.md)** - 5-minute setup with copy-paste commands
-- **[Getting Started](docs/GETTING_STARTED.md)** - Complete installation guide
-- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder
-- **[Configuration](docs/CONFIGURATION.md)** - Environment variables explained
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-
-### Core Concepts
-- **[Choosing Agent Type](docs/CHOOSING_AGENT_TYPE.md)** - Rule-Based vs LLM vs Hybrid vs RAG
-- **[Hybrid Agents](docs/HYBRID_AGENTS.md)** - Combining rules and AI efficiently
-- **[LLM Customization](docs/LLM_CUSTOMIZATION.md)** - AI model configuration
-- **[Database Setup](docs/DATABASE_SETUP.md)** - PostgreSQL details
-
-### Reference
-- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Code organization
-- **[Examples Guide](examples/README.md)** - Learning path and strategy examples
-- **[Agent File Guidelines](docs/AGENT_FILE_GUIDELINES.md)** - Best practices
-- **[API Reference](docs/API_REFERENCE.md)** - REST API documentation
-
-### Legal
-- **[Disclaimer](DISCLAIMER.md)** - Educational use and legal terms
-- **[License](LICENSE)** - MIT License
-- **[Contributing](CONTRIBUTING.md)** - How to contribute
-
----
-
-## 🎓 Learning Path
-
-Follow these examples in order:
-
-```bash
-# 1. Rule-based (no AI, fast)
-python examples/01_basic.py          # ⭐ Start here
-
-# 2. LLM-powered (AI analysis)
-python examples/02_llm_agent.py      # ⭐⭐ Requires Ollama
-
-# 3. Hybrid (rules + AI)
-python examples/03_hybrid.py         # ⭐⭐⭐ Best of both
-
-# 4. RAG document analysis
-python examples/04_rag_agent.py      # ⭐⭐⭐⭐ Analyze PDFs
-
-# 5. Famous investor strategies
-python examples/05_buffett_quality.py  # Warren Buffett
-python examples/06_lynch_garp.py       # Peter Lynch
-python examples/07_graham_value.py     # Benjamin Graham
-```
-
-**Or use the visual GUI:**
-```bash
-./gui/launch.sh
-```
-
----
-
-## 🛠️ Installation Options
-
-### Core Dependencies (Always Installed)
-```bash
-pip install -e .
-```
-Includes: FastAPI, Pydantic, AsyncPG, basic framework
-
-### Optional Dependencies
-
-```bash
-# LLM support (OpenAI, Anthropic, Ollama)
-pip install -e ".[llm]"
-
-# RAG support (Document analysis)
-pip install -e ".[rag]"
-
-# Development tools (pytest, black, ruff)
-pip install -e ".[dev]"
-
-# Everything (recommended)
-pip install -e ".[all]"
-```
-
-**See [Getting Started](docs/GETTING_STARTED.md) for environment setup (conda/venv/system Python)**
-
----
-
-## 🔧 Configuration
-
-All settings are managed via `.env` file:
-
-```bash
-# Copy template
-cp .env.example .env
-
-# Edit settings
-nano .env
-```
-
-**Key settings:**
-- **Database:** Host, port, credentials
-- **LLM providers:** OpenAI, Anthropic, Ollama
-- **API:** Host, port, CORS
-
-**See [Configuration Guide](docs/CONFIGURATION.md) for details**
-
----
-
-## 🤖 AI Integration (Optional)
-
-### Free Local AI (Ollama)
-```bash
-# Install
-curl https://ollama.ai/install.sh | sh
-
-# Download model
-ollama pull llama3.2
-
-# Run examples
-python examples/02_llm_agent.py
-```
-
-### OpenAI (ChatGPT)
-```bash
-# Add to .env
-OPENAI_API_KEY=sk-your-key-here
-
-# Run examples
-python examples/02_llm_agent.py
-```
-
-### Anthropic (Claude)
-```bash
-# Add to .env
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# Run examples
-python examples/02_llm_agent.py
-```
-
-**See [LLM Customization Guide](docs/LLM_CUSTOMIZATION.md) for advanced configuration**
-
----
-
-## 🎨 Visual GUI
-
-Build agents without coding:
-
-```bash
-# Setup (one time - installs ALL dependencies)
-./gui/setup.sh
-
-# Launch
-./gui/launch.sh
-```
-
-**Setup installs everything:**
-- ✅ GUI (Streamlit)
-- ✅ All LLM providers (Ollama, OpenAI, Anthropic)
-- ✅ RAG support (document analysis)
-- ✅ PDF processing
-
-**No optional dependencies!** Everything works after setup.
-
-**Features:**
-- 📋 Browse and manage agents
-- ➕ Create agents visually (Rule-Based, LLM, Hybrid, RAG)
-- 🧪 Test agents with mock data or PDFs
-- 📈 Backtest agents on scenarios
-- 💾 Save directly to `examples/`
-- 🎓 Educational tooltips for financial metrics
-
-**See [GUI Quick Start](GUI_QUICK_START.md) for details**
-
----
-
-## 🏗️ Project Structure
-
-```
-AI-Agent-Builder/
-├── agent_framework/        # Core package
-│   ├── agent.py           # Base Agent class
-│   ├── models.py          # Pydantic data models
-│   ├── database.py        # PostgreSQL client
-│   ├── llm.py             # LLM integrations
-│   ├── rag.py             # Document analysis
-│   ├── api.py             # FastAPI server
-│   └── config.py          # Configuration
-│
-├── gui/                   # Visual agent builder
-│   └── app.py            # Streamlit application
-│
-├── examples/              # Learning examples
-│   ├── 01_basic.py        # Rule-based
-│   ├── 02_llm_agent.py    # LLM-powered
-│   ├── 03_hybrid.py       # Hybrid
-│   └── 04_rag_agent.py    # RAG-powered
-│
-├── docs/                  # Documentation
-├── tests/                 # Test suite
-└── docker-compose.yml     # Database setup
-```
-
-**See [Project Structure](docs/PROJECT_STRUCTURE.md) for details**
-
----
-
-## 📝 Common Commands
-
-```bash
-# Environment management
-conda activate agent-framework          # Conda
-source venv/bin/activate                # venv
-
-# Database
-docker compose up -d postgres           # Start
-docker compose down                     # Stop
-docker compose logs postgres            # View logs
-
-# Development
-python examples/01_basic.py             # Run agent
-pytest tests/                           # Run tests
-pip install -e ".[dev]"                # Install dev tools
-
-# GUI
-./gui/launch.sh                        # Start GUI
-```
-
----
-
-## 🐛 Troubleshooting
-
-**Common issues:**
-
-| Problem | Quick Fix |
-|---------|-----------|
-| Module not found | `pip install -e ".[all]"` |
-| Can't connect to DB | `docker compose up -d postgres` |
-| Port in use | Change `DB_PORT` in `.env` |
-| LLM not working | `ollama serve` + `ollama pull llama3.2` |
-
-**See [Complete Troubleshooting Guide](docs/TROUBLESHOOTING.md) for all issues**
-
----
-
-## ⚡ Performance Tips
-
-**For large-scale screening:**
-- Use **Rule-Based** for initial filtering (1000s of stocks)
-- Use **Hybrid** for smart filtering + deep analysis (95% cost reduction)
-- Use **LLM-Powered** only on final candidates (< 20 stocks)
-
-**For production:**
-- Connection pooling enabled by default (2-10 connections)
-- Async operations for non-blocking I/O
-- Horizontal scaling via FastAPI
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-**Ways to contribute:**
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📖 Improve documentation
-- 🔧 Submit pull requests
-- 🎓 Share example strategies
-
----
-
-## 📜 License
-
-MIT License - See [LICENSE](LICENSE) for details.
-
-Copyright (c) 2025 ThesisAI LLC
-
-**Summary:** You can use, modify, and distribute this software freely, with attribution.
-
----
-
-## ⚖️ Legal
-
-### Educational Use Only
-
-This software is for **learning and education only**. It is NOT:
-- ❌ Financial advice
-- ❌ Investment recommendations
-- ❌ Trading signals
-- ❌ Professional advice
-
-### Investment Risks
-
-ALL INVESTMENTS CARRY RISK. You can lose money. Past performance does not guarantee future results.
-
-### Requirements
-
-Before any real trading:
-- ✅ Consult licensed financial advisors
-- ✅ Understand all risks
-- ✅ Comply with regulations
-- ✅ Use professional data sources
-- ✅ Implement proper risk management
+- ❌ **NOT financial advice** - For learning only
+- ❌ **NOT for real trading** - Theoretical exercises only
+- ✅ **FOR education** - Learn investment concepts with AI
 
 **See [DISCLAIMER.md](DISCLAIMER.md) for complete legal terms**
 
 ---
 
-## 🚀 Production Ready?
+## 🚀 Quick Start (5 Minutes)
 
-For production trading systems with:
-- ✅ Professional risk management
-- ✅ Regulatory compliance
-- ✅ Real-time data integrations
-- ✅ Production support and SLAs
-- ✅ Proper legal protection
+### 1. Install
 
-**Visit [thesis-app](https://thesisai.app)**
+```bash
+git clone https://github.com/yourusername/AI-Agent-Builder.git
+cd AI-Agent-Builder
+pip install -e ".[all]"
+```
+
+### 2. Setup Database
+
+```bash
+cp .env.example .env
+docker compose up -d postgres
+python seed_data.py
+```
+
+### 3. Launch Visual GUI
+
+```bash
+./gui/launch.sh
+```
+
+Opens at: **http://localhost:8501**
+
+**Done!** Start creating agents visually - no coding needed!
 
 ---
 
-## 📞 Support
+## 🎓 What You'll Learn
 
-- **Documentation:** [docs/](docs/)
-- **Examples:** [examples/](examples/)
-- **Issues:** [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
-- **Troubleshooting:** [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+### Finance Concepts
+- Value investing (Warren Buffett, Benjamin Graham)
+- Growth investing (Peter Lynch, GARP)
+- Risk assessment and portfolio construction
+- SEC filing analysis
+- Multi-factor investment strategies
 
-**Do not request financial advice in issues**
+### AI/Tech Skills (Optional)
+- Using AI for analysis (ChatGPT, Claude, LLaMA)
+- Prompt engineering
+- Document processing with RAG
+- Python basics (by viewing generated code)
+- Database queries
+
+**You can use the visual GUI without any coding knowledge!**
+
+---
+
+## 🤖 Agent Types
+
+Create four types of agents visually:
+
+### 📊 Rule-Based (Start Here!)
+
+**What:** Follows clear rules you define
+**Example:** "Buy if PE < 15 AND ROE > 15%"
+**Setup:** None - works immediately!
+**Best for:** Learning basics, fast screening
+
+### 🧠 LLM-Powered (AI Intelligence)
+
+**What:** Uses AI (ChatGPT, Claude, LLaMA) for analysis
+**Example:** "Apple shows strong competitive moat with 28% ROE..."
+**Setup:** Install Ollama (free) or use OpenAI/Anthropic (paid)
+**Best for:** Deep analysis, complex reasoning
+
+### 📄 RAG-Powered (Document Analysis)
+
+**What:** Analyzes long documents (SEC filings, reports)
+**Example:** Extract insights from 100-page 10-K filing
+**Setup:** Same as LLM (Ollama recommended)
+**Best for:** Research, due diligence, document review
+
+### 🔀 Hybrid (Best of Both)
+
+**What:** Rules for screening + AI for deep analysis
+**Example:** Filter 1000 stocks → AI analyzes top 50
+**Setup:** Same as LLM (Ollama recommended)
+**Best for:** Large-scale analysis, cost efficiency (95% cheaper)
+
+[Complete Comparison](docs/CHOOSING_AGENT_TYPE.md)
+
+---
+
+## 🎨 Visual GUI Features
+
+**No coding required!** Create agents through forms:
+
+- 📋 **Browse** - Example strategies (Buffett, Lynch, Graham)
+- ➕ **Create** - Build agents with visual forms
+- 🧪 **Test** - Try with mock data or real data (YFinance)
+- 👁️ **View Code** - See and learn from generated Python code
+- 📄 **Upload PDFs** - Analyze SEC filings with RAG agents
+- ⚙️ **LLM Setup** - Step-by-step wizard for AI setup
+- 💾 **Save** - Agents saved to `examples/` folder
+
+**See code, learn Python, but use GUI for everything!**
+
+---
+
+## 📚 Learning Path
+
+### Week 1: Basics (No AI Setup)
+```
+1. Launch GUI → Create rule-based agent (30 min)
+2. Test with mock data → Understand signals (20 min)
+3. View generated code → See Python basics (30 min)
+4. Try example strategies → Buffett, Lynch (1 hour)
+```
+
+**No AI setup needed yet!**
+
+### Week 2: AI Intelligence
+```
+5. Install Ollama using wizard (10 min)
+6. Create LLM-powered agent (30 min)
+7. Compare LLM vs Rules on same stock (20 min)
+8. Try different AI "personalities" (1 hour)
+```
+
+**Uses free Ollama - no costs!**
+
+### Week 3+: Advanced
+```
+9. Create Hybrid agent (efficiency) (30 min)
+10. Upload PDF → Analyze with RAG (45 min)
+11. Build custom investment strategy (2 hours)
+12. Compare multiple agents (ongoing)
+```
+
+---
+
+## 💡 Simple Example
+
+Even without coding, here's what the GUI generates:
+
+```python
+# You create this in GUI by clicking forms
+# GUI generates this Python code automatically
+
+class ValueAgent(Agent):
+    """Buy undervalued stocks."""
+    
+    async def analyze(self, ticker, data):
+        pe = data.get('pe_ratio', 0)
+        
+        if pe < 15:
+            return Signal('bullish', 0.8, f'Undervalued: PE={pe}')
+        return Signal('neutral', 0.5, 'Fair value')
+```
+
+**You can:**
+- ✅ Create this in GUI without coding
+- ✅ View the code to learn Python
+- ✅ Download and modify if you want
+- ✅ Or just use it without ever seeing code!
+
+---
+
+## 🔧 Setup Options
+
+### Option A: Automatic (Recommended)
+
+```bash
+./gui/setup.sh    # Installs everything
+./gui/launch.sh   # Start GUI
+```
+
+**Installs:**
+- GUI (Streamlit)
+- All LLM providers (Ollama, OpenAI, Anthropic)
+- RAG support (document analysis)
+- PDF processing
+- YFinance (real market data)
+
+**Everything works after setup!**
+
+### Option B: Manual
+
+```bash
+# Core framework
+pip install -e ".[all]"
+
+# Database
+docker compose up -d postgres
+python seed_data.py
+
+# For LLM agents (optional - do later)
+# Follow wizard in GUI: ⚙️ LLM Setup
+```
+
+[Complete Installation Guide](docs/GETTING_STARTED.md)
+
+---
+
+## 📖 Documentation
+
+### For Students
+- [Quick Start](QUICK_START.md) - 5-minute setup
+- [GUI Quick Start](GUI_QUICK_START.md) - Visual interface guide
+- [How to Use Agents](gui/how_to_page.py) - Complete tutorial (in GUI)
+- [Choosing Agent Type](docs/CHOOSING_AGENT_TYPE.md) - Which to use when
+
+### For Learning Python
+- [View Agent Code](gui/code_viewer.py) - Educational code viewer
+- [Examples](examples/) - Buffett, Lynch, Graham strategies
+- [Agent Guidelines](docs/AGENT_FILE_GUIDELINES.md) - Code patterns
+
+### Technical Reference
+- [LLM Customization](docs/LLM_CUSTOMIZATION.md) - AI configuration
+- [API Reference](docs/API_REFERENCE.md) - REST API docs
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues
+
+---
+
+## 🎓 For Universities
+
+### Why Use in Your Course?
+
+- ✅ **No coding required** - Students use visual GUI
+- ✅ **Code visibility** - Can view/learn Python optionally
+- ✅ **Real strategies** - Buffett, Lynch, Graham examples
+- ✅ **Modern AI** - Learn LLMs, RAG, hybrid systems
+- ✅ **Free tools** - Ollama for AI, PostgreSQL for data
+- ✅ **Safe learning** - Mock data, clear disclaimers
+
+### Course Integration
+
+**Quantitative Finance Course:**
+- Week 1-2: Rule-based agents (quantitative screening)
+- Week 3-4: LLM agents (AI in finance)
+- Week 5-6: RAG agents (document analysis, research)
+- Week 7-8: Student projects (build custom strategies)
+
+**Python for Finance Course:**
+- Students create agents in GUI (no code)
+- View generated code to learn Python
+- Modify code to learn programming
+- Build increasingly complex agents
+
+**Investment Analysis Course:**
+- Learn by implementing famous strategies
+- Test strategies on sample data
+- Compare different approaches
+- Understand limitations of systematic investing
+
+### Classroom Setup
+
+```bash
+# One-time server setup
+git clone https://github.com/yourusername/AI-Agent-Builder.git
+cd AI-Agent-Builder
+./gui/setup.sh
+
+# Students access at:
+http://your-server:8501
+```
+
+**Each student can:**
+- Create and save their own agents
+- Test with mock or real data
+- View and learn from code
+- Download their work
+
+---
+
+## 🤝 Contributing
+
+Help make this better for students worldwide!
+
+- 🐛 Report bugs
+- 📖 Improve documentation
+- 🎓 Add example strategies
+- 💡 Suggest features
+- 🔧 Submit pull requests
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+## 📜 License
+
+**MIT License** - Free to use, modify, and distribute
+
+Copyright (c) 2025 ThesisAI LLC
+
+See [LICENSE](LICENSE) for details.
+
+### What This Means
+
+You can:
+- ✅ Use for personal or educational projects
+- ✅ Modify the code however you want
+- ✅ Use in university courses
+- ✅ Build upon it for research
+
+Just include the license and copyright notice.
+
+---
+
+## ⚠️ Disclaimer
+
+### Educational Use Only
+
+This software:
+- ❌ Does NOT provide financial advice
+- ❌ Is NOT for real trading
+- ❌ Has NO warranties
+
+Before real investing:
+- ✅ Consult licensed financial advisors
+- ✅ Understand all risks
+- ✅ Never invest money you can't afford to lose
+
+[Full Disclaimer](DISCLAIMER.md)
+
+---
+
+## 💬 Get Help
+
+- 📖 [Documentation](docs/)
+- ⚙️ [LLM Setup Wizard](gui/llm_setup_wizard.py) - In GUI
+- ❓ [Troubleshooting](docs/TROUBLESHOOTING.md)
+- 🐛 [Report Issues](https://github.com/yourusername/AI-Agent-Builder/issues)
+
+---
+
+## 🚀 Production Ready?
+
+**This tool is for learning.** For real trading, you need:
+- Professional risk management
+- Real-time data feeds
+- Regulatory compliance
+- Production support
+
+**Check out [thesis-app](https://thesisai.app)** for production-ready investment tools.
 
 ---
 
 ## 🙏 Acknowledgments
 
-Built for learning. Inspired by legendary investors:
-- Warren Buffett - Quality investing
-- Peter Lynch - Growth at reasonable price
-- Benjamin Graham - Value investing
+Inspired by legendary investors:
+- **Warren Buffett** - Quality and value investing
+- **Peter Lynch** - Growth at reasonable price
+- **Benjamin Graham** - Value investing principles
+
+Built for education. Maintained by [ThesisAI](https://thesisai.app).
 
 ---
 
-**Educational tool · Not financial advice · MIT License · [Full Disclaimer](DISCLAIMER.md)**
+## 🎯 Quick Reference
+
+**Three steps to start:**
+```bash
+./gui/setup.sh    # Setup (one-time)
+./gui/launch.sh   # Launch GUI
+```
+
+**In GUI:**
+- Create Rule-Based agent → Works immediately ✅
+- Create LLM agent → Use wizard: ⚙️ LLM Setup
+- View any code → Click 👁️ View button
+- Test with data → Mock or real (YFinance)
+
+**Get help:**
+- In GUI: Click "📚 How to Use Agents"
+- In GUI: Click "⚙️ LLM Setup" for AI setup
+- Docs: [Documentation](docs/)
+
+---
+
+**Learn investing. Learn AI. Learn coding (optional).** 🚀
+
+[Get Started](QUICK_START.md) | [GUI Guide](GUI_QUICK_START.md) | [Documentation](docs/)

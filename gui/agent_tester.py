@@ -1,11 +1,11 @@
 """Agent Tester - Test agents with mock or real data and PDF documents"""
 
-import sys
-import importlib.util
-import time
 import asyncio
+import importlib.util
+import sys
+import time
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 
 class AgentTester:
@@ -48,7 +48,10 @@ class AgentTester:
             agent_class = self._find_agent_class(module, agent_class_name)
             if not agent_class:
                 if agent_class_name:
-                    return {"success": False, "error": f"Agent class '{agent_class_name}' not found in file"}
+                    return {
+                        "success": False,
+                        "error": f"Agent class '{agent_class_name}' not found in file",
+                    }
                 else:
                     return {"success": False, "error": "No Agent class found in file"}
 
@@ -57,10 +60,10 @@ class AgentTester:
 
             # Check if RAG agent by looking at config
             is_rag_agent = (
-                hasattr(agent, 'config') and 
-                agent.config and 
-                hasattr(agent.config, 'rag') and 
-                agent.config.rag is not None
+                hasattr(agent, "config")
+                and agent.config
+                and hasattr(agent.config, "rag")
+                and agent.config.rag is not None
             )
 
             if is_rag_agent and uploaded_file:
@@ -81,11 +84,11 @@ class AgentTester:
             start_time = time.time()
             signal = asyncio.run(agent.analyze(ticker, data))
             execution_time = time.time() - start_time
-            
+
             # Check if this was a fallback signal (LLM error)
             is_fallback = self._detect_llm_fallback(signal)
             llm_error_info = None
-            
+
             if is_fallback:
                 llm_error_info = self._parse_llm_error(signal.reasoning)
 
@@ -100,7 +103,7 @@ class AgentTester:
                 "execution_time": execution_time,
                 "ticker": ticker,
                 "is_fallback": is_fallback,
-                "llm_error_info": llm_error_info
+                "llm_error_info": llm_error_info,
             }
 
         except Exception as e:
@@ -159,27 +162,29 @@ class AgentTester:
 
             # Run async analysis (RAG agents now return Signal, not dict)
             start_time = time.time()
-            
+
             try:
                 signal = asyncio.run(agent.analyze(ticker, document_text))
             except Exception as analyze_error:
                 # Better error message if analyze() fails
                 return {
                     "success": False,
-                    "error": f"RAG analysis failed: {str(analyze_error)}. Ensure sentence-transformers is installed: pip install sentence-transformers"
+                    "error": f"RAG analysis failed: {str(analyze_error)}. Ensure sentence-transformers is installed: pip install sentence-transformers",
                 }
-            
+
             execution_time = time.time() - start_time
 
             # Verify we got a Signal object
-            if not hasattr(signal, 'metadata'):
+            if not hasattr(signal, "metadata"):
                 return {
                     "success": False,
-                    "error": f"Agent returned {type(signal).__name__} instead of Signal object. Check agent code."
+                    "error": f"Agent returned {type(signal).__name__} instead of Signal object. Check agent code.",
                 }
 
             # Extract insights from signal metadata
-            insights = signal.metadata.get('insights', []) if isinstance(signal.metadata, dict) else []
+            insights = (
+                signal.metadata.get("insights", []) if isinstance(signal.metadata, dict) else []
+            )
 
             # Return results
             return {
@@ -209,7 +214,7 @@ class AgentTester:
 
     def _find_agent_class(self, module, agent_class_name: Optional[str] = None):
         """Find the Agent class in a module.
-        
+
         Args:
             module: Python module
             agent_class_name: Optional specific class name to find
@@ -218,7 +223,7 @@ class AgentTester:
             Agent class or None
         """
         from agent_framework import Agent
-        
+
         # If specific class name requested, find that one
         if agent_class_name:
             for name in dir(module):
@@ -261,100 +266,111 @@ class AgentTester:
             "dividend_yield": 2.0,
             "market_cap": 500_000_000_000,  # $500B
         }
-    
+
     def _detect_llm_fallback(self, signal) -> bool:
         """Detect if signal is from LLM fallback (error occurred).
-        
+
         Args:
             signal: Signal object
-            
+
         Returns:
             True if this is a fallback signal
         """
         reasoning = signal.reasoning.lower()
-        
+
         # Check for fallback indicators
         fallback_indicators = [
-            'llm unavailable',
-            'llm error',
-            'using fallback',
-            'no module named',
-            'connection refused',
-            'api error',
-            'rate limit',
-            'authentication',
-            'api key'
+            "llm unavailable",
+            "llm error",
+            "using fallback",
+            "no module named",
+            "connection refused",
+            "api error",
+            "rate limit",
+            "authentication",
+            "api key",
         ]
-        
+
         return any(indicator in reasoning for indicator in fallback_indicators)
-    
+
     def _parse_llm_error(self, reasoning: str) -> Dict:
         """Parse LLM error reasoning to extract useful information.
-        
+
         Args:
             reasoning: Signal reasoning string
-            
+
         Returns:
             Dict with error type and installation instructions
         """
         reasoning_lower = reasoning.lower()
-        
+
         # Detect specific error types
         error_info = {
             "error_type": "unknown",
             "provider": None,
             "model": None,
             "install_command": None,
-            "description": ""
+            "description": "",
         }
-        
+
         # Module not found errors
         if "no module named 'ollama'" in reasoning_lower:
-            error_info.update({
-                "error_type": "missing_package",
-                "provider": "ollama",
-                "install_command": "pip install ollama",
-                "description": "Ollama Python package not installed"
-            })
+            error_info.update(
+                {
+                    "error_type": "missing_package",
+                    "provider": "ollama",
+                    "install_command": "pip install ollama",
+                    "description": "Ollama Python package not installed",
+                }
+            )
         elif "no module named 'openai'" in reasoning_lower:
-            error_info.update({
-                "error_type": "missing_package",
-                "provider": "openai",
-                "install_command": "pip install openai",
-                "description": "OpenAI Python package not installed"
-            })
+            error_info.update(
+                {
+                    "error_type": "missing_package",
+                    "provider": "openai",
+                    "install_command": "pip install openai",
+                    "description": "OpenAI Python package not installed",
+                }
+            )
         elif "no module named 'anthropic'" in reasoning_lower:
-            error_info.update({
-                "error_type": "missing_package",
-                "provider": "anthropic",
-                "install_command": "pip install anthropic",
-                "description": "Anthropic Python package not installed"
-            })
-        
+            error_info.update(
+                {
+                    "error_type": "missing_package",
+                    "provider": "anthropic",
+                    "install_command": "pip install anthropic",
+                    "description": "Anthropic Python package not installed",
+                }
+            )
+
         # Connection errors (Ollama not running)
         elif "connection refused" in reasoning_lower or "connect" in reasoning_lower:
-            error_info.update({
-                "error_type": "connection_error",
-                "provider": "ollama",
-                "install_command": None,
-                "description": "Ollama service not running. Start with: ollama serve"
-            })
-        
+            error_info.update(
+                {
+                    "error_type": "connection_error",
+                    "provider": "ollama",
+                    "install_command": None,
+                    "description": "Ollama service not running. Start with: ollama serve",
+                }
+            )
+
         # Model not found (need to pull)
         elif "model" in reasoning_lower and "not found" in reasoning_lower:
             # Try to extract model name from reasoning
             import re
+
             model_match = re.search(r"model[\s'\"]*([a-z0-9\.:_-]+)", reasoning_lower)
             model_name = model_match.group(1) if model_match else "llama3.2"
-            
-            error_info.update({
-                "error_type": "model_not_found",
-                "provider": "ollama",
-                "model": model_name,
-                "install_command": f"ollama pull {model_name}",
-                "description": f"Model '{model_name}' not downloaded in Ollama"
-            })
-        
+
+            error_info.update(
+                {
+                    "error_type": "model_not_found",
+                    "provider": "ollama",
+                    "model": model_name,
+                    "install_command": f"ollama pull {model_name}",
+                    "description": f"Model '{model_name}' not downloaded in Ollama",
+                }
+            )
+
         # API key errors
         elif "api key" in reasoning_lower or "authentication" in reasoning_lower:
             if "openai" in reasoning_lower:
@@ -366,30 +382,36 @@ class AgentTester:
             else:
                 provider = "unknown"
                 env_var = "API_KEY"
-            
-            error_info.update({
-                "error_type": "missing_api_key",
-                "provider": provider,
-                "install_command": None,
-                "description": f"API key not configured. Set {env_var} in .env file"
-            })
-        
+
+            error_info.update(
+                {
+                    "error_type": "missing_api_key",
+                    "provider": provider,
+                    "install_command": None,
+                    "description": f"API key not configured. Set {env_var} in .env file",
+                }
+            )
+
         # Rate limit errors
         elif "rate limit" in reasoning_lower:
-            error_info.update({
-                "error_type": "rate_limit",
-                "provider": None,
-                "install_command": None,
-                "description": "API rate limit exceeded. Wait a few minutes and try again."
-            })
-        
+            error_info.update(
+                {
+                    "error_type": "rate_limit",
+                    "provider": None,
+                    "install_command": None,
+                    "description": "API rate limit exceeded. Wait a few minutes and try again.",
+                }
+            )
+
         # Generic LLM error
         else:
-            error_info.update({
-                "error_type": "llm_error",
-                "provider": None,
-                "install_command": None,
-                "description": "LLM service encountered an error"
-            })
-        
+            error_info.update(
+                {
+                    "error_type": "llm_error",
+                    "provider": None,
+                    "install_command": None,
+                    "description": "LLM service encountered an error",
+                }
+            )
+
         return error_info

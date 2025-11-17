@@ -1,82 +1,143 @@
-# GUI Quick Start
+# GUI Quick Start - Visual Agent Builder
 
-Build AI agents visually with no coding required.
+Build investment agents with no coding required.
 
 ---
 
-## Setup & Launch
+## 🚀 Setup & Launch (5 Minutes)
 
 ```bash
-cd ~/AI-Agent-Builder
+cd AI-Agent-Builder
 
-# One-time setup (installs ALL dependencies)
+# One-time setup (installs EVERYTHING)
 ./gui/setup.sh
 
 # Launch GUI
 ./gui/launch.sh
 ```
 
-**What setup.sh installs:**
-- ✅ Framework core (FastAPI, Database, Pydantic)
-- ✅ GUI (Streamlit, PyPDF2)
-- ✅ All LLM providers (Ollama, OpenAI, Anthropic)
-- ✅ RAG support (sentence-transformers for document analysis)
+**Opens at:** http://localhost:8501
 
-**Everything is installed automatically!** You can use all agent types immediately.
-
-Opens at: `http://localhost:8501`
+**That's it!** Start creating agents visually.
 
 ---
 
-## Additional Setup for LLM Agents
+## What Gets Installed
 
-**For Ollama (Free, Local AI):**
+The `./gui/setup.sh` script installs everything you need:
 
-The Ollama Python package is installed, but you also need the Ollama service:
+✅ **GUI** (Streamlit, PyPDF2)
+✅ **All LLM providers** (Ollama, OpenAI, Anthropic packages)
+✅ **RAG support** (sentence-transformers for document analysis)
+✅ **Data sources** (YFinance for real market data)
+✅ **All dependencies** - No "optional" packages!
+
+**After setup, all agent types work!**
+
+---
+
+## 🔧 Additional Setup for AI Agents
+
+**Rule-Based agents work immediately** - no extra setup needed!
+
+**For LLM/RAG/Hybrid agents, you also need:**
+
+### Option A: Ollama (Free, Local) - Recommended
+
+The Python package is installed, but you also need the Ollama service:
 
 ```bash
 # 1. Install Ollama service (one-time)
 curl https://ollama.ai/install.sh | sh
 
-# 2. Download a model (one-time)
+# 2. Download AI model (one-time, ~4GB)
 ollama pull llama3.2
 
-# 3. Start Ollama service (each time you use it)
-ollama serve  # Keep this running in a separate terminal
+# 3. Start service (each time you use LLM agents)
+ollama serve  # Keep this running in a terminal
 ```
 
-**For OpenAI or Anthropic:**
+**Or use the visual wizard:**
+1. Launch GUI
+2. Click **"⚙️ LLM Setup"** in sidebar
+3. Follow step-by-step instructions
+4. Test connection when done
 
-Add your API key to `.env` file:
+### Option B: OpenAI/Anthropic (Cloud, Paid)
+
+Add API key to `.env` file:
 
 ```bash
-# Edit .env
 nano .env
 
-# Add your key:
+# Add one of these:
 OPENAI_API_KEY=sk-your-key-here
-# or
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
 
-**Rule-Based agents work immediately** with no additional setup!
+**Or use the wizard** to configure automatically!
 
 ---
 
-## Create Your First Agent
+## 📚 GUI Overview
 
-### 1. Navigate
-Click "➕ Create Agent" in sidebar
+### Navigation
 
-### 2. Configure
+**📋 Browse Agents** - View and manage existing agents
+- See all example strategies (Buffett, Lynch, Graham)
+- View code with educational annotations
+- Duplicate agents to create variations
+- Download or delete agents
+
+**➕ Create Agent** - Build new agents visually
+- Choose type (Rule/LLM/RAG/Hybrid)
+- Configure with forms (no coding!)
+- Generate Python code automatically
+- Save to `examples/` folder
+
+**🧪 Test Agent** - Try agents with data
+- Test with mock data (fictional)
+- Test with YFinance (real market data)
+- Upload PDFs (for RAG agents)
+- See results and reasoning
+
+**📚 How to Use Agents** - Complete tutorials
+- Getting started guide
+- Rule-based agent tutorial
+- LLM agent tutorial
+- RAG agent tutorial
+- Hybrid agent tutorial
+- Understanding signals
+
+**⚙️ LLM Setup** - Interactive setup wizard
+- Step-by-step Ollama installation
+- Model download guidance
+- Connection testing
+- OpenAI/Anthropic configuration
+
+---
+
+## 🎯 Create Your First Agent (10 Minutes)
+
+### 1. Launch GUI
+
+```bash
+./gui/launch.sh
 ```
-Agent Name: ValueAgent
-Description: Buys undervalued stocks
-Filename: value_agent.py
+
+### 2. Navigate to "➕ Create Agent"
+
+### 3. Fill in the Form
+
+**Basic Info:**
+```
+Agent Name: ValueHunter
+Description: Finds undervalued quality stocks
+Filename: value_hunter.py
 Type: Rule-Based
 ```
 
-### 3. Add Rule
+**Add a Rule:**
 ```
 Metric: pe_ratio
 Operator: <
@@ -86,198 +147,206 @@ Confidence: 0.8
 ```
 
 ### 4. Generate & Save
-- Click "Generate Code"
-- Review the code
-- Click "💾 Save Agent"
-- Done! File saved to `examples/`
 
----
+- Click **"Generate Code"**
+- Review the Python code (optional)
+- Click **"💾 Save Agent"**
 
-## Test Your Agent
+✅ **Done!** Your agent is created and saved!
 
-### For Rule-Based/LLM Agents
+### 5. Test Your Agent
 
-#### 1. Navigate
-Click "🧪 Test Agent"
+- Go to **"🧪 Test Agent"**
+- Select "ValueHunter"
+- Choose "Mock Data"
+- Set PE Ratio: 12
+- Click **"🚀 Run Analysis"**
 
-#### 2. Configure
-```
-Select Agent: ValueAgent
-Ticker: AAPL
-Use Mock Data: ✓
-PE Ratio: 12
-```
-
-#### 3. Run
-Click "🚀 Run Analysis"
-
-#### 4. Result
+**Result:**
 ```
 Signal: 🟢 BULLISH
 Confidence: 80%
-Reasoning: Pe Ratio 12.0 is bullish
+Reasoning: "PE ratio 12.0 is bullish"
 ```
 
 ---
 
-### For RAG Agents
+## 🤖 Create an AI Agent (15 Minutes)
 
-#### 1. Navigate
-Click "🧪 Test Agent"
+### Prerequisites
 
-#### 2. Select RAG Agent
+Install Ollama first (use the wizard!):
+1. Click **"⚙️ LLM Setup"** in sidebar
+2. Select "Ollama (Free, Local)"
+3. Follow the 4 steps
+4. Test connection ✅
+
+### Create LLM Agent
+
+**Navigate to "➕ Create Agent"**
+
+**Fill in:**
 ```
-Select Agent: SECAnalystAgent
-Ticker: AAPL
+Agent Name: AIValueInvestor
+Description: AI-powered value analysis
+Filename: ai_value_investor.py
+Type: LLM-Powered
+
+LLM Configuration:
+Provider: ollama
+Model: llama3.2
+Temperature: 0.5
+Max Tokens: 1500
+
+System Prompt:
+You are a value investor inspired by Warren Buffett.
+Focus on business quality, competitive advantages,
+and margin of safety. Be conservative but thorough.
 ```
 
-#### 3. Upload PDF
-**Drag and drop a PDF file:**
-- SEC 10-K filing
-- Earnings report
-- News articles
-- Research reports
+**Generate & Save!**
 
-#### 4. Run
-Click "🚀 Run Analysis"
+### Test AI Agent
 
-#### 5. Result
+**Make sure Ollama is running:**
+```bash
+# In separate terminal
+ollama serve
+```
+
+**Then in GUI:**
+1. Go to "🧪 Test Agent"
+2. Select "AIValueInvestor"
+3. Choose data source (Mock or YFinance)
+4. Click "Run Analysis"
+5. Read AI's reasoning!
+
+**AI provides detailed analysis:**
 ```
 Signal: 🟢 BULLISH
 Confidence: 75%
-Reasoning: Strong growth prospects...
 
+Reasoning: The company demonstrates exceptional business 
+quality with ROE of 28% and margins of 25%, indicating 
+strong competitive advantages. The PE ratio of 12 suggests 
+undervaluation relative to quality. Debt levels at 0.8x 
+are manageable. Good long-term value opportunity.
+```
+
+---
+
+## 📄 Analyze Documents with RAG (20 Minutes)
+
+### Create RAG Agent
+
+**In "➕ Create Agent":**
+```
+Agent Name: SECAnalyst
+Description: Analyzes SEC 10-K filings
+Filename: sec_analyst.py
+Type: RAG-Powered
+
+LLM: ollama / llama3.2 / temp=0.5
+RAG: chunk_size=300, overlap=50, top_k=3
+
+System Prompt:
+You are an SEC filing expert. Extract key financial 
+trends, risks, and strategic initiatives from filings.
+Be precise and cite specific details.
+```
+
+### Test with PDF
+
+1. Go to "🧪 Test Agent"
+2. Select "SECAnalyst"
+3. **Upload PDF:**
+   - Drag and drop a SEC 10-K filing
+   - Or any financial document
+4. Click "Run Analysis"
+
+**RAG extracts insights:**
+```
 Detailed Insights:
-  • Financial performance shows 15% revenue growth
-  • Key risks include supply chain dependencies
-  • Growth strategies focus on AI integration
+1. Financial Performance: Revenue up 8% to $394B, 
+   Services growing 16%...
+2. Risk Factors: China supply chain concentration,
+   EU regulatory scrutiny...
+3. Growth Strategy: India expansion, Vision Pro launch,
+   AI/ML R&D investment...
+
+Signal: 🟢 BULLISH (70%)
 ```
 
 ---
 
-## Backtest Your Agent
+## 👁️ View and Learn from Code
 
-### Navigate
-Click "📈 Backtest Agent" in sidebar
+**Every agent you create:**
+1. Click **"👁️ View"** button
+2. See code broken into sections
+3. Read explanations for each part
+4. Download to experiment
 
-### Select Agent
+**What you see:**
 ```
-Select Agent: ValueAgent
-Data Source: Mock Data (Scenarios)
-```
+[Expandable] 1. Imports - Getting Tools
+  → Explanation of imports
+  → Learning tip
 
-### Run Backtest
-Click "🚀 Run Backtest"
+[Expandable] 4. Analysis Logic - THE BRAIN ⭐
+  → This is where decisions happen
+  → Learning tip: Focus here!
 
-### Results
-```
-Total Signals: 5
-Avg Confidence: 75%
-Bullish Signals: 60%
-
-Signal Distribution:
-🟢 Bullish: 3 (60%)
-🔴 Bearish: 1 (20%)
-🟡 Neutral: 1 (20%)
-
-Interpretation: Balanced strategy
+[Full Code with line numbers below]
 ```
 
-**What backtesting shows:**
-- ✅ Signal distribution across scenarios
-- ✅ Average confidence levels
-- ✅ How rules perform on different market conditions
-
-**What it does NOT show:**
-- ❌ Actual profit/loss (educational only)
-- ❌ Transaction costs or slippage
-- ❌ Real market conditions
-
-⚠️ **Remember:** This is for learning! Past performance doesn't guarantee future results.
+**Benefits:**
+- Understand code structure
+- Learn Python by example
+- See how your strategy becomes code
+- Modify and experiment (optional)
 
 ---
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### GUI Won't Start
 
 ```bash
-# Reinstall GUI dependencies
-pip install --upgrade streamlit pypdf2
+# Reinstall dependencies
+pip install -e ".[all]"
 
-# Verify
+# Verify Streamlit
 streamlit --version
 ```
 
-### "No module named" Errors
-
-If you see module errors, re-run setup:
-
-```bash
-./gui/setup.sh
-```
-
-This installs ALL dependencies including:
-- Ollama (local AI)
-- OpenAI (ChatGPT API)
-- Anthropic (Claude API)
-- sentence-transformers (document analysis)
-
 ### LLM Agents Not Working
 
-**For Ollama:**
+**Use the wizard:**
+1. Click "⚙️ LLM Setup" in sidebar
+2. Follow Ollama setup
+3. Test connection
+4. Follow error messages if any
+
+**Or manually:**
 ```bash
-# Check if Ollama service is running
+# Check if Ollama is running
 curl http://localhost:11434/api/tags
 
-# If not, start it:
-ollama serve  # Keep running in separate terminal
+# If not, start it
+ollama serve
 
-# Check if model is downloaded
-ollama list | grep llama3.2
+# Check if model downloaded
+ollama list
 
-# If not, download it:
+# If not, download it
 ollama pull llama3.2
-```
-
-**For OpenAI/Anthropic:**
-```bash
-# Check .env file has your API key
-cat .env | grep API_KEY
-
-# Add if missing:
-nano .env
-# OPENAI_API_KEY=sk-your-key-here
-```
-
-### RAG Agents Not Working
-
-**Error: "No module named 'sentence_transformers'"**
-
-This should not happen if you ran `./gui/setup.sh`. If it does:
-
-```bash
-# Manual install
-pip install sentence-transformers
-
-# Or reinstall everything
-pip install -e ".[all]"
-```
-
-### PDF Upload Errors
-
-```bash
-# Install PyPDF2 if missing
-pip install pypdf2
-
-# Verify
-python3 -c "import PyPDF2; print('OK')"
 ```
 
 ### Files Not Saving
 
 ```bash
-# Check directory exists and has permissions
+# Check directory permissions
 ls -ld examples/
 chmod 755 examples/
 
@@ -285,97 +354,84 @@ chmod 755 examples/
 python3 gui/test_setup.py
 ```
 
-**For more help:** See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+### More Help
+
+- Check [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+- Use **⚙️ LLM Setup wizard** in GUI
+- Review error messages (they include solutions!)
 
 ---
 
-## Agent Types Explained
-
-### Rule-Based ✨
-- **Setup needed:** None (works immediately)
-- **Use for:** Clear investment criteria, fast screening
-- **Example:** Buy stocks with PE < 15
-
-### LLM-Powered 🤖
-- **Setup needed:** Ollama service + model (see above)
-- **Use for:** Deep analysis, complex reasoning
-- **Example:** Analyze company quality holistically
-
-### Hybrid ⚡
-- **Setup needed:** Ollama service + model (see above)
-- **Use for:** Large-scale screening + selective deep analysis
-- **Example:** Screen 500 stocks → Analyze top 20
-
-### RAG-Powered 📄
-- **Setup needed:** Ollama service + model (see above)
-- **Use for:** Document analysis (PDFs, SEC filings)
-- **Example:** Extract insights from 10-K filing
-
-**All packages are already installed by setup.sh!** You just need to:
-- Start Ollama service (for LLM/Hybrid/RAG)
-- Add API keys (for OpenAI/Anthropic)
-
----
-
-## Quick Start Tips
+## 🎨 GUI Tips
 
 ### For Beginners
-1. **Start with Rule-Based** - Works immediately, no LLM needed
-2. **Test with mock data** - No database required
-3. **Try the examples** - Buffett, Lynch, Graham strategies included
+- ✅ Start with Rule-Based agents (no AI needed)
+- ✅ Use mock data for testing
+- ✅ View code to learn (but don't need to understand it)
+- ✅ Try example strategies (duplicate and modify)
+
+### For Learning AI
+- ✅ Use the **⚙️ LLM Setup wizard**
+- ✅ Start with Ollama (free!)
+- ✅ Try different temperatures (0.3 vs 0.8)
+- ✅ Compare LLM vs Rule agents on same stock
 
 ### For Advanced Users
-1. **Set up Ollama** - Free local AI for LLM agents
-2. **Create Hybrid agents** - Best performance for production
-3. **Upload PDFs** - Analyze real SEC filings with RAG
+- ✅ Create Hybrid agents (rules + AI)
+- ✅ Upload real SEC filings (RAG)
+- ✅ Download code and modify manually
+- ✅ Integrate with your Python projects
 
-### For thesis-ai Integration
-```python
-# Import generated agents in thesis-ai
-from AI_Agent_Builder.examples.value_agent import ValueAgent
+---
 
-agent = ValueAgent()
-signal = agent.analyze('AAPL', data)
+## 📊 What Each Agent Type Can Do
+
+| Type | Data Input | Output | Setup Time |
+|------|-----------|--------|------------|
+| **Rule-Based** | Mock or YFinance | Buy/Sell/Hold signal | 0 minutes |
+| **LLM** | Mock or YFinance | AI reasoning + signal | 10 minutes* |
+| **RAG** | PDF documents | Document insights + signal | 10 minutes* |
+| **Hybrid** | Mock or YFinance | Filtered + AI analysis | 10 minutes* |
+
+*Using Ollama wizard
+
+---
+
+## 🔗 Quick Links
+
+**In the GUI:**
+- **⚙️ LLM Setup** → Step-by-step AI configuration
+- **📚 How to Use** → Complete tutorials
+- **👁️ View** → See code with explanations
+
+**Documentation:**
+- [Full Setup Guide](docs/GETTING_STARTED.md)
+- [Agent Type Comparison](docs/CHOOSING_AGENT_TYPE.md)
+- [LLM Customization](docs/LLM_CUSTOMIZATION.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+
+---
+
+## ⚖️ Legal
+
+**Educational use only.** See [DISCLAIMER.md](DISCLAIMER.md) for complete terms.
+
+**MIT License.** See [LICENSE](LICENSE) for details.
+
+**For production:** [thesis-app](https://thesisai.app)
+
+---
+
+## 🎉 You're Ready!
+
+```bash
+./gui/launch.sh
 ```
 
----
+**Then:**
+1. Create your first agent (Rule-Based recommended)
+2. Test it with mock data
+3. View the code to learn
+4. Set up AI when ready (use wizard!)
 
-## Full Documentation
-
-See `gui/README.md` for complete documentation.
-
-**Having issues?** See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-
----
-
-## ⚖️ Legal & License
-
-**Educational use only.** This GUI and framework are for learning purposes only.
-
-- **Disclaimer:** [DISCLAIMER.md](DISCLAIMER.md) - Complete legal terms
-- **License:** [LICENSE](LICENSE) - MIT License  
-- **Not financial advice** - Do not use for real trading
-
-**GUI is part of the AI-Agent-Builder framework** and subject to the same MIT License.
-
-Copyright (c) 2025 ThesisAI LLC
-
-**For production systems:** [thesis-app](https://thesisai.app)
-
----
-
-## Quick Reference
-
-**Three steps to start:**
-1. Run setup: `./gui/setup.sh` (installs everything)
-2. Start Ollama: `ollama serve` (for LLM agents)
-3. Launch GUI: `./gui/launch.sh`
-
-**Create agents:**
-- Rule-Based: Ready immediately ✅
-- LLM/Hybrid/RAG: Needs Ollama running ⚡
-
-**Get help:**
-- Setup issues: `python3 gui/test_setup.py`
-- Dependencies: All installed by setup.sh ✅
-- Troubleshooting: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+**Have fun learning!** 🚀
