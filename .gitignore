@@ -71,36 +71,6 @@ Thumbs.db
 # Docker
 docker-compose.override.yml
 
-# Development/Internal files (remove before publishing)
-CLEANUP_CHECKLIST.md
-IMPROVEMENTS_SUMMARY.md
-IMPLEMENTATION_REPORT.md
-TEST_FIXES.md
-DISCLAIMER_IMPLEMENTATION.md
-DISCLAIMER_UX_FLOW.md
-IMPLEMENTATION_COMPLETE.md
-BACKTESTING_IMPLEMENTATION.md
-BACKTEST_SUMMARY.md
-ONE_AGENT_PER_FILE.md
-BUG_FIX_SUMMARY.md
-UI_IMPROVEMENTS.md
-ONE_AGENT_IMPLEMENTATION.md
-MODEL_SELECTION_SUMMARY.md
-ERROR_HANDLING_COMPLETE.md
-DOCS_STRUCTURE.md
-DOCUMENTATION.md
-CLEANUP_SUMMARY.md
-FINAL_RESTRUCTURE.md
-README_CLEANUP.md
-HYBRID_TYPE_FIX.md
-cleanup_internal_docs.sh
-cleanup_docs.sh
-final_cleanup.sh
-clean_repo.sh
-clean_all.sh
-diagnose_postgres.py
-setup_test_db.sh
-
 # Jupyter Notebooks (if any)
 .ipynb_checkpoints/
 *.ipynb
@@ -124,3 +94,98 @@ uv.lock
 # Only ignore root-level files, allow in subdirectories
 /setup.py
 /requirements.txt
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Streamlit cache
+.streamlit/
+
+# Claude/AI artifacts (if you save conversations)
+*.claude.md
+*.ai-session.md
+
+# Local testing files
+test_output/
+scratch/
+playground/
+
+# Large data files (if added)
+*.csv.gz
+*.parquet
+large_data/
+
+# API keys and secrets (redundant but explicit)
+*_api_key*
+*_secret*
+secrets.yml
+credentials.json
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Local development overrides
+docker-compose.local.yml
+.env.development
+.env.test
+.env.production
+
+# Generated documentation (if using tools like Sphinx)
+docs/_build/
+docs/.doctrees/
+site/
+
+# Coverage reports
+coverage.xml
+*.cover
+.coverage.*
+
+# Profiling data
+*.prof
+*.lprof
+
+# Pytest
+.pytest_cache/
+pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# User-generated agent files (optional - keep if want to commit)
+# examples/user_agents/
+# examples/my_*.py
+
+# Backup of examples before modifications
+examples/*.backup.py
+
+# System files
+*.lock
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary installation files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
