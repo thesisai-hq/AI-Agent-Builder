@@ -18,6 +18,15 @@ from gui.code_viewer import CodeViewer  # ✅ Educational code viewer
 from gui.how_to_page import show_how_to_page
 from gui.llm_setup_wizard import show_llm_setup_wizard  # ✅ Already imported
 from gui.metrics import MetricDefinitions, RuleValidator
+from gui.agent_creation_helpers import (
+    AgentCreationState,
+    show_basic_info_section,
+    show_agent_type_section,
+    show_llm_configuration,
+    show_rag_configuration,
+    show_analysis_logic_section,
+    show_generated_code_section,
+)
 
 # Page configuration
 st.set_page_config(page_title="AI Agent Builder", page_icon="🤖", layout="wide")
@@ -38,7 +47,8 @@ def show_disclaimer():
     if not st.session_state.disclaimer_accepted:
         st.error("⚠️ IMPORTANT DISCLAIMER - PLEASE READ")
 
-        st.markdown("""
+        st.markdown(
+            """
         ### Educational Use Only
 
         This software is for **learning purposes only** and is **NOT intended for real trading**.
@@ -61,7 +71,8 @@ def show_disclaimer():
         ---
 
         **For production trading tools with proper risk management, see [thesis-app](https://thesisai.app)**
-        """)
+        """
+        )
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -103,7 +114,8 @@ def show_license_modal():
 
     st.markdown("---")
 
-    st.markdown("""
+    st.markdown(
+        """
     ### AI-Agent-Builder Framework
 
     **Copyright (c) 2025 ThesisAI LLC**
@@ -156,7 +168,8 @@ def show_license_modal():
     For questions about licensing or usage, please:
     - Open an issue on [GitHub](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
     - Email: support@thesisai.app
-    """)
+    """
+    )
 
 
 def main():
@@ -207,15 +220,18 @@ def main():
     # Disclaimer reminder in sidebar
     st.sidebar.markdown("---")
     st.sidebar.error("⚠️ **Educational Use Only**")
-    st.sidebar.caption("""
+    st.sidebar.caption(
+        """
     Not financial advice.
     Do not use for real trading.
     [Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)
-    """)
+    """
+    )
 
     # Link to thesis-app
     st.sidebar.markdown("---")
-    st.sidebar.info("""
+    st.sidebar.info(
+        """
     🚀 **Ready for Production?**
 
     Check out [thesis-app](https://thesisai.app) for:
@@ -223,7 +239,8 @@ def main():
     - Multi-agent orchestration
     - Risk management
     - Production support
-    """)
+    """
+    )
 
     st.sidebar.markdown("---")
     st.sidebar.caption(
@@ -422,677 +439,116 @@ def show_browse_page():
 
 
 def show_create_page():
-    """Display agent creation interface."""
+    """Display agent creation interface - REFACTORED VERSION.
+
+    This coordinator function delegates to smaller, focused functions.
+    Replaces the original 600+ line implementation with clean, maintainable code.
+
+    Structure:
+    1. Initialize state
+    2. Show basic info (name, description, filename)
+    3. Show agent type selection
+    4. Show type-specific configuration (LLM/RAG if needed)
+    5. Show analysis logic (rules if applicable)
+    6. Handle code generation
+    7. Display generated code with actions
+    """
     st.header("Create New Agent")
 
     st.info(
-        "💡 **Tip:** Browse the examples directory to see strategy templates (Buffett, Lynch, Graham, etc.). Duplicate them to create variations!"
+        "💡 **Tip:** Browse the examples directory to see strategy templates "
+        "(Buffett, Lynch, Graham, etc.). Duplicate them to create variations!"
     )
 
-    # Initialize session state for generated code
+    # Initialize session state
     if "generated_code" not in st.session_state:
-        st.session_state.generated_code = None
-    if "current_filename" not in st.session_state:
-        st.session_state.current_filename = None
+        AgentCreationState.clear_generated_code()
+
+    # Get instances
+    from gui.agent_creator import AgentCreator
 
     creator = AgentCreator()
-    loader = st.session_state.agent_loader  # ✅ Get loader for validation
+    loader = st.session_state.agent_loader
 
-    # Agent configuration
+    # ========================================================================
+    # Section 1 & 2: Basic Info and Agent Type (Side by Side)
+    # ========================================================================
+
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Basic Information")
-        agent_name = st.text_input(
-            "Agent Class Name",
-            value="MyAgent",
-            help="Python class name (e.g., ValueAgent, GrowthAgent)",
-        )
-
-        description = st.text_area("Description", help="What does this agent do?")
-
-        filename = st.text_input(
-            "Filename",
-            value=f"{agent_name.lower() if agent_name else 'my_agent'}.py",
-            help="File will be saved in examples/ directory",
-        )
-
-        # Real-time filename validation
-        if filename:
-            save_path = st.session_state.examples_dir / filename
-
-            # Validate filename
-            if not filename.endswith(".py"):
-                st.error("❌ Filename must end with .py")
-            elif not loader._is_valid_filename(filename):
-                st.error(
-                    "❌ Invalid filename. Use only letters, numbers, and underscores (e.g., my_agent.py, value_strategy_v2.py)"
-                )
-                st.caption(
-                    "Valid: `my_agent.py`, `value_v2.py` | Invalid: `my-agent.py`, `my agent.py`, `1agent.py`"
-                )
-            elif (st.session_state.examples_dir / filename).exists():
-                st.warning(
-                    f"⚠️ File `{filename}` already exists. Choose a different name or delete the existing file first."
-                )
-            else:
-                st.success(f"✅ Valid filename: will save to `examples/{filename}`")
-                st.caption(f"Full path: `{save_path}`")
+        # Basic Information
+        basic_info = show_basic_info_section()
 
     with col2:
-        st.subheader("Agent Type")
-        agent_type = st.selectbox(
-            "Template", ["Rule-Based", "LLM-Powered", "Hybrid", "RAG-Powered"]
-        )
+        # Agent Type Selection
+        type_config = show_agent_type_section()
+        agent_type = type_config["agent_type"]
 
-        # Show explanation of Hybrid
-        if agent_type == "Hybrid":
-            st.info("""
-            🧑‍💻 **What is a Hybrid Agent?**
+        # ====================================================================
+        # Section 3: LLM Configuration (if needed)
+        # ====================================================================
 
-            Combines rules + LLM:
-            1. **Rules:** Fast screening (filter stocks)
-            2. **LLM:** Deep analysis (only on filtered stocks)
-
-            **Use when:** You want to screen thousands of stocks quickly,
-            then use AI for detailed analysis on candidates.
-            """)
-
+        llm_config = None
         if agent_type in ["LLM-Powered", "Hybrid", "RAG-Powered"]:
-            st.markdown("**LLM Configuration**")
+            llm_config = show_llm_configuration()
 
-            # Provider selection
-            llm_provider = st.selectbox(
-                "Provider",
-                ["ollama", "openai", "anthropic"],
-                help="LLM service provider. Ollama is free and local, OpenAI and Anthropic require API keys.",
-            )
+        # ====================================================================
+        # Section 4: RAG Configuration (if needed)
+        # ====================================================================
 
-            # Model selection based on provider
-            model_options = {
-                "ollama": [
-                    "llama3.2",
-                    "llama3.1",
-                    "llama3",
-                    "llama2",
-                    "mistral",
-                    "mixtral",
-                    "phi",
-                    "gemma",
-                    "qwen",
-                    "custom (enter below)",
-                ],
-                "openai": [
-                    "gpt-4o",
-                    "gpt-4o-mini",
-                    "gpt-4-turbo",
-                    "gpt-4",
-                    "gpt-3.5-turbo",
-                    "custom (enter below)",
-                ],
-                "anthropic": [
-                    "claude-3-5-sonnet-20241022",
-                    "claude-3-5-haiku-20241022",
-                    "claude-3-opus-20240229",
-                    "claude-3-sonnet-20240229",
-                    "claude-3-haiku-20240307",
-                    "custom (enter below)",
-                ],
-            }
-
-            selected_model = st.selectbox(
-                "Model",
-                model_options[llm_provider],
-                help=f"Specific {llm_provider} model to use. Different models have different capabilities and costs.",
-            )
-
-            # Custom model input if selected
-            if selected_model == "custom (enter below)":
-                custom_model = st.text_input(
-                    "Custom Model Name",
-                    placeholder=f"Enter exact model name for {llm_provider}",
-                    help="Enter the exact model identifier (e.g., 'llama3.2:70b' for Ollama)",
-                )
-                final_model = custom_model if custom_model else model_options[llm_provider][0]
-            else:
-                final_model = selected_model
-
-            # Show model info
-            model_info = {
-                "llama3.2": "💡 Latest Llama model, good balance of speed and quality",
-                "gpt-4o": "💡 Latest GPT-4 with vision, fastest GPT-4 model",
-                "gpt-4o-mini": "💡 Cost-effective GPT-4, 60% cheaper than GPT-4o",
-                "claude-3-5-sonnet-20241022": "💡 Latest Claude, best for analysis and coding",
-                "claude-3-5-haiku-20241022": "💡 Fastest Claude, good for simple tasks",
-                "mistral": "💡 Good open-source alternative, fast inference",
-                "gpt-4": "💡 Original GPT-4, very capable but slower",
-                "gpt-3.5-turbo": "💡 Fast and cheap, good for simple analysis",
-            }
-
-            if selected_model in model_info:
-                st.caption(model_info[selected_model])
-
-            temperature = st.slider("Temperature", 0.0, 1.0, 0.5, 0.1)
-            max_tokens = st.number_input("Max Tokens", 100, 4000, 1000, 100)
-
-            st.markdown("**Prompts (AI Instructions)**")
-
-            system_prompt = st.text_area(
-                "System Prompt (Agent Personality)",
-                height=120,
-                help="Defines who the AI is and its overall approach. This sets the agent's personality.",
-                placeholder="Example: You are a value investor inspired by Warren Buffett. Focus on business quality, competitive advantages, and margin of safety.",
-            )
-
-            # NEW: User prompt instructions
-            with st.expander("➕ Add Custom Analysis Instructions (Optional)", expanded=False):
-                st.info("""
-                **What are User Prompt Instructions?**
-
-                Add specific questions or analysis requirements beyond the standard recommendation.
-                The data and output format are handled automatically - just add your custom instructions!
-
-                **Examples:**
-                - "Focus specifically on dividend safety and payout sustainability"
-                - "Assess the competitive moat and barriers to entry"
-                - "Evaluate management capital allocation decisions"
-                - "Compare to industry peers and explain relative valuation"
-
-                **Leave empty for standard analysis.**
-                """)
-
-                user_prompt_instructions = st.text_area(
-                    "Custom Analysis Instructions",
-                    height=80,
-                    placeholder="Example: Focus on dividend safety. Evaluate payout ratio sustainability and free cash flow coverage.",
-                    help="Optional: Add specific analysis requirements or questions",
-                )
-
-                if user_prompt_instructions:
-                    st.success(
-                        f"✅ Custom instructions added ({len(user_prompt_instructions)} characters)"
-                    )
-
-            # Store for later use
-            if "user_prompt_instructions" not in locals():
-                user_prompt_instructions = None
-        else:
-            llm_provider = None
-            final_model = None
-            temperature = None
-            max_tokens = None
-            system_prompt = None
-            user_prompt_instructions = None
-
+        rag_config = None
         if agent_type == "RAG-Powered":
-            st.markdown("**RAG Configuration**")
-            chunk_size = st.number_input(
-                "Chunk Size", 100, 1000, 300, 50, help="Size of text chunks for vector search"
-            )
-            chunk_overlap = st.number_input(
-                "Chunk Overlap", 0, 200, 50, 10, help="Overlap between chunks"
-            )
-            top_k = st.number_input(
-                "Top K Results", 1, 10, 3, 1, help="Number of relevant chunks to retrieve"
-            )
-        else:
-            chunk_size = None
-            chunk_overlap = None
-            top_k = None
+            rag_config = show_rag_configuration()
 
-    # Analysis Logic
-    st.subheader("Analysis Logic")
-    
-    # Add confidence explanation
-    with st.expander("📊 How Confidence Levels Are Calculated", expanded=False):
-        st.markdown("""
-        **Enhanced Confidence System:**
-        
-        Confidence is not hardcoded - it's calculated based on signal strength!
-        
-        **For Rule-Based Agents:**
-        - **Barely met** (within 5% of threshold): ~60% confidence
-        - **Moderately met** (5-15% from threshold): ~70% confidence
-        - **Strongly met** (15-30% from threshold): ~80% confidence
-        - **Very strongly met** (>30% from threshold): ~90% confidence
-        
-        **Example:** PE Ratio rule (buy if PE < 15)
-        - PE = 14.5 (barely under) → 60% confidence
-        - PE = 12.0 (moderately under) → 70% confidence
-        - PE = 10.0 (strongly under) → 80% confidence
-        - PE = 5.0 (very strongly under) → 90% confidence
-        
-        **For Score-Based Agents:**
-        - Confidence based on how far past the threshold
-        - Score of 6 when threshold is 5 → Different than score of 10
-        - Margin percentage affects final confidence
-        
-        **For LLM Agents:**
-        - AI provides base confidence
-        - Adjusted if reasoning is vague or lacks specifics
-        - Detailed, specific reasoning → Higher confidence
-        - Vague or short reasoning → Lower confidence
-        
-        **Data Quality Adjustment:**
-        - Missing data reduces confidence
-        - Extreme/unreliable values reduce confidence
-        - Complete, clean data → No reduction
-        
-        **Why This Matters:**
-        - More accurate confidence = Better decisions
-        - Barely meeting criteria ≠ Strong signal
-        - Confidence reflects true signal strength
-        """)
+    # ========================================================================
+    # Section 5: Analysis Logic
+    # ========================================================================
 
-    if agent_type == "Rule-Based" or agent_type == "Hybrid":
-        # Show different header for hybrid
-        if agent_type == "Hybrid":
-            st.markdown("🎯 **Screening Rules (Step 1: Filter Stocks)**")
-            st.caption("Define rules to filter which stocks get LLM analysis")
-        else:
-            st.markdown("Define your investment strategy:")
+    rules = show_analysis_logic_section(agent_type)
 
-        rule_style = st.radio(
-            "Rule Style",
-            ["Simple Rules", "Advanced Rules", "Score-Based"],
-            help="Simple: Single conditions | Advanced: Multi-condition AND/OR | Score: Point accumulation",
-        )
+    # ========================================================================
+    # Section 6: Code Generation
+    # ========================================================================
 
-        if rule_style == "Simple Rules":
-            num_rules = st.number_input("Number of Rules", 1, 5, 2)
-            rules = []
-            validation_warnings = []
-
-            for i in range(num_rules):
-                with st.expander(f"Rule {i + 1}"):
-                    col_a, col_b, col_c = st.columns(3)
-
-                    with col_a:
-                        metric = st.selectbox(
-                            "Metric",
-                            [
-                                "pe_ratio",
-                                "revenue_growth",
-                                "profit_margin",
-                                "roe",
-                                "debt_to_equity",
-                                "dividend_yield",
-                                "pb_ratio",
-                                "current_ratio",
-                            ],
-                            key=f"metric_{i}",
-                            help="Hover over threshold field for metric details",
-                        )
-
-                    with col_b:
-                        operator = st.selectbox(
-                            "Operator", ["<", ">", "<=", ">=", "=="], key=f"op_{i}"
-                        )
-
-                    with col_c:
-                        # Get metric definition for tooltip
-                        metrics = get_metric_definitions()
-                        metric_def = metrics.get(metric, {})
-
-                        threshold = st.number_input(
-                            "Threshold",
-                            key=f"thresh_{i}",
-                            help=metric_def.get("tooltip", "Enter threshold value"),
-                        )
-
-                        # Validate threshold
-                        is_valid, error_msg = MetricDefinitions.validate_value(metric, threshold)
-                        if not is_valid:
-                            st.error(error_msg)
-                            validation_warnings.append(f"Rule {i + 1}: {error_msg}")
-
-                        # Check threshold logic
-                        logic_warning = RuleValidator.validate_threshold_logic(
-                            metric, operator, threshold
-                        )
-                        if logic_warning:
-                            st.warning(logic_warning)
-
-                        # Get suggestion
-                        suggestion = MetricDefinitions.get_suggestion(metric, threshold, operator)
-                        if suggestion:
-                            st.info(suggestion)
-
-                    direction = st.selectbox(
-                        "Signal", ["bullish", "bearish", "neutral"], key=f"dir_{i}"
-                    )
-                    confidence = st.slider("Confidence", 0.0, 1.0, 0.7, 0.1, key=f"conf_{i}")
-
-                    rules.append(
-                        {
-                            "type": "simple",
-                            "metric": metric,
-                            "operator": operator,
-                            "threshold": threshold,
-                            "direction": direction,
-                            "confidence": confidence,
-                        }
-                    )
-
-            # Check for conflicts
-            conflicts = RuleValidator.check_conflicts(rules)
-            if conflicts:
-                st.warning("**Rule Conflicts Detected:**")
-                for conflict in conflicts:
-                    st.warning(conflict)
-
-        elif rule_style == "Advanced Rules":
-            num_rules = st.number_input("Number of Rules", 1, 3, 1)
-            rules = []
-
-            for i in range(num_rules):
-                with st.expander(f"Advanced Rule {i + 1}"):
-                    num_conditions = st.number_input(
-                        "Number of Conditions", 1, 5, 2, key=f"num_cond_{i}"
-                    )
-                    logic_operator = st.selectbox(
-                        "Combine conditions with", ["AND", "OR"], key=f"logic_{i}"
-                    )
-
-                    conditions = []
-                    for j in range(num_conditions):
-                        col_a, col_b, col_c = st.columns(3)
-
-                        with col_a:
-                            metric = st.selectbox(
-                                "Metric",
-                                [
-                                    "pe_ratio",
-                                    "revenue_growth",
-                                    "profit_margin",
-                                    "roe",
-                                    "debt_to_equity",
-                                    "dividend_yield",
-                                    "pb_ratio",
-                                    "current_ratio",
-                                    "peg_ratio",
-                                    "quality_score",
-                                ],
-                                key=f"adv_metric_{i}_{j}",
-                                help="Hover over Value field for details",
-                            )
-
-                        with col_b:
-                            operator = st.selectbox(
-                                "Op", ["<", ">", "<=", ">=", "=="], key=f"adv_op_{i}_{j}"
-                            )
-
-                        with col_c:
-                            metrics = get_metric_definitions()
-                            metric_def = metrics.get(metric, {})
-                            threshold = st.number_input(
-                                "Value",
-                                key=f"adv_thresh_{i}_{j}",
-                                help=metric_def.get("tooltip", "Enter value"),
-                            )
-
-                            # Validate
-                            is_valid, error_msg = MetricDefinitions.validate_value(
-                                metric, threshold
-                            )
-                            if not is_valid:
-                                st.error(error_msg)
-
-                        conditions.append(
-                            {"metric": metric, "operator": operator, "threshold": threshold}
-                        )
-
-                    direction = st.selectbox(
-                        "Signal", ["bullish", "bearish", "neutral"], key=f"adv_dir_{i}"
-                    )
-                    confidence = st.slider("Confidence", 0.0, 1.0, 0.7, 0.1, key=f"adv_conf_{i}")
-
-                    rules.append(
-                        {
-                            "type": "advanced",
-                            "conditions": conditions,
-                            "logic": logic_operator,
-                            "direction": direction,
-                            "confidence": confidence,
-                        }
-                    )
-
-        else:  # Score-Based
-            st.markdown(
-                "**Score-Based Strategy:** Accumulate points, decide signal based on total score."
-            )
-
-            num_criteria = st.number_input("Number of Scoring Criteria", 1, 10, 5)
-            criteria = []
-
-            for i in range(num_criteria):
-                with st.expander(f"Criterion {i + 1}"):
-                    col_a, col_b, col_c, col_d = st.columns(4)
-
-                    with col_a:
-                        metric = st.selectbox(
-                            "Metric",
-                            [
-                                "pe_ratio",
-                                "revenue_growth",
-                                "profit_margin",
-                                "roe",
-                                "debt_to_equity",
-                                "dividend_yield",
-                                "pb_ratio",
-                                "current_ratio",
-                            ],
-                            key=f"score_metric_{i}",
-                            help="Hover over Value for details",
-                        )
-
-                    with col_b:
-                        operator = st.selectbox("Op", ["<", ">", "<=", ">="], key=f"score_op_{i}")
-
-                    with col_c:
-                        metrics = get_metric_definitions()
-                        metric_def = metrics.get(metric, {})
-                        threshold = st.number_input(
-                            "Value",
-                            key=f"score_thresh_{i}",
-                            help=metric_def.get("tooltip", "Enter value"),
-                        )
-
-                        # Validate
-                        is_valid, error_msg = MetricDefinitions.validate_value(metric, threshold)
-                        if not is_valid:
-                            st.error(error_msg)
-
-                    with col_d:
-                        points = st.number_input(
-                            "Points",
-                            -5,
-                            5,
-                            1,
-                            key=f"score_pts_{i}",
-                            help="Positive points for good, negative for bad. Typical: +1 or +2 for positive factors, -1 or -2 for red flags",
-                        )
-
-                    criteria.append(
-                        {
-                            "metric": metric,
-                            "operator": operator,
-                            "threshold": threshold,
-                            "points": points,
-                        }
-                    )
-
-            st.markdown("**Score Thresholds:**")
-            col1, col2 = st.columns(2)
-            with col1:
-                bullish_threshold = st.number_input("Bullish if score >=", 0, 20, 3)
-                bullish_confidence = st.slider(
-                    "Bullish Confidence", 0.0, 1.0, 0.8, 0.1, key="bullish_conf"
-                )
-            with col2:
-                bearish_threshold = st.number_input("Bearish if score <=", -20, 0, -2)
-                bearish_confidence = st.slider(
-                    "Bearish Confidence", 0.0, 1.0, 0.7, 0.1, key="bearish_conf"
-                )
-
-            rules = [
-                {
-                    "type": "score",
-                    "criteria": criteria,
-                    "bullish_threshold": bullish_threshold,
-                    "bullish_confidence": bullish_confidence,
-                    "bearish_threshold": bearish_threshold,
-                    "bearish_confidence": bearish_confidence,
-                }
-            ]
-
-    elif agent_type == "RAG-Powered":
-        rules = None
-        st.info("📄 RAG agents analyze documents/text using retrieval and embeddings")
-    elif agent_type == "LLM-Powered":
-        rules = None
-        st.info("🤖 LLM-powered agents use natural language prompts instead of explicit rules")
-    # Hybrid agents already have rules defined above
-
-    # Generate and preview code
     st.markdown("---")
     st.subheader("Preview Generated Code")
 
     if st.button("Generate Code", type="primary", use_container_width=True):
         with st.spinner("Generating agent code..."):
+            # Extract values with safe defaults
             code = creator.generate_agent_code(
-                agent_name=agent_name,
-                description=description,
+                agent_name=basic_info["agent_name"],
+                description=basic_info["description"],
                 agent_type=agent_type,
                 rules=rules,
-                llm_provider=llm_provider,
-                llm_model=final_model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                system_prompt=system_prompt,
-                user_prompt_instructions=user_prompt_instructions,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                top_k=top_k,
+                llm_provider=llm_config["provider"] if llm_config else None,
+                llm_model=llm_config["model"] if llm_config else None,
+                temperature=llm_config["temperature"] if llm_config else None,
+                max_tokens=llm_config["max_tokens"] if llm_config else None,
+                system_prompt=llm_config["system_prompt"] if llm_config else None,
+                user_prompt_instructions=llm_config["user_instructions"] if llm_config else None,
+                chunk_size=rag_config["chunk_size"] if rag_config else None,
+                chunk_overlap=rag_config["chunk_overlap"] if rag_config else None,
+                top_k=rag_config["top_k"] if rag_config else None,
             )
 
-            st.session_state.generated_code = code
-            st.session_state.current_filename = filename
+            # Save to session state
+            AgentCreationState.set_generated_code(code)
+            AgentCreationState.set_filename(basic_info["filename"])
 
         # Show success message
         st.success(f"✅ Agent code generated successfully! ({len(code)} characters)")
-        st.info(f"📝 Agent Type: **{agent_type}** | File: `{filename}`")
+        st.info(f"📝 Agent Type: **{agent_type}** | File: `{basic_info['filename']}`")
         st.balloons()
 
-    # Display generated code if available
-    if st.session_state.generated_code:
-        # Show action buttons at TOP (no scrolling needed)
-        st.markdown("### 💾 Save Your Agent")
+    # ========================================================================
+    # Section 7: Display Generated Code (if available)
+    # ========================================================================
 
-        col1, col2, col3 = st.columns([2, 2, 3])
-        with col1:
-            if st.button("💾 Save Agent", type="primary", use_container_width=True, key="save_top"):
-                # Use current filename from text input, not cached session state
-                current_filename = filename  # This is from the text_input above
-
-                loader = st.session_state.agent_loader
-
-                with st.spinner(f"Saving {current_filename}..."):
-                    success, message = loader.save_agent(
-                        current_filename, st.session_state.generated_code
-                    )
-
-                if success:
-                    st.success(f"✅ {message}")
-                    st.info("🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
-                    st.balloons()
-                    # Clear session state
-                    st.session_state.generated_code = None
-                    st.session_state.current_filename = None
-                    st.rerun()
-                else:
-                    # Show error and keep code visible for editing filename
-                    st.error(f"❌ {message}")
-                    st.info(
-                        "💡 **Tip:** Change the filename above and click 'Generate Code' again, then save."
-                    )
-
-        with col2:
-            if st.button("🗑️ Clear & Start Over", use_container_width=True, key="clear_top"):
-                st.session_state.generated_code = None
-                st.session_state.current_filename = None
-                st.rerun()
-
-        with col3:
-            st.download_button(
-                "⬇️ Download Code",
-                data=st.session_state.generated_code,
-                file_name=filename,
-                mime="text/x-python",
-                use_container_width=True,
-                key="download_top",
-            )
-
-        st.markdown("---")
-
-        # Show info about the generated code
-        col_info1, col_info2, col_info3 = st.columns(3)
-        with col_info1:
-            st.metric("Lines of Code", len(st.session_state.generated_code.split("\n")))
-        with col_info2:
-            st.metric("Characters", len(st.session_state.generated_code))
-        with col_info3:
-            st.metric("Status", "✅ Ready to Save")
-
-        st.markdown("---")
-
-        st.code(st.session_state.generated_code, language="python")
-
-        # Also show buttons at bottom for convenience after scrolling
-        st.markdown("---")
-        st.markdown("### 💾 Quick Actions")
-
-        col1, col2, col3 = st.columns([2, 2, 3])
-        with col1:
-            if st.button(
-                "💾 Save Agent", type="primary", use_container_width=True, key="save_bottom"
-            ):
-                current_filename = filename
-                loader = st.session_state.agent_loader
-
-                with st.spinner(f"Saving {current_filename}..."):
-                    success, message = loader.save_agent(
-                        current_filename, st.session_state.generated_code
-                    )
-
-                if success:
-                    st.success(f"✅ {message}")
-                    st.info("🎉 Your agent is ready! Test it in the '🧪 Test Agent' tab.")
-                    st.balloons()
-                    st.session_state.generated_code = None
-                    st.session_state.current_filename = None
-                    st.rerun()
-                else:
-                    st.error(f"❌ {message}")
-                    st.info(
-                        "💡 **Tip:** Scroll up to change the filename, then click 'Generate Code' again."
-                    )
-
-        with col2:
-            if st.button("🗑️ Clear & Start Over", use_container_width=True, key="clear_bottom"):
-                st.session_state.generated_code = None
-                st.session_state.current_filename = None
-                st.rerun()
-
-        with col3:
-            st.download_button(
-                "⬇️ Download Code",
-                data=st.session_state.generated_code,
-                file_name=filename,
-                mime="text/x-python",
-                use_container_width=True,
-                key="download_bottom",
-            )
+    generated_code = AgentCreationState.get_generated_code()
+    if generated_code:
+        show_generated_code_section(generated_code, basic_info["filename"], loader)
 
 
 def show_test_page():
@@ -1271,13 +727,15 @@ def show_test_page():
 
     # Show warning before running analysis
     st.markdown("---")
-    st.warning("""
+    st.warning(
+        """
     ⚠️ **Testing Reminder:**
     - This is a theoretical test using mock data
     - Results are for educational purposes only
     - Do not use these signals for real trading
     - Always consult financial professionals for investment decisions
-    """)
+    """
+    )
 
     if st.button("🚀 Run Analysis", type="primary"):
         tester = AgentTester()
@@ -1309,7 +767,8 @@ def show_test_page():
 
                 # Show specific error message based on type
                 if error_type == "missing_package":
-                    st.error(f"""
+                    st.error(
+                        f"""
                     ❌ **Missing LLM Package**
 
                     **Problem:** {llm_error.get("description")}
@@ -1323,11 +782,13 @@ def show_test_page():
                     ```bash
                     pip install 'ai-agent-framework[llm]'
                     ```
-                    """)
+                    """
+                    )
 
                 elif error_type == "model_not_found":
                     model_name = llm_error.get("model", "llama3.2")
-                    st.error(f"""
+                    st.error(
+                        f"""
                     ❌ **Model Not Available**
 
                     **Problem:** Model '{model_name}' not downloaded
@@ -1343,10 +804,12 @@ def show_test_page():
                     - `ollama pull llama3.2` (recommended)
                     - `ollama pull mistral`
                     - `ollama pull phi`
-                    """)
+                    """
+                    )
 
                 elif error_type == "connection_error":
-                    st.error("""
+                    st.error(
+                        """
                     ❌ **Ollama Service Not Running**
 
                     **Problem:** Can't connect to Ollama service
@@ -1367,13 +830,15 @@ def show_test_page():
                     # Start service
                     ollama serve
                     ```
-                    """)
+                    """
+                    )
 
                 elif error_type == "missing_api_key":
                     provider = llm_error.get("provider", "unknown")
                     env_var = f"{provider.upper()}_API_KEY" if provider != "unknown" else "API_KEY"
 
-                    st.error(f"""
+                    st.error(
+                        f"""
                     ❌ **API Key Not Configured**
 
                     **Problem:** {llm_error.get("description")}
@@ -1390,10 +855,12 @@ def show_test_page():
                     **Get an API Key:**
                     - OpenAI: https://platform.openai.com/api-keys
                     - Anthropic: https://console.anthropic.com/
-                    """)
+                    """
+                    )
 
                 elif error_type == "rate_limit":
-                    st.error("""
+                    st.error(
+                        """
                     ❌ **Rate Limit Exceeded**
 
                     **Problem:** Too many API requests
@@ -1402,10 +869,12 @@ def show_test_page():
                     - Wait 1-2 minutes and try again
                     - Or use Ollama (free, no rate limits)
                     - Or upgrade your API plan
-                    """)
+                    """
+                    )
 
                 else:
-                    st.error(f"""
+                    st.error(
+                        f"""
                     ❌ **LLM Error Occurred**
 
                     **Problem:** {llm_error.get("description", "LLM service error")}
@@ -1416,14 +885,17 @@ def show_test_page():
                     - Check that LLM service is running
                     - Verify configuration in .env file
                     - Try a different provider or model
-                    """)
+                    """
+                    )
 
-                st.info("""
+                st.info(
+                    """
                 🛠️ **Fallback Mode Active**
 
                 The agent used simple rule-based logic instead of LLM analysis.
                 Results shown below are from fallback logic, not AI reasoning.
-                """)
+                """
+                )
 
             # Show results (even with fallback)
             st.success(
@@ -1462,14 +934,16 @@ def show_backtest_page():
     """Display backtesting interface."""
     st.header("📈 Backtest Agent")
 
-    st.info("""
+    st.info(
+        """
     🎯 **What is Backtesting?**
 
     Backtesting shows how your agent would have performed on historical data.
     This helps you understand if your rules would have been profitable.
 
     **⚠️ Important:** Past performance does NOT guarantee future results!
-    """)
+    """
+    )
 
     loader = st.session_state.agent_loader
     agents = loader.list_agents()
@@ -1521,7 +995,8 @@ def show_backtest_page():
 
     # Educational disclaimer
     st.markdown("---")
-    st.warning("""
+    st.warning(
+        """
     📚 **Educational Backtesting**
 
     This is a simplified backtest for learning purposes:
@@ -1541,7 +1016,8 @@ def show_backtest_page():
     For production backtesting, use:
     - Backtrader, Zipline, QuantConnect
     - Or thesis-app with real historical data
-    """)
+    """
+    )
 
     # Run backtest button
     st.markdown("---")
@@ -1649,7 +1125,8 @@ def show_backtest_page():
 
             # Learning tips
             st.markdown("---")
-            st.info("""
+            st.info(
+                """
             💡 **How to Use These Results:**
 
             1. **High Bullish %:** Your rules favor buying - good for bull markets
@@ -1663,7 +1140,8 @@ def show_backtest_page():
             - Run backtest again to see improvements
             - Compare different agent strategies
             - Remember: This is for learning, not real trading!
-            """)
+            """
+            )
 
         else:
             st.error(f"❌ Backtest Failed: {error}")

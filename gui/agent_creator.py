@@ -1,14 +1,106 @@
 """Agent Creator - Generate agent code with enhanced confidence calculations
 
+SECURITY: This version includes input sanitization to prevent code injection.
+
 This version generates agents that use sophisticated confidence calculations
 based on signal strength, not hardcoded values.
 """
 
+import re
 from typing import Dict, List, Optional
 
 
 class AgentCreator:
-    """Generates agent code with enhanced confidence calculations."""
+    """Generates agent code with enhanced confidence calculations and security."""
+
+    # ===================================================================
+    # SECURITY: Input Sanitization Methods
+    # ===================================================================
+
+    @staticmethod
+    def _sanitize_identifier(name: str) -> str:
+        """Sanitize a Python identifier (class name, variable name).
+
+        Args:
+            name: Raw identifier from user input
+
+        Returns:
+            Safe identifier with only alphanumeric and underscores
+        """
+        # Remove any non-alphanumeric characters except underscores
+        sanitized = re.sub(r"[^a-zA-Z0-9_]", "", name)
+
+        # Ensure it starts with a letter
+        if sanitized and not sanitized[0].isalpha():
+            sanitized = "A" + sanitized
+
+        # Return or provide default
+        return sanitized if sanitized else "Agent"
+
+    @staticmethod
+    def _escape_string_literal(text: str) -> str:
+        """Escape a string for safe inclusion in Python triple-quoted strings.
+
+        This prevents code injection by escaping:
+        - Backslashes (to prevent escape sequences)
+        - Triple quotes (to prevent breaking out of string)
+        - Other special characters
+
+        Args:
+            text: Raw text from user input
+
+        Returns:
+            Escaped text safe for triple-quoted strings
+        """
+        if not text:
+            return ""
+
+        # Escape backslashes first (must be done before other escapes)
+        escaped = text.replace("\\", "\\\\")
+
+        # Escape triple quotes to prevent breaking out of docstrings
+        escaped = escaped.replace('"""', r"\"\"\"")
+
+        # Also escape single triple quotes (for safety)
+        escaped = escaped.replace("'''", r"\'\'\'")
+
+        return escaped
+
+    @staticmethod
+    def _validate_numeric(value: any, default: float = 0.0) -> float:
+        """Safely convert and validate numeric values.
+
+        Args:
+            value: Value to convert
+            default: Default value if conversion fails
+
+        Returns:
+            Validated float
+        """
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _validate_integer(value: any, default: int = 0) -> int:
+        """Safely convert and validate integer values.
+
+        Args:
+            value: Value to convert
+            default: Default value if conversion fails
+
+        Returns:
+            Validated integer
+        """
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    # ===================================================================
+    # Main Generation Methods
+    # ===================================================================
 
     def generate_agent_code(
         self,
@@ -26,30 +118,87 @@ class AgentCreator:
         chunk_overlap: Optional[int] = None,
         top_k: Optional[int] = None,
     ) -> str:
-        """Generate complete agent code with enhanced confidence."""
+        """Generate complete agent code with enhanced confidence.
+
+        SECURITY: All user inputs are sanitized before code generation.
+        """
+        # Sanitize identifier inputs
+        safe_agent_name = self._sanitize_identifier(agent_name)
+        safe_description = self._escape_string_literal(description)
+
+        # Sanitize LLM inputs
+        safe_llm_provider = self._sanitize_identifier(llm_provider) if llm_provider else None
+        safe_llm_model = self._escape_string_literal(llm_model) if llm_model else None
+        safe_system_prompt = self._escape_string_literal(system_prompt) if system_prompt else None
+        safe_user_instructions = (
+            self._escape_string_literal(user_prompt_instructions)
+            if user_prompt_instructions
+            else None
+        )
+
+        # Validate numeric inputs
+        safe_temperature = (
+            self._validate_numeric(temperature, 0.7) if temperature is not None else None
+        )
+        safe_max_tokens = (
+            self._validate_integer(max_tokens, 1000) if max_tokens is not None else None
+        )
+        safe_chunk_size = (
+            self._validate_integer(chunk_size, 300) if chunk_size is not None else None
+        )
+        safe_chunk_overlap = (
+            self._validate_integer(chunk_overlap, 50) if chunk_overlap is not None else None
+        )
+        safe_top_k = self._validate_integer(top_k, 3) if top_k is not None else None
+
+        # Route to appropriate generator
         if agent_type == "Rule-Based":
-            return self._generate_rule_based_agent(agent_name, description, rules)
+            return self._generate_rule_based_agent(safe_agent_name, safe_description, rules)
         elif agent_type == "LLM-Powered":
             return self._generate_llm_agent(
-                agent_name, description, llm_provider, llm_model,
-                temperature, max_tokens, system_prompt, user_prompt_instructions
+                safe_agent_name,
+                safe_description,
+                safe_llm_provider,
+                safe_llm_model,
+                safe_temperature,
+                safe_max_tokens,
+                safe_system_prompt,
+                safe_user_instructions,
             )
         elif agent_type == "RAG-Powered":
             return self._generate_rag_agent(
-                agent_name, description, llm_provider, llm_model,
-                temperature, max_tokens, system_prompt, user_prompt_instructions,
-                chunk_size, chunk_overlap, top_k
+                safe_agent_name,
+                safe_description,
+                safe_llm_provider,
+                safe_llm_model,
+                safe_temperature,
+                safe_max_tokens,
+                safe_system_prompt,
+                safe_user_instructions,
+                safe_chunk_size,
+                safe_chunk_overlap,
+                safe_top_k,
             )
         else:  # Hybrid
             return self._generate_hybrid_agent(
-                agent_name, description, rules, llm_provider, llm_model,
-                temperature, max_tokens, system_prompt, user_prompt_instructions
+                safe_agent_name,
+                safe_description,
+                rules,
+                safe_llm_provider,
+                safe_llm_model,
+                safe_temperature,
+                safe_max_tokens,
+                safe_system_prompt,
+                safe_user_instructions,
             )
 
     def _generate_rule_based_agent(
         self, agent_name: str, description: str, rules: List[Dict]
     ) -> str:
-        """Generate rule-based agent code."""
+        """Generate rule-based agent code.
+
+        Note: agent_name and description are already sanitized by generate_agent_code.
+        """
         if not rules:
             return self._generate_empty_agent(agent_name, description)
 
@@ -67,18 +216,27 @@ class AgentCreator:
     def _generate_simple_rules_agent(
         self, agent_name: str, description: str, rules: List[Dict]
     ) -> str:
-        """Generate simple rules agent with enhanced confidence."""
-        
+        """Generate simple rules agent with enhanced confidence.
+
+        SECURITY: All inputs already sanitized by caller.
+        """
+
         # Generate rule logic with enhanced confidence
         rule_conditions = []
         for i, rule in enumerate(rules or []):
-            metric = rule["metric"]
-            operator = rule["operator"]
-            threshold = rule["threshold"]
-            direction = rule["direction"]
-            base_conf = rule["confidence"]
-            
-            rule_conditions.append(f"""
+            # Sanitize rule parameters
+            metric = self._sanitize_identifier(rule["metric"])
+            operator = rule["operator"] if rule["operator"] in ["<", ">", "<=", ">=", "=="] else "<"
+            threshold = self._validate_numeric(rule["threshold"])
+            direction = (
+                rule["direction"]
+                if rule["direction"] in ["bullish", "bearish", "neutral"]
+                else "neutral"
+            )
+            base_conf = self._validate_numeric(rule["confidence"], 0.5)
+
+            rule_conditions.append(
+                f"""
         # Rule {i+1}: {metric} {operator} {threshold}
         if {metric} {operator} {threshold}:
             # Enhanced confidence based on signal strength
@@ -93,10 +251,11 @@ class AgentCreator:
                 direction='{direction}',
                 confidence=rule_conf,
                 reasoning=f"{metric.replace('_', ' ').title()} {{{metric}:.1f}} is {direction}. {{strength_reason}}"
-            )""")
-        
+            )"""
+            )
+
         rules_code = "".join(rule_conditions)
-        
+
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -178,27 +337,28 @@ if __name__ == "__main__":
     def _generate_score_based_agent(
         self, agent_name: str, description: str, rule_config: Dict
     ) -> str:
-        """Generate score-based agent with enhanced confidence."""
-        
+        """Generate score-based agent with enhanced confidence.
+
+        SECURITY: All inputs already sanitized by caller.
+        """
+
         criteria = rule_config["criteria"]
-        bullish_threshold = rule_config["bullish_threshold"]
-        bearish_threshold = rule_config["bearish_threshold"]
-        
-        # Calculate max/min possible scores
-        max_score = sum(c["points"] for c in criteria if c["points"] > 0)
-        min_score = sum(c["points"] for c in criteria if c["points"] < 0)
-        
-        # Generate scoring logic
+        bullish_threshold = self._validate_integer(rule_config["bullish_threshold"], 3)
+        bearish_threshold = self._validate_integer(rule_config["bearish_threshold"], -2)
+
+        # Generate scoring logic with sanitized inputs
         score_checks = []
-        criteria_tracking = []
-        
+
         for i, criterion in enumerate(criteria):
-            metric = criterion["metric"]
-            operator = criterion["operator"]
-            threshold = criterion["threshold"]
-            points = criterion["points"]
-            
-            score_checks.append(f"""
+            metric = self._sanitize_identifier(criterion["metric"])
+            operator = (
+                criterion["operator"] if criterion["operator"] in ["<", ">", "<=", ">="] else "<"
+            )
+            threshold = self._validate_numeric(criterion["threshold"])
+            points = self._validate_integer(criterion["points"])
+
+            score_checks.append(
+                f"""
         # {metric} {operator} {threshold} = {points:+d} points
         if {metric} {operator} {threshold}:
             score += {points}
@@ -213,10 +373,11 @@ if __name__ == "__main__":
                 'metric': '{metric}',
                 'points': {points},
                 'met': False
-            }})""")
-        
+            }})"""
+            )
+
         score_code = "".join(score_checks)
-        
+
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -316,13 +477,23 @@ if __name__ == "__main__":
 '''
 
     def _generate_llm_agent(
-        self, agent_name: str, description: str, llm_provider: str,
-        llm_model: str, temperature: float, max_tokens: int,
-        system_prompt: str, user_prompt_instructions: Optional[str] = None
+        self,
+        agent_name: str,
+        description: str,
+        llm_provider: str,
+        llm_model: str,
+        temperature: float,
+        max_tokens: int,
+        system_prompt: str,
+        user_prompt_instructions: Optional[str] = None,
     ) -> str:
-        """Generate LLM agent with enhanced confidence parsing."""
-        
-        # Build user prompt template
+        """Generate LLM agent with enhanced confidence parsing.
+
+        SECURITY: All inputs already sanitized by caller.
+        Note: system_prompt and user_prompt_instructions are escaped for safe inclusion.
+        """
+
+        # Build user prompt template (already escaped)
         if user_prompt_instructions:
             prompt_content = f"""Analyze {{ticker}} with the following data:
 
@@ -341,7 +512,10 @@ Example: bullish|75|Strong growth with healthy margins"""
 Provide your investment recommendation.
 Format: DIRECTION|CONFIDENCE|REASONING  
 Example: bullish|75|Strong growth with healthy margins"""
-        
+
+        # Use escaped system_prompt (safe for triple quotes)
+        safe_prompt = system_prompt or "You are a financial analyst."
+
         return f'''"""Auto-generated LLM-powered agent: {agent_name}
 
 {description}
@@ -371,7 +545,7 @@ class {agent_name}(Agent):
                 model='{llm_model}',
                 temperature={temperature},
                 max_tokens={max_tokens},
-                system_prompt="""{system_prompt or "You are a financial analyst."}"""
+                system_prompt="""{safe_prompt}"""
             )
         )
         super().__init__(config)
@@ -425,15 +599,27 @@ if __name__ == "__main__":
 '''
 
     def _generate_rag_agent(
-        self, agent_name: str, description: str, llm_provider: str,
-        llm_model: str, temperature: float, max_tokens: int,
-        system_prompt: str, user_prompt_instructions: Optional[str] = None,
-        chunk_size: int = 300, chunk_overlap: int = 50, top_k: int = 3
+        self,
+        agent_name: str,
+        description: str,
+        llm_provider: str,
+        llm_model: str,
+        temperature: float,
+        max_tokens: int,
+        system_prompt: str,
+        user_prompt_instructions: Optional[str] = None,
+        chunk_size: int = 300,
+        chunk_overlap: int = 50,
+        top_k: int = 3,
     ) -> str:
-        """Generate RAG agent code."""
-        
+        """Generate RAG agent code.
+
+        SECURITY: All inputs already sanitized by caller.
+        """
+
         custom_query = user_prompt_instructions or ""
-        
+        safe_prompt = system_prompt or "You are a financial document analyst."
+
         return f'''"""Auto-generated RAG-powered agent: {agent_name}
 
 {description}
@@ -466,7 +652,7 @@ class {agent_name}(Agent):
                 model='{llm_model}',
                 temperature={temperature},
                 max_tokens={max_tokens},
-                system_prompt="""{system_prompt or "You are a financial document analyst."}"""
+                system_prompt="""{safe_prompt}"""
             )
         )
         super().__init__(config)
@@ -570,14 +756,23 @@ if __name__ == "__main__":
 '''
 
     def _generate_hybrid_agent(
-        self, agent_name: str, description: str, rules: List[Dict],
-        llm_provider: str, llm_model: str, temperature: float,
-        max_tokens: int, system_prompt: str,
-        user_prompt_instructions: Optional[str] = None
+        self,
+        agent_name: str,
+        description: str,
+        rules: List[Dict],
+        llm_provider: str,
+        llm_model: str,
+        temperature: float,
+        max_tokens: int,
+        system_prompt: str,
+        user_prompt_instructions: Optional[str] = None,
     ) -> str:
-        """Generate hybrid agent."""
-        
-        # Build prompt template
+        """Generate hybrid agent.
+
+        SECURITY: All inputs already sanitized by caller.
+        """
+
+        # Build prompt template (already escaped)
         if user_prompt_instructions:
             prompt_content = f"""Analyze {{ticker}}:
 
@@ -592,17 +787,18 @@ Format: DIRECTION|CONFIDENCE|REASONING"""
 {fundamentals_text}
 
 Format: DIRECTION|CONFIDENCE|REASONING"""
-        
-        # Generate rule checks
+
+        # Generate rule checks with sanitized inputs
         rule_checks = []
         for rule in rules or []:
-            metric = rule["metric"]
-            operator = rule["operator"]
-            threshold = rule["threshold"]
+            metric = self._sanitize_identifier(rule["metric"])
+            operator = rule["operator"] if rule["operator"] in ["<", ">", "<=", ">=", "=="] else "<"
+            threshold = self._validate_numeric(rule["threshold"])
             rule_checks.append(f"data.get('{metric}', 0) {operator} {threshold}")
-        
+
         rules_condition = " or ".join(rule_checks) if rule_checks else "False"
-        
+        safe_prompt = system_prompt or "You are a financial analyst."
+
         return f'''"""Auto-generated hybrid agent: {agent_name}
 
 {description}
@@ -632,7 +828,7 @@ class {agent_name}(Agent):
                 model='{llm_model}',
                 temperature={temperature},
                 max_tokens={max_tokens},
-                system_prompt="""{system_prompt or "You are a financial analyst."}"""
+                system_prompt="""{safe_prompt}"""
             )
         )
         super().__init__(config)
@@ -698,24 +894,30 @@ if __name__ == "__main__":
     def _generate_advanced_rules_agent(
         self, agent_name: str, description: str, rules: List[Dict]
     ) -> str:
-        """Generate advanced rules - keeping simple for now."""
-        # For advanced rules, use base confidence from rules
-        # Full enhanced confidence for multi-condition is complex
-        # Can add in v1.1
-        
+        """Generate advanced rules agent.
+
+        SECURITY: All inputs already sanitized by caller.
+        """
+
         rule_conditions = []
         for i, rule in enumerate(rules):
             conditions = rule["conditions"]
             logic = rule["logic"]
-            direction = rule["direction"]
-            confidence = rule["confidence"]
-            
+            direction = (
+                rule["direction"]
+                if rule["direction"] in ["bullish", "bearish", "neutral"]
+                else "neutral"
+            )
+            confidence = self._validate_numeric(rule["confidence"], 0.5)
+
             cond_parts = []
             for cond in conditions:
-                metric = cond["metric"]
-                operator = cond["operator"]
-                threshold = cond["threshold"]
-                
+                metric = self._sanitize_identifier(cond["metric"])
+                operator = (
+                    cond["operator"] if cond["operator"] in ["<", ">", "<=", ">=", "=="] else "<"
+                )
+                threshold = self._validate_numeric(cond["threshold"])
+
                 if metric == "peg_ratio":
                     cond_parts.append(
                         f"(pe_ratio / max(revenue_growth, 0.1) {operator} {threshold})"
@@ -726,22 +928,29 @@ if __name__ == "__main__":
                     )
                 else:
                     cond_parts.append(f"(data.get('{metric}', 0) {operator} {threshold})")
-            
+
             logic_op = " and " if logic == "AND" else " or "
             full_condition = logic_op.join(cond_parts)
-            cond_desc = f" {logic} ".join([f"{c['metric']} {c['operator']} {c['threshold']}" for c in conditions])
-            
-            rule_conditions.append(f"""
+            cond_desc = f" {logic} ".join(
+                [
+                    f"{self._sanitize_identifier(c['metric'])} {c['operator']} {self._validate_numeric(c['threshold'])}"
+                    for c in conditions
+                ]
+            )
+
+            rule_conditions.append(
+                f"""
         # Rule {i+1}: {cond_desc}
         if {full_condition}:
             return Signal(
                 direction='{direction}',
                 confidence={confidence},
                 reasoning=f"{{'{direction}'.capitalize()}} signal: {cond_desc}"
-            )""")
-        
+            )"""
+            )
+
         rules_code = "".join(rule_conditions)
-        
+
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -803,7 +1012,10 @@ if __name__ == "__main__":
 '''
 
     def _generate_empty_agent(self, agent_name: str, description: str) -> str:
-        """Generate template for agents with no rules."""
+        """Generate template for agents with no rules.
+
+        SECURITY: All inputs already sanitized by caller.
+        """
         return f'''"""Auto-generated agent: {agent_name}
 
 {description}
@@ -844,19 +1056,25 @@ if __name__ == "__main__":
 '''
 
     def _generate_metric_extraction(self, rules: List[Dict]) -> str:
-        """Generate metric extraction code."""
+        """Generate metric extraction code with sanitized metric names."""
         if not rules:
             return "# No metrics"
-        
-        metrics = set(rule.get("metric") for rule in rules if rule.get("metric"))
+
+        metrics = set(
+            self._sanitize_identifier(rule.get("metric", ""))
+            for rule in rules
+            if rule.get("metric")
+        )
+        metrics = [m for m in metrics if m]  # Remove empty strings
         extractions = [f"{m} = data.get('{m}', 0)" for m in metrics]
         return "\n        ".join(extractions)
 
     def _generate_metric_extraction_for_score(self, criteria: List[Dict]) -> str:
-        """Generate metric extraction for score-based."""
+        """Generate metric extraction for score-based with sanitized names."""
         if not criteria:
             return "# No metrics"
-        
-        metrics = set(c["metric"] for c in criteria)
+
+        metrics = set(self._sanitize_identifier(c["metric"]) for c in criteria)
+        metrics = [m for m in metrics if m]  # Remove empty strings
         extractions = [f"{m} = data.get('{m}', 0)" for m in metrics]
         return "\n        ".join(extractions)
