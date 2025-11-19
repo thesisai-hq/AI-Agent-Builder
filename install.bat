@@ -27,6 +27,28 @@ REM Get Python version
 for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
 echo ✅ Python %PYTHON_VERSION% found
 
+REM Check Python version >= 3.10
+for /f "tokens=1,2 delims=." %%a in ("%PYTHON_VERSION%") do (
+    set MAJOR=%%a
+    set MINOR=%%b
+)
+
+if %MAJOR% LSS 3 (
+    echo ❌ Python 3.10+ required (found %PYTHON_VERSION%)
+    echo    Download: https://www.python.org/downloads/
+    echo.
+    pause
+    exit /b 1
+)
+
+if %MAJOR% EQU 3 if %MINOR% LSS 10 (
+    echo ❌ Python 3.10+ required (found %PYTHON_VERSION%)
+    echo    Download: https://www.python.org/downloads/
+    echo.
+    pause
+    exit /b 1
+)
+
 REM Check Docker
 docker --version >nul 2>&1
 if errorlevel 1 (
