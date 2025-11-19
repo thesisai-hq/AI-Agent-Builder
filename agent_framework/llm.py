@@ -223,5 +223,17 @@ class LLMClient:
         if self.config.system_prompt:
             messages = [{"role": "system", "content": self.config.system_prompt}] + messages
 
-        response = client.chat(model=self.config.model, messages=messages)
+        # Build options for temperature and max_tokens
+        options = {}
+        if self.config.temperature is not None:
+            options["temperature"] = self.config.temperature
+        if self.config.max_tokens is not None:
+            options["num_predict"] = self.config.max_tokens  # Ollama uses num_predict
+
+        # Call with options
+        if options:
+            response = client.chat(model=self.config.model, messages=messages, options=options)
+        else:
+            response = client.chat(model=self.config.model, messages=messages)
+
         return response["message"]["content"]
