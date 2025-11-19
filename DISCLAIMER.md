@@ -210,14 +210,13 @@ If you have questions about this disclaimer or the software:
 
 ## For Production Use
 
-If you need a production-ready investment analysis platform with:
+If you're interested in production-ready investment analysis tools with:
 - Professional-grade risk management
 - Regulatory compliance features
 - Real-time data integrations
-- Production support and SLAs
-- Proper disclaimers and legal protection
+- Production support
 
-**Visit [thesis-app](https://thesisai.app) for our commercial offering.**
+**We're building [thesis-app](THESIS_APP.md) - a professional trading platform (coming soon).**
 
 ---
 

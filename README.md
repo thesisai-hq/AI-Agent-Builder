@@ -22,7 +22,7 @@ This is a **learning tool for finance education**. Not for real trading.
 - ❌ **NOT for real trading** - Theoretical exercises only
 - ✅ **FOR education** - Learn investment concepts with AI
 
-**For production trading:** See [thesis-app](THESIS_APP.md) - our professional platform
+**Ready for production?** [thesis-app](THESIS_APP.md) - professional platform (coming soon)
 
 **Legal:** [DISCLAIMER.md](DISCLAIMER.md) | [LICENSE](LICENSE)
 
@@ -111,7 +111,7 @@ Create agents visually in the GUI - no coding required!
 **Speed:** Fast screening, selective analysis  
 **Setup:** Same as LLM  
 **Best for:** Analyzing large universes efficiently  
-**Cost:** 95% cheaper than pure AI (fewer API calls)
+**Cost:** Cheaper than pure AI (fewer API calls)
 
 ### 📄 RAG-Powered (Document Analysis)
 
@@ -221,7 +221,6 @@ class ValueAgent(Agent):
 - [Quick Start](QUICK_START.md) - 5-minute setup guide
 - [GUI Quick Start](GUI_QUICK_START.md) - Visual interface walkthrough
 - [Choosing Agent Type](docs/CHOOSING_AGENT_TYPE.md) - Which to use when
-- [Learning Path](docs/LEARNING_PATH.md) - Structured curriculum
 
 ### For Python Learners
 - [View Agent Code](gui/code_viewer.py) - Educational code viewer
@@ -285,7 +284,6 @@ class ValueAgent(Agent):
 # Professor controls datasets
 ```
 
-**Request Academic License:** education@thesisai.app
 
 ---
 
@@ -299,24 +297,22 @@ With AI-Agent-Builder, you understand:
 - ✅ Building and testing methodologies
 - ✅ Famous investor approaches
 
-### Ready for Real Trading?
+### Interested in Production Trading?
 
-**thesis-app** offers production-ready features:
+**thesis-app** (coming soon) will offer production-ready features:
 
-| Feature | AI-Agent-Builder | thesis-app Pro |
+| Feature | AI-Agent-Builder<br>**(Available Now - Free)** | thesis-app<br>**(Coming Soon)** |
 |---------|-----------------|----------------|
-| Purpose | Learning | Professional Trading |
-| Data | Sample (10-20 stocks) | Real-time (10,000+) |
-| Historical | Snapshot | 10+ years |
-| Execution | Manual testing | Automated |
-| Portfolio | Single stock | Full management |
-| Risk Controls | Basic | Professional |
-| Support | Community | SLA |
-| Cost | **Free** | From $99/mo |
+| Purpose | Learning & experimentation | Professional trading |
+| Data | Sample (10-20 stocks) | Real-time (10,000+ stocks) |
+| Historical | Snapshot only | 10+ years of data |
+| Execution | Manual testing | Automated execution |
+| Portfolio | Single stock | Full portfolio management |
+| Risk Controls | Basic confidence | Professional risk controls |
+| Support | Community | Professional support |
+| Cost | **Free forever** | Details TBA |
 
-**🎓 Student Discount:** 50% off thesis-app Pro with .edu email
-
-**Learn more:** [THESIS_APP.md](THESIS_APP.md)
+*thesis-app is currently in development. [Learn more →](THESIS_APP.md)*
 
 ---
 
@@ -384,31 +380,10 @@ Just include the license and copyright notice.
 ### Documentation
 - 📖 [Complete Docs](docs/) - All guides and references
 - ❓ [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues
-- 🎥 [Video Tutorials](docs/TUTORIALS.md) - Coming soon
-
-### Community
-- 💬 [Discord](https://discord.gg/thesisai) - Chat with students
-- 🐦 [Twitter](https://twitter.com/thesisai) - Updates & tips
-- 📧 [Email](mailto:education@thesisai.app) - Direct support
 
 ### Report Issues
 - 🐛 [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues) - Bug reports
 - 💡 [Feature Requests](https://github.com/thesisai-hq/AI-Agent-Builder/discussions) - Suggestions
-
----
-
-## 🌟 Success Stories
-
-> "Finally understood Buffett's approach by building it myself. Now using thesis-app to trade with real money."  
-> — Marcus, Finance Student → Trader
-
-> "Used this in my quantitative finance class. Entire class learned investment concepts in 2 weeks."  
-> — Prof. Smith, NYU Finance
-
-> "Went from zero Python to building AI agents. The GUI made it accessible, the code viewer made it educational."  
-> — Sarah, MBA Student
-
-**Join 10,000+ students learning investment analysis with AI**
 
 ---
 
@@ -470,27 +445,4 @@ If this helped you learn investment analysis:
 
 ---
 
-## 📞 Contact
-
-### Educational Inquiries
-- 📧 Email: education@thesisai.app
-- 🎓 University partnerships welcome
-- 🏛️ Request academic license
-
-### Production Platform
-- 🚀 **thesis-app.com** - Professional trading platform
-- 💼 sales@thesisai.app - Enterprise & institutional
-
-### Company
-**ThesisAI LLC**  
-Building tools for the next generation of quantitative investors
-
----
-
-**Learn investment analysis. Build AI agents. Trade with confidence.**
-
-[Get Started Now](QUICK_START.md) | [Launch GUI](#-one-command-installation) | [Learn More About thesis-app](THESIS_APP.md)
-
----
-
-*Remember: This is for education only. For real trading, consult financial professionals and consider [thesis-app](THESIS_APP.md).*
+*Remember: This is for education only. For real trading, consult financial professionals. Interested in production tools? [thesis-app is coming soon](THESIS_APP.md).*
