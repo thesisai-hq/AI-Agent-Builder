@@ -225,33 +225,3 @@ class LLMClient:
 
         response = client.chat(model=self.config.model, messages=messages)
         return response["message"]["content"]
-
-    def embed(self, text: str) -> List[float]:
-        """Generate embedding for text (for RAG).
-
-        Args:
-            text: Text to embed
-
-        Returns:
-            Embedding vector
-
-        Raises:
-            LLMError: If embedding generation fails
-        """
-        client = self._get_client()
-
-        try:
-            if self.config.provider == "openai":
-                response = client.embeddings.create(input=text, model="text-embedding-ada-002")
-                return response.data[0].embedding
-
-            elif self.config.provider == "ollama":
-                response = client.embeddings(model=self.config.model, prompt=text)
-                return response["embedding"]
-
-            else:
-                raise LLMError(f"Embeddings not supported for {self.config.provider}")
-
-        except Exception as e:
-            logger.error(f"Embedding generation failed: {e}")
-            raise LLMError(f"Could not generate embedding: {e}") from e
