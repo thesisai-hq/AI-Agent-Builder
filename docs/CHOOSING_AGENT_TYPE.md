@@ -211,7 +211,7 @@ Document analysis:
   → RAG-Powered (SEC filings, reports, news)
 ```
 
-### For thesis-app Integration:
+### For Multi-Agent Systems:
 ```
 Use case: Multi-agent investment advisor
 

@@ -246,12 +246,13 @@ Students who follow this pattern learn:
 
 ---
 
-## 🚀 For thesis-app Integration
+## 🚀 For Multi-Agent Systems
 
 ### Same Recommendation:
 
 ```python
-# thesis-ai/server/multi_agent_system/agents/
+# Multi-agent system structure:
+# server/multi_agent_system/agents/
 ├── value_agent.py          # One agent
 ├── growth_agent.py         # One agent
 ├── sentiment_agent.py      # One agent

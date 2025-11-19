@@ -769,33 +769,22 @@ DB_PORT=5433
 
 - **Documentation:** Complete guides in docs/
 - **Examples:** Reference implementations in examples/
-- **Community:** GitHub Discussions
-- **Email:** education@thesisai.app
-
-### Office Hours Support
-
-We offer **free** support for educational use:
-- Setup help
-- Curriculum advice
-- Assignment ideas
-- Technical troubleshooting
-
-**Contact:** education@thesisai.app
+- **Community:** [GitHub Discussions](https://github.com/thesisai-hq/AI-Agent-Builder/discussions)
 
 ### Educational Resources
 
-**We can provide:**
-- Slide decks (upon request)
-- Sample syllabi
-- Assignment templates
-- Grading rubrics
+**Available:**
+- Complete documentation in docs/
+- Sample syllabi (this document)
+- Assignment templates (see above)
+- Grading rubrics (see above)
 - Video tutorials (in development)
 
 ---
 
 ## 🎓 Success Stories
 
-*We'd love to feature your class! Email us at education@thesisai.app*
+*Share your course experience via [GitHub Discussions](https://github.com/thesisai-hq/AI-Agent-Builder/discussions)*
 
 ---
 
@@ -920,17 +909,15 @@ If you publish research using this tool:
 
 ---
 
-## 📧 Contact
+## 📞 Get Help
 
-**General questions:** support@thesisai.app  
-**Educational support:** education@thesisai.app  
-**Technical issues:** [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
-
-**Looking forward to supporting your course!** 🎓
+**Technical issues:** [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)  
+**Questions & Discussion:** [GitHub Discussions](https://github.com/thesisai-hq/AI-Agent-Builder/discussions)  
+**Documentation:** [docs/](../docs/) directory
 
 ---
 
 <p align="center">
   <sub>Built with ❤️ for students and educators</sub><br>
-  <sub><a href="https://thesisai.app">ThesisAI</a> | Educational Use Only | MIT License</sub>
+  <sub>Educational Use Only | MIT License</sub>
 </p>

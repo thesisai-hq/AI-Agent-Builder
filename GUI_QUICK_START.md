@@ -418,7 +418,7 @@ python3 gui/test_setup.py
 
 **MIT License.** See [LICENSE](LICENSE) for details.
 
-**For production:** [thesis-app](https://thesisai.app)
+**For production:** [thesis-app](THESIS_APP.md) (coming soon)
 
 ---
 

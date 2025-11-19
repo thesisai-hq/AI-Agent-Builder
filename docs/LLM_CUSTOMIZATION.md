@@ -466,7 +466,7 @@ More tokens = more money spent on API calls.
 
 ## More Examples
 
-See [examples/04_custom_llm_config.py](../examples/04_custom_llm_config.py) for working code with different temperature and token settings!
+See [examples/04_rag_agent.py](../examples/04_rag_agent.py) for working code with temperature and token setting!
 
 ---
 

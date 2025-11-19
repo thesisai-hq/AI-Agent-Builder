@@ -286,7 +286,7 @@ pip install -e ".[dev]"              # Install dev tools
 - **License:** [LICENSE](LICENSE) - MIT License
 - **Not for real trading** without professional advice
 
-**For production:** [thesis-app](https://thesisai.app)
+**For production:** [thesis-app](THESIS_APP.md) - professional platform (coming soon)
 
 ---
 

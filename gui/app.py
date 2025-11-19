@@ -70,7 +70,7 @@ def show_disclaimer():
 
         ---
 
-        **For production trading tools with proper risk management, see [thesis-app](https://thesisai.app)**
+        **Interested in production trading tools?** We're building [thesis-app](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/THESIS_APP.md) (coming soon)
         """
         )
 
