@@ -1,0 +1,100 @@
+"""
+GUI Testing - Quick Start Guide
+================================
+
+Run all tests with a single command, or run specific test categories.
+
+Prerequisites
+-------------
+pip install pytest pytest-asyncio pytest-cov pytest-mock
+
+Quick Start
+-----------
+# Run all tests
+pytest -v
+
+# Run with coverage
+pytest --cov=../../gui --cov-report=html --cov-report=term -v
+
+# Open coverage report
+# Linux/Mac: open htmlcov/index.html
+# Windows: start htmlcov/index.html
+
+Test Categories
+---------------
+# All tests
+pytest -v
+
+# Fast tests only (skip integration)
+pytest -v -m "not integration"
+
+# Security tests only
+pytest test_security.py -v
+
+# Async tests only
+pytest test_async_utils.py -v
+
+# Integration tests only
+pytest test_integration.py -v
+
+# Specific test
+pytest test_async_utils.py::TestAsyncRunner::test_run_simple_coroutine -v
+
+Using the Test Runner Script
+-----------------------------
+# Make executable (first time only)
+chmod +x run_tests.sh
+
+# Run complete test suite with coverage
+./run_tests.sh
+
+Expected Output
+---------------
+================================
+GUI Test Suite Runner
+================================
+
+Running All Tests...
+✅ 75 tests passed
+
+Running with Coverage...
+gui/async_utils          85%
+gui/components           72%
+gui/business_logic       81%
+gui/pages               64%
+Overall                 75%
+
+Coverage report: htmlcov/index.html
+
+Troubleshooting
+---------------
+Problem: ImportError for gui modules
+Solution: Run from tests/gui/ directory
+         Or: export PYTHONPATH="../../:$PYTHONPATH"
+
+Problem: Async warnings
+Solution: Use --asyncio-mode=auto flag
+         Or: Add to pytest.ini
+
+Problem: Tests fail on Windows
+Solution: Use WSL2 or update path separators
+
+Success Criteria
+----------------
+✅ All 75 tests pass
+✅ Coverage >= 70%
+✅ Security tests >= 95%
+✅ No critical warnings
+✅ Performance tests verify speedup
+
+After Testing
+-------------
+1. Review coverage report (htmlcov/index.html)
+2. Fix any failing tests
+3. Add tests for new features
+4. Maintain 70%+ coverage as code grows
+
+Questions?
+----------
+See: tests/gui/README.md for detailed documentation
+"""
