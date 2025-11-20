@@ -65,7 +65,61 @@ Market Cap: ${data.get("market_cap", 0) / 1e9:.1f}B
 
 
 def calculate_sentiment_score(text: str) -> Tuple[str, float]:
-    """Calculate simple sentiment from text.
+    """Calculate sentiment from text using VADER.
+
+    VADER (Valence Aware Dictionary and sEntiment Reasoner) is specifically
+    designed for social media and financial text. It handles:
+    - Negation ("not good" is negative)
+    - Degree modifiers ("very good" is more positive than "good")
+    - Punctuation emphasis ("great!!!" is more positive)
+    - Capitalization ("AMAZING" is stronger than "amazing")
+
+    Args:
+        text: Text to analyze
+
+    Returns:
+        Tuple of (direction, confidence)
+
+    Raises:
+        ImportError: If vaderSentiment not installed
+    """
+    try:
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    except ImportError:
+        # Fallback to simple keyword matching if VADER not installed
+        return _calculate_sentiment_simple(text)
+
+    # Initialize VADER analyzer (cached after first call)
+    if not hasattr(calculate_sentiment_score, "_analyzer"):
+        calculate_sentiment_score._analyzer = SentimentIntensityAnalyzer()
+
+    analyzer = calculate_sentiment_score._analyzer
+
+    # Get sentiment scores
+    scores = analyzer.polarity_scores(text)
+    compound = scores["compound"]  # Range: -1 (most negative) to +1 (most positive)
+
+    # Convert compound score to direction and confidence
+    if compound >= 0.05:  # Positive sentiment
+        direction = "bullish"
+        # Map compound [0.05, 1.0] to confidence [0.55, 0.85]
+        confidence = min(0.85, 0.55 + (compound * 0.30))
+    elif compound <= -0.05:  # Negative sentiment
+        direction = "bearish"
+        # Map compound [-1.0, -0.05] to confidence [0.55, 0.80]
+        confidence = min(0.80, 0.55 + (abs(compound) * 0.25))
+    else:  # Neutral sentiment (-0.05 to 0.05)
+        direction = "neutral"
+        confidence = 0.60
+
+    return direction, confidence
+
+
+def _calculate_sentiment_simple(text: str) -> Tuple[str, float]:
+    """Fallback simple sentiment calculation (if VADER not installed).
+
+    This is a basic keyword-matching approach used when vaderSentiment
+    package is not available.
 
     Args:
         text: Text to analyze
