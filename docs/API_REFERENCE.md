@@ -724,6 +724,128 @@ CORS_ORIGINS=*
 
 ---
 
+## Sentiment Analysis
+
+### calculate_sentiment_score()
+
+The framework includes built-in sentiment analysis using **VADER** (Valence Aware Dictionary and sEntiment Reasoner).
+
+**What is VADER?**
+
+VADER is an industry-standard sentiment analysis tool specifically designed for:
+- Social media text
+- Financial news and headlines
+- Short informal text
+- Business communications
+
+**Key Features:**
+- ✅ Handles negation ("not good" correctly identified as negative)
+- ✅ Understands degree modifiers ("very good" > "good")
+- ✅ Recognizes punctuation emphasis ("great!!!" > "great")
+- ✅ Accounts for capitalization ("AMAZING" > "amazing")
+- ✅ Optimized for financial text
+
+**Usage:**
+
+```python
+from agent_framework import calculate_sentiment_score
+
+# Analyze news headline
+text = "Strong revenue growth drives stock higher"
+direction, confidence = calculate_sentiment_score(text)
+
+print(f"{direction}: {confidence:.1%}")
+# Output: bullish: 68%
+```
+
+**Return Values:**
+
+**Direction:**
+- `"bullish"` - Positive sentiment (VADER compound >= 0.05)
+- `"bearish"` - Negative sentiment (VADER compound <= -0.05)
+- `"neutral"` - Neutral sentiment (VADER compound between -0.05 and 0.05)
+
+**Confidence:**
+- Bullish range: 0.55 to 0.85
+- Bearish range: 0.55 to 0.80
+- Neutral: 0.60 (fixed)
+
+**VADER Compound Score Mapping:**
+
+| VADER Compound | Direction | Confidence Range | Example |
+|----------------|-----------|------------------|----------|
+| 0.75 to 1.00 | Bullish | 77% - 85% | "Exceptional growth!!! 🚀" |
+| 0.50 to 0.75 | Bullish | 70% - 77% | "Very strong performance" |
+| 0.05 to 0.50 | Bullish | 57% - 70% | "Good results" |
+| -0.05 to 0.05 | Neutral | 60% | "Company reported earnings" |
+| -0.50 to -0.05 | Bearish | 57% - 68% | "Facing challenges" |
+| -1.00 to -0.50 | Bearish | 68% - 80% | "Major risks and concerns" |
+
+**Example Use Cases:**
+
+```python
+# Positive news
+news = "Apple announces record earnings, beating expectations"
+direction, conf = calculate_sentiment_score(news)
+# Result: bullish, ~75%
+
+# Negative news
+text = "Major regulatory challenges and declining market share"
+direction, conf = calculate_sentiment_score(text)
+# Result: bearish, ~65%
+
+# Neutral statement
+text = "The company reported quarterly results"
+direction, conf = calculate_sentiment_score(text)
+# Result: neutral, 60%
+
+# Negation handling (VADER strength)
+text1 = "This is good"
+text2 = "This is not good"
+dir1, _ = calculate_sentiment_score(text1)  # bullish
+dir2, _ = calculate_sentiment_score(text2)  # bearish ✅
+# Simple keyword matching would fail on text2!
+```
+
+**Fallback Behavior:**
+
+If vaderSentiment package is not installed, automatically falls back to simple keyword matching:
+
+```python
+# VADER not installed → uses fallback
+direction, confidence = calculate_sentiment_score(text)
+# Still works, just less sophisticated
+```
+
+**Installation:**
+
+VADER is included in core dependencies:
+```bash
+pip install -e "."  # Includes vaderSentiment
+pip install -e ".[all]"  # Also includes vaderSentiment
+```
+
+Or install separately:
+```bash
+pip install vaderSentiment
+```
+
+**Technical Details:**
+
+VADER returns four scores:
+- `positive`: Ratio of positive sentiment (0.0 to 1.0)
+- `negative`: Ratio of negative sentiment (0.0 to 1.0)
+- `neutral`: Ratio of neutral sentiment (0.0 to 1.0)
+- `compound`: Normalized composite score (-1.0 to +1.0)
+
+We use the **compound score** as it provides the best overall sentiment indicator.
+
+**References:**
+- VADER Paper: Hutto, C.J. & Gilbert, E.E. (2014). VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text.
+- GitHub: https://github.com/cjhutto/vaderSentiment
+
+---
+
 ## Next Steps
 
 - **[Configuration Guide](CONFIGURATION.md)** - Environment variables
