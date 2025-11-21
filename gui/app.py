@@ -16,10 +16,7 @@ from gui.agent_loader import AgentLoader
 
 # Page configuration
 st.set_page_config(
-    page_title="AI Agent Builder",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="AI Agent Builder", page_icon="🤖", layout="wide", initial_sidebar_state="expanded"
 )
 
 
@@ -31,7 +28,8 @@ def show_disclaimer():
     if not st.session_state.disclaimer_accepted:
         st.error("⚠️ IMPORTANT DISCLAIMER - PLEASE READ")
 
-        st.markdown("""
+        st.markdown(
+            """
         ### Educational Use Only
 
         This software is for **learning purposes only** and is **NOT intended for real trading**.
@@ -54,7 +52,8 @@ def show_disclaimer():
         ---
 
         **Interested in production trading tools?** We're building [thesis-app](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/THESIS_APP.md) (coming soon)
-        """)
+        """
+        )
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -82,24 +81,25 @@ def main():
     """Main home page."""
     # Show disclaimer first
     show_disclaimer()
-    
+
     # Initialize session state
     initialize_session_state()
-    
+
     # Home page content
     st.title("🤖 AI Agent Builder")
     st.markdown("### Create and manage AI investment agents")
-    
+
     # Show reminder banner
     st.warning(
         "📚 **Educational Tool** | Not for real trading | "
         "[Read Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)"
     )
-    
+
     st.markdown("---")
-    
+
     # Welcome message
-    st.markdown("""
+    st.markdown(
+        """
     ## Welcome to AI Agent Builder! 👋
     
     This tool helps you learn investment analysis by building AI-powered agents.
@@ -115,33 +115,35 @@ def main():
     - **⚙️ LLM Setup** - Configure AI providers (OpenAI, Anthropic, Ollama)
     
     ### 📊 Quick Stats
-    """)
-    
+    """
+    )
+
     # Show statistics
     loader = st.session_state.agent_loader
     agents = loader.list_agents()
-    
+
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric("Total Agents", len(agents))
-    
+
     with col2:
         rule_based = len([a for a in agents if a["type"] == "Rule-Based"])
         st.metric("Rule-Based", rule_based)
-    
+
     with col3:
         llm_powered = len([a for a in agents if "LLM" in a["type"] or "RAG" in a["type"]])
         st.metric("LLM/RAG", llm_powered)
-    
+
     with col4:
         custom = len([a for a in agents if not a["filename"].startswith("0")])
         st.metric("Your Agents", custom)
-    
+
     st.markdown("---")
-    
+
     # Getting started guide
-    st.markdown("""
+    st.markdown(
+        """
     ### 🎓 Learning Path
     
     **New to AI Agent Builder?** Follow this path:
@@ -162,15 +164,17 @@ def main():
     ### 📍 Save Location
     
     Your agents are saved to: `{st.session_state.examples_dir}`
-    """)
-    
+    """
+    )
+
     st.markdown("---")
-    
+
     # Footer info
     col_a, col_b = st.columns(2)
-    
+
     with col_a:
-        st.info("""
+        st.info(
+            """
         **🚀 Ready for Production?**
         
         Check out [thesis-app](https://thesisai.app) for:
@@ -178,17 +182,20 @@ def main():
         - Multi-agent orchestration
         - Risk management
         - Production support
-        """)
-    
+        """
+        )
+
     with col_b:
-        st.info("""
+        st.info(
+            """
         **📖 Resources**
         
         - [GitHub Repository](https://github.com/thesisai-hq/AI-Agent-Builder)
         - [Documentation](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/README.md)
         - [Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)
         - [MIT License](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/LICENSE)
-        """)
+        """
+        )
 
 
 if __name__ == "__main__":

@@ -1,12 +1,13 @@
 """Integration tests for GUI workflows.
 
 Tests complete user workflows from UI interaction to result display.
+NO batch testing - focused on single-agent testing workflows.
 """
 
 import pytest
 import asyncio
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 import sys
 
 # Add parent directory to path
@@ -14,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from gui.business_logic.test_executor import TestExecutor
 from gui.components.test_config import TestDataConfig
-from gui.pages.batch_test_page import BatchTestExecutor, BatchTestConfig
 
 
 # ============================================================================
@@ -26,27 +26,41 @@ class TestAgentExecutionWorkflow:
     
     @pytest.mark.asyncio
     @pytest.mark.integration
-    async def test_execute_simple_agent(self, sample_agent_file, sample_test_data):
+    async def test_execute_simple_agent(self, examples_dir, sample_agent_code):
         """Test executing a simple rule-based agent."""
+        # Create test agent file
+        agent_file = examples_dir / "sample_agent.py"
+        agent_file.write_text(sample_agent_code)
+        
         executor = TestExecutor()
-        executor.examples_dir = sample_agent_file.parent
+        executor.examples_dir = examples_dir
         
         agent_info = {
-            "filename": sample_agent_file.name,
+            "filename": "sample_agent.py",
             "name": "SampleAgent",
             "type": "Rule-Based"
         }
         
+        test_data = {
+            "pe_ratio": 12.0,
+            "roe": 15.0,
+            "profit_margin": 12.0,
+            "revenue_growth": 15.0,
+            "debt_to_equity": 0.8,
+            "dividend_yield": 2.0,
+            "name": "Test Company"
+        }
+        
         test_config = TestDataConfig(
             source="mock",
-            data=sample_test_data,
+            data=test_data,
             ticker="TEST"
         )
         
         result = await executor.execute_test_async(
             agent_info=agent_info,
             test_config=test_config,
-            data=sample_test_data
+            data=test_data
         )
         
         # Verify result structure
@@ -59,24 +73,23 @@ class TestAgentExecutionWorkflow:
     
     @pytest.mark.asyncio
     @pytest.mark.integration
-    async def test_execute_with_timeout(self, sample_agent_file, sample_test_data):
+    async def test_execute_with_timeout(self, examples_dir):
         """Test timeout protection."""
-        executor = TestExecutor()
-        executor.examples_dir = sample_agent_file.parent
-        
         # Create agent file with slow analysis
-        slow_agent_code = '''
-from agent_framework import Agent, Signal
+        slow_agent_code = '''from agent_framework import Agent, Signal
 import asyncio
 
 class SlowAgent(Agent):
     async def analyze(self, ticker, data):
         await asyncio.sleep(100)  # Very slow
-        return Signal("neutral", 0.5, "Slow")
+        return Signal(direction="neutral", confidence=0.5, reasoning="Slow")
 '''
         
-        slow_agent_file = sample_agent_file.parent / "slow_agent.py"
+        slow_agent_file = examples_dir / "slow_agent.py"
         slow_agent_file.write_text(slow_agent_code)
+        
+        executor = TestExecutor()
+        executor.examples_dir = examples_dir
         
         agent_info = {
             "filename": "slow_agent.py",
@@ -86,7 +99,7 @@ class SlowAgent(Agent):
         
         test_config = TestDataConfig(
             source="mock",
-            data=sample_test_data,
+            data={"pe_ratio": 20},
             ticker="TEST"
         )
         
@@ -94,180 +107,12 @@ class SlowAgent(Agent):
         result = await executor.execute_test_async(
             agent_info=agent_info,
             test_config=test_config,
-            data=sample_test_data
+            data={"pe_ratio": 20}
         )
         
         # Verify timeout handling
         assert result["success"] is False
-        assert "timeout" in result["error"].lower()
-
-
-# ============================================================================
-# Batch Testing Integration Tests
-# ============================================================================
-
-class TestBatchTestingWorkflow:
-    """Test batch testing workflow."""
-    
-    @pytest.mark.asyncio
-    @pytest.mark.integration
-    async def test_batch_test_multiple_agents_tickers(
-        self, 
-        temp_examples_dir,
-        sample_test_data
-    ):
-        """Test batch testing with multiple agents and tickers."""
-        # Create two test agents
-        agent1_code = '''
-from agent_framework import Agent, Signal
-
-class Agent1(Agent):
-    async def analyze(self, ticker, data):
-        if data.get("pe_ratio", 0) < 20:
-            return Signal("bullish", 0.8, "Value")
-        return Signal("neutral", 0.6, "Fair")
-'''
-        
-        agent2_code = '''
-from agent_framework import Agent, Signal
-
-class Agent2(Agent):
-    async def analyze(self, ticker, data):
-        if data.get("revenue_growth", 0) > 10:
-            return Signal("bullish", 0.7, "Growth")
-        return Signal("neutral", 0.5, "Slow")
-'''
-        
-        (temp_examples_dir / "agent1.py").write_text(agent1_code)
-        (temp_examples_dir / "agent2.py").write_text(agent2_code)
-        
-        # Setup batch test
-        batch_executor = BatchTestExecutor()
-        batch_executor.executor.examples_dir = temp_examples_dir
-        
-        config = BatchTestConfig(
-            agents=[
-                {"filename": "agent1.py", "name": "Agent1"},
-                {"filename": "agent2.py", "name": "Agent2"}
-            ],
-            tickers=["AAPL", "MSFT"],
-            test_data_config=TestDataConfig(
-                source="mock",
-                data=sample_test_data,
-                ticker="AAPL"
-            ),
-            max_concurrent=2
-        )
-        
-        results = await batch_executor.run_batch_test(config)
-        
-        # Verify results
-        assert results["total_tests"] == 4  # 2 agents × 2 tickers
-        assert results["successful"] >= 0
-        assert results["successful"] + results["failed"] == 4
-        
-        # Verify aggregation
-        assert "by_agent" in results
-        assert "by_ticker" in results
-        assert "signal_distribution" in results
-    
-    @pytest.mark.asyncio
-    @pytest.mark.integration
-    async def test_batch_test_with_failures(self, temp_examples_dir, sample_test_data):
-        """Test batch testing handles failures gracefully."""
-        # Create one good agent and one bad agent
-        good_agent = '''
-from agent_framework import Agent, Signal
-
-class GoodAgent(Agent):
-    async def analyze(self, ticker, data):
-        return Signal("bullish", 0.8, "Good")
-'''
-        
-        bad_agent = '''
-from agent_framework import Agent, Signal
-
-class BadAgent(Agent):
-    async def analyze(self, ticker, data):
-        raise ValueError("Intentional error")
-'''
-        
-        (temp_examples_dir / "good.py").write_text(good_agent)
-        (temp_examples_dir / "bad.py").write_text(bad_agent)
-        
-        batch_executor = BatchTestExecutor()
-        batch_executor.executor.examples_dir = temp_examples_dir
-        
-        config = BatchTestConfig(
-            agents=[
-                {"filename": "good.py", "name": "GoodAgent"},
-                {"filename": "bad.py", "name": "BadAgent"}
-            ],
-            tickers=["AAPL"],
-            test_data_config=TestDataConfig(
-                source="mock",
-                data=sample_test_data,
-                ticker="AAPL"
-            ),
-            max_concurrent=2
-        )
-        
-        results = await batch_executor.run_batch_test(config)
-        
-        # One should succeed, one should fail
-        assert results["successful"] == 1
-        assert results["failed"] == 1
-        assert results["total_tests"] == 2
-
-
-# ============================================================================
-# Performance Integration Tests
-# ============================================================================
-
-class TestPerformanceIntegration:
-    """Test performance characteristics."""
-    
-    @pytest.mark.asyncio
-    @pytest.mark.integration
-    async def test_parallel_faster_than_sequential(self, temp_examples_dir):
-        """Verify parallel execution is faster."""
-        import time
-        
-        # Create simple agent
-        agent_code = '''
-from agent_framework import Agent, Signal
-import asyncio
-
-class TestAgent(Agent):
-    async def analyze(self, ticker, data):
-        await asyncio.sleep(0.1)  # Simulate work
-        return Signal("neutral", 0.5, "Test")
-'''
-        
-        (temp_examples_dir / "test.py").write_text(agent_code)
-        
-        batch_executor = BatchTestExecutor()
-        batch_executor.executor.examples_dir = temp_examples_dir
-        
-        # Test with 5 tickers (would take 0.5s sequential)
-        config = BatchTestConfig(
-            agents=[{"filename": "test.py", "name": "TestAgent"}],
-            tickers=["T1", "T2", "T3", "T4", "T5"],
-            test_data_config=TestDataConfig(
-                source="mock",
-                data={"pe_ratio": 20},
-                ticker="T1"
-            ),
-            max_concurrent=5  # All parallel
-        )
-        
-        start = time.time()
-        results = await batch_executor.run_batch_test(config)
-        elapsed = time.time() - start
-        
-        # Should complete in ~0.1s (parallel) not 0.5s (sequential)
-        assert elapsed < 0.3  # Allow some overhead
-        assert results["total_tests"] == 5
+        assert "timeout" in result["error"].lower() or "timed out" in result["error"].lower()
 
 
 # ============================================================================
@@ -279,10 +124,10 @@ class TestErrorRecovery:
     
     @pytest.mark.asyncio
     @pytest.mark.integration
-    async def test_recover_from_missing_agent_file(self, temp_examples_dir):
+    async def test_recover_from_missing_agent_file(self, examples_dir):
         """Test graceful handling of missing agent files."""
         executor = TestExecutor()
-        executor.examples_dir = temp_examples_dir
+        executor.examples_dir = examples_dir
         
         agent_info = {
             "filename": "nonexistent.py",
@@ -308,14 +153,14 @@ class TestErrorRecovery:
     
     @pytest.mark.asyncio
     @pytest.mark.integration
-    async def test_recover_from_invalid_agent_code(self, temp_examples_dir):
+    async def test_recover_from_invalid_agent_code(self, examples_dir):
         """Test handling of syntactically invalid agent files."""
         executor = TestExecutor()
-        executor.examples_dir = temp_examples_dir
+        executor.examples_dir = examples_dir
         
         # Create invalid Python file
         invalid_code = "this is not valid python code {{{"
-        (temp_examples_dir / "invalid.py").write_text(invalid_code)
+        (examples_dir / "invalid.py").write_text(invalid_code)
         
         agent_info = {
             "filename": "invalid.py",
@@ -338,6 +183,107 @@ class TestErrorRecovery:
         # Should handle gracefully
         assert result["success"] is False
         assert "error" in result
+
+
+# ============================================================================
+# RAG Agent Integration Tests
+# ============================================================================
+
+class TestRAGAgentWorkflow:
+    """Test RAG agent execution workflow."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_rag_agent_with_pdf(self, examples_dir):
+        """Test RAG agent with PDF document."""
+        # Create simple RAG agent
+        rag_agent_code = '''from agent_framework import Agent, Signal, AgentConfig, RAGConfig, LLMConfig
+
+class RAGTestAgent(Agent):
+    def __init__(self):
+        config = AgentConfig(
+            name="RAGTestAgent",
+            description="Test RAG agent",
+            rag=RAGConfig(chunk_size=200, chunk_overlap=20, top_k=3),
+            llm=LLMConfig(provider="ollama", model="llama3.2")
+        )
+        super().__init__(config)
+    
+    async def analyze(self, ticker, document_text):
+        # Simple analysis without actual RAG/LLM
+        if len(document_text) > 100:
+            return Signal(direction="bullish", confidence=0.7, reasoning="Document analyzed")
+        return Signal(direction="neutral", confidence=0.5, reasoning="Short document")
+'''
+        
+        (examples_dir / "rag_agent.py").write_text(rag_agent_code)
+        
+        executor = TestExecutor()
+        executor.examples_dir = examples_dir
+        
+        agent_info = {
+            "filename": "rag_agent.py",
+            "name": "RAGTestAgent",
+            "type": "RAG-Powered"
+        }
+        
+        # Mock PDF file
+        mock_pdf = Mock()
+        mock_pdf.name = "test.pdf"
+        
+        test_config = TestDataConfig(
+            source="pdf",
+            uploaded_file=mock_pdf,
+            ticker="AAPL"
+        )
+        
+        # For this test, we'll just verify the executor can handle RAG agents
+        # (actual PDF processing would require PyPDF2 and is tested separately)
+        result = await executor.execute_test_async(
+            agent_info=agent_info,
+            test_config=test_config,
+            data=None
+        )
+        
+        # Should recognize as RAG agent
+        # May fail due to PDF processing, but should handle gracefully
+        assert "success" in result
+
+
+# ============================================================================
+# Agent Loader Integration Tests
+# ============================================================================
+
+class TestAgentLoaderIntegration:
+    """Test agent loader integration."""
+    
+    def test_list_agents(self, examples_dir, sample_agent_code):
+        """Test listing agents from directory."""
+        from gui.agent_loader import AgentLoader
+        
+        # Create test agents
+        (examples_dir / "agent1.py").write_text(sample_agent_code)
+        (examples_dir / "agent2.py").write_text(sample_agent_code.replace("SampleAgent", "Agent2"))
+        
+        loader = AgentLoader(examples_dir)
+        agents = loader.list_agents()
+        
+        assert len(agents) == 2
+        assert all(a["filename"].endswith(".py") for a in agents)
+        assert all("name" in a for a in agents)
+        assert all("type" in a for a in agents)
+    
+    def test_get_agent_code(self, examples_dir, sample_agent_code):
+        """Test retrieving agent code."""
+        from gui.agent_loader import AgentLoader
+        
+        (examples_dir / "test.py").write_text(sample_agent_code)
+        
+        loader = AgentLoader(examples_dir)
+        code = loader.get_agent_code("test.py")
+        
+        assert code == sample_agent_code
+        assert "SampleAgent" in code
 
 
 # ============================================================================

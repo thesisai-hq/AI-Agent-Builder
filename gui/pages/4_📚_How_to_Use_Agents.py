@@ -18,40 +18,45 @@ st.set_page_config(page_title="How to Use Agents", page_icon="📚", layout="wid
 def show_how_to_page():
     """Display comprehensive guide for all agent types."""
     st.title("📚 How to Use Agents for Investment Analysis")
-    
-    st.markdown("""
+
+    st.markdown(
+        """
     This guide teaches you how to use AI agents to analyze stocks and learn investment strategies.
     Choose a topic below to get started!
-    """)
-    
+    """
+    )
+
     # Navigation tabs for different topics
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🎯 Getting Started",
-        "📊 Agent Types",
-        "🧪 Testing Agents",
-        "💡 Best Practices",
-        "🎓 Learning Resources"
-    ])
-    
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        [
+            "🎯 Getting Started",
+            "📊 Agent Types",
+            "🧪 Testing Agents",
+            "💡 Best Practices",
+            "🎓 Learning Resources",
+        ]
+    )
+
     with tab1:
         show_getting_started()
-    
+
     with tab2:
         show_agent_types()
-    
+
     with tab3:
         show_testing_guide()
-    
+
     with tab4:
         show_best_practices()
-    
+
     with tab5:
         show_learning_resources()
 
 
 def show_getting_started():
     """Getting started guide."""
-    st.markdown("""
+    st.markdown(
+        """
     ## 🎯 Getting Started with AI Agent Builder
     
     ### Quick Start (5 minutes)
@@ -114,24 +119,28 @@ def show_getting_started():
     **Mock Data**: Fictional data for testing
     
     **Real Data**: Live market data from Yahoo Finance
-    """)
+    """
+    )
 
 
 def show_agent_types():
     """Explain different agent types."""
-    st.markdown("""
+    st.markdown(
+        """
     ## 📊 Agent Types Explained
     
     Choose the right agent type for your learning goals.
-    """)
-    
+    """
+    )
+
     # Rule-Based
     st.markdown("### 1. Rule-Based Agents 📊")
-    
+
     col1, col2 = st.columns([1, 2])
-    
+
     with col1:
-        st.success("""
+        st.success(
+            """
         **Best for:**
         - Beginners
         - Learning fundamentals
@@ -142,10 +151,12 @@ def show_agent_types():
         **Setup:** ✅ None needed
         
         **Cost:** 💚 Free
-        """)
-    
+        """
+        )
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         **What are they?**
         
         Rule-based agents use simple if/then logic you define:
@@ -169,17 +180,19 @@ def show_agent_types():
         - You want deterministic results
         - You're learning basic concepts
         - You want fast execution
-        """)
-    
+        """
+        )
+
     st.markdown("---")
-    
+
     # LLM-Powered
     st.markdown("### 2. LLM-Powered Agents 🤖")
-    
+
     col1, col2 = st.columns([1, 2])
-    
+
     with col1:
-        st.info("""
+        st.info(
+            """
         **Best for:**
         - Nuanced analysis
         - Learning AI integration
@@ -190,10 +203,12 @@ def show_agent_types():
         **Setup:** ⚙️ Ollama/OpenAI/Anthropic
         
         **Cost:** 💛 Free (Ollama) or Paid (APIs)
-        """)
-    
+        """
+        )
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         **What are they?**
         
         LLM agents use AI (ChatGPT, Claude, LLaMA) for intelligent analysis:
@@ -219,17 +234,19 @@ def show_agent_types():
         - Ollama (free, local AI) - Recommended for learning
         - OpenAI API (paid, powerful)
         - Anthropic Claude (paid, advanced)
-        """)
-    
+        """
+        )
+
     st.markdown("---")
-    
+
     # RAG-Powered
     st.markdown("### 3. RAG Agents 📄")
-    
+
     col1, col2 = st.columns([1, 2])
-    
+
     with col1:
-        st.warning("""
+        st.warning(
+            """
         **Best for:**
         - Document analysis
         - SEC filing research
@@ -240,10 +257,12 @@ def show_agent_types():
         **Setup:** ⚙️ Same as LLM
         
         **Cost:** 💛 Free (Ollama) or Paid (APIs)
-        """)
-    
+        """
+        )
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         **What are they?**
         
         RAG (Retrieval-Augmented Generation) agents analyze long documents:
@@ -270,17 +289,19 @@ def show_agent_types():
         **Limitation:**
         - Requires PDF upload (not for live market data)
         - Best for qualitative research, not quantitative screening
-        """)
-    
+        """
+        )
+
     st.markdown("---")
-    
+
     # Hybrid
     st.markdown("### 4. Hybrid Agents 🔀")
-    
+
     col1, col2 = st.columns([1, 2])
-    
+
     with col1:
-        st.success("""
+        st.success(
+            """
         **Best for:**
         - Advanced users
         - Efficient screening
@@ -291,10 +312,12 @@ def show_agent_types():
         **Setup:** ⚙️ Same as LLM
         
         **Cost:** 💛 Optimized (fewer LLM calls)
-        """)
-    
+        """
+        )
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         **What are they?**
         
         Hybrid agents combine rules and AI for efficient analysis:
@@ -324,12 +347,14 @@ def show_agent_types():
         **Best practice:**
         - Use rules for quantitative filtering (PE, ROE, debt)
         - Use AI for qualitative analysis (moat, management, risks)
-        """)
+        """
+        )
 
 
 def show_testing_guide():
     """Testing guide."""
-    st.markdown("""
+    st.markdown(
+        """
     ## 🧪 Testing Your Agents
     
     ### Test Data Options
@@ -446,12 +471,14 @@ def show_testing_guide():
     - Overpriced stock → Should warn
     - Compare AI reasoning with your analysis
     ```
-    """)
+    """
+    )
 
 
 def show_best_practices():
     """Best practices guide."""
-    st.markdown("""
+    st.markdown(
+        """
     ## 💡 Best Practices
     
     ### For Rule-Based Agents
@@ -548,12 +575,14 @@ def show_best_practices():
     - Understand each metric's meaning
     - Document your learning
     - Start simple, add complexity gradually
-    """)
+    """
+    )
 
 
 def show_learning_resources():
     """Learning resources and references."""
-    st.markdown("""
+    st.markdown(
+        """
     ## 🎓 Learning Resources
     
     ### Investment Strategies (What Agents Implement)
@@ -638,7 +667,8 @@ def show_learning_resources():
     - Share your agents
     - Improve documentation
     - Report bugs
-    """)
+    """
+    )
 
 
 # Run the page
