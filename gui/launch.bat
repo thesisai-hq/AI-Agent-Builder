@@ -11,4 +11,4 @@ REM Change to AI-Agent-Builder root directory
 cd /d "%~dp0\.."
 
 REM Launch Streamlit
-streamlit run gui\app.py
+streamlit run gui\0_🏠_Home.py

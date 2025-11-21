@@ -22,6 +22,7 @@ from gui.agent_creation_helpers import (
     show_analysis_logic_section,
     show_generated_code_section,
 )
+from gui.sidebar_info import show_sidebar_info
 
 # Page config
 st.set_page_config(page_title="Create Agent", page_icon="➕", layout="wide")
@@ -36,6 +37,9 @@ if "agent_loader" not in st.session_state:
 
 def show_create_page():
     """Display agent creation interface."""
+    # Show sidebar info on all pages
+    show_sidebar_info()
+    
     st.title("➕ Create New Agent")
 
     st.info(

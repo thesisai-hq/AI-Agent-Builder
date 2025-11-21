@@ -11,4 +11,4 @@ echo ""
 cd "$(dirname "$0")/.."
 
 # Launch Streamlit
-streamlit run gui/app.py
+streamlit run gui/0_🏠_Home.py

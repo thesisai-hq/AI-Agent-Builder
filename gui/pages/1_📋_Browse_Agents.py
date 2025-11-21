@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from gui.agent_loader import AgentLoader
 from gui.code_viewer import CodeViewer
 from gui.components.agent_card import render_agent_card, show_agent_stats
+from gui.sidebar_info import show_sidebar_info
 
 # Page config
 st.set_page_config(page_title="Browse Agents", page_icon="📋", layout="wide")
@@ -29,6 +30,9 @@ if "agent_loader" not in st.session_state:
 
 def show_browse_page():
     """Browse existing agents - clean coordinator."""
+    # Show sidebar info on all pages
+    show_sidebar_info()
+    
     st.title("📋 Browse Existing Agents")
     
     # Handle code viewer modal

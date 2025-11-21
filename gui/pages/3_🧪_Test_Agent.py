@@ -19,6 +19,7 @@ from gui.agent_loader import AgentLoader
 from gui.business_logic.test_executor import TestExecutor
 from gui.components.results_display import display_error_with_solution, display_test_results
 from gui.components.test_config import TestDataConfig, configure_test_data
+from gui.sidebar_info import show_sidebar_info
 
 # Page config
 st.set_page_config(page_title="Test Agent", page_icon="🧪", layout="wide")
@@ -33,6 +34,9 @@ if "agent_loader" not in st.session_state:
 
 def show_test_page():
     """Test agent - async-enhanced coordinator."""
+    # Show sidebar info on all pages
+    show_sidebar_info()
+    
     st.title("🧪 Test Agent")
 
     # Select agent

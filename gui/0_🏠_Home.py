@@ -13,6 +13,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from gui.agent_loader import AgentLoader
+from gui.sidebar_info import show_sidebar_info
 
 # Page configuration
 st.set_page_config(
@@ -84,6 +85,9 @@ def main():
 
     # Initialize session state
     initialize_session_state()
+    
+    # Show sidebar info (appears on all pages)
+    show_sidebar_info()
 
     # Home page content
     st.title("🤖 AI Agent Builder")
@@ -143,7 +147,7 @@ def main():
 
     # Getting started guide
     st.markdown(
-        """
+        f"""
     ### 🎓 Learning Path
     
     **New to AI Agent Builder?** Follow this path:
@@ -166,36 +170,6 @@ def main():
     Your agents are saved to: `{st.session_state.examples_dir}`
     """
     )
-
-    st.markdown("---")
-
-    # Footer info
-    col_a, col_b = st.columns(2)
-
-    with col_a:
-        st.info(
-            """
-        **🚀 Ready for Production?**
-        
-        Check out [thesis-app](https://thesisai.app) for:
-        - Real-time market data
-        - Multi-agent orchestration
-        - Risk management
-        - Production support
-        """
-        )
-
-    with col_b:
-        st.info(
-            """
-        **📖 Resources**
-        
-        - [GitHub Repository](https://github.com/thesisai-hq/AI-Agent-Builder)
-        - [Documentation](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/README.md)
-        - [Full Disclaimer](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/DISCLAIMER.md)
-        - [MIT License](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/LICENSE)
-        """
-        )
 
 
 if __name__ == "__main__":
