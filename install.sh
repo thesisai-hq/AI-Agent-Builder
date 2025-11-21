@@ -76,7 +76,7 @@ pip install --upgrade pip > /dev/null 2>&1
 
 # Install framework
 echo "📦 Installing AI Agent Builder..."
-echo "   (This may take 2-3 minutes...)"
+echo "   (This may take 5-10 minutes...)"
 pip install -e ".[all]" > /dev/null 2>&1
 echo -e "${GREEN}✅ Framework installed${NC}"
 echo ""

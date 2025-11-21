@@ -71,9 +71,15 @@ This is a **learning tool for finance education**. Not for real trading.
 **Linux / macOS / WSL2:**
 ```bash
 git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
-cd AI-Agent-Builder
-chmod +x install.sh
-./install.sh
+
+cd ~/AI-Agent-Builder
+
+# One-time setup (installs ALL dependencies)
+chmod +x gui/setup.sh gui/launch.sh
+./gui/setup.sh
+
+# Launch
+./gui/launch.sh
 ```
 
 **Windows:**
