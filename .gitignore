@@ -1,191 +1,139 @@
+# ============================================================================
 # Python
+# ============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# Build and distribution
+# ============================================================================
+# Virtual Environments
+# ============================================================================
+venv/
+env/
+.venv/
+ENV/
+
+# ============================================================================
+# Environment Variables & Secrets
+# ============================================================================
+.env
+.env.*
+!.env.example
+
+# ============================================================================
+# Build & Distribution
+# ============================================================================
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-/lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 MANIFEST
 
-# Virtual Environment
-venv/
-env/
-ENV/
-.venv
-.env/
+# ============================================================================
+# Testing
+# ============================================================================
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
 
-# IDE
+# ============================================================================
+# IDE & Editors
+# ============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# ============================================================================
+# Operating System
+# ============================================================================
+# macOS
 .DS_Store
+.AppleDouble
+._*
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-*.cover
-.hypothesis/
+# Windows
+Thumbs.db
+Desktop.ini
 
-# Environment
-.env
-.env.local
-.env.*.local
+# Linux
+.directory
+.Trash-*
 
+# ============================================================================
 # Database
+# ============================================================================
 *.db
 *.sqlite
 *.sql.backup
 pg_dump_*.sql
 
+# ============================================================================
 # Logs
+# ============================================================================
 *.log
 logs/
 
-# OS
-.DS_Store
-Thumbs.db
-*.bak
+# ============================================================================
+# Streamlit
+# ============================================================================
+.streamlit/
 
-# Docker
-docker-compose.override.yml
-
-# Jupyter Notebooks (if any)
-.ipynb_checkpoints/
-*.ipynb
-
-# Type checking
+# ============================================================================
+# Type Checking & Linting
+# ============================================================================
 .mypy_cache/
-.dmypy.json
-dmypy.json
+.ruff_cache/
 .pytype/
 
-# Backup files
-*~
-*.swp
-*.swo
+# ============================================================================
+# Docker
+# ============================================================================
+docker-compose.override.yml
+docker-compose.local.yml
 
-# uv
-.uv/
-uv.lock
-
-# Deprecated files (if they accidentally get added back)
-# Only ignore root-level files, allow in subdirectories
-/setup.py
-/requirements.txt
-
-# Temporary files
+# ============================================================================
+# Temporary Files & Cleanup Scripts
+# ============================================================================
 *.tmp
 *.temp
 .cache/
 
-# Streamlit cache
-.streamlit/
+# Temporary cleanup scripts (Phase 1 refactoring)
+cleanup_*.py
+cleanup_*.sh
+verify_*.py
+verify_*.sh
+consolidate_*.py
+CLEANUP_INSTRUCTIONS.md
+PHASE1_COMMANDS.md
 
-# Claude/AI artifacts (if you save conversations)
-*.claude.md
-*.ai-session.md
-
-# Local testing files
-test_output/
+# ============================================================================
+# User-Generated Test Files
+# ============================================================================
+examples/myagent.py
+examples/test_*.py
+examples/*.backup.py
 scratch/
 playground/
 
-# Large data files (if added)
+# ============================================================================
+# Large Data Files
+# ============================================================================
 *.csv.gz
 *.parquet
 large_data/
 
-# API keys and secrets (redundant but explicit)
-*_api_key*
-*_secret*
-secrets.yml
-credentials.json
-
-# macOS
-.AppleDouble
-.LSOverride
-Icon
-._*
-
-# Windows
-Desktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-*.lnk
-
-# Linux
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
-
-# Local development overrides
-docker-compose.local.yml
-.env.development
-.env.test
-.env.production
-
-# Generated documentation (if using tools like Sphinx)
-docs/_build/
-docs/.doctrees/
-site/
-
-# Coverage reports
-coverage.xml
-*.cover
-.coverage.*
-
-# Profiling data
-*.prof
-*.lprof
-
-# Pytest
-.pytest_cache/
-pytest_cache/
-
-# Ruff
-.ruff_cache/
-
-# User-generated agent files (optional - keep if want to commit)
-# examples/user_agents/
-# examples/my_*.py
-
-# Backup of examples before modifications
-examples/*.backup.py
-
-# System files
-*.lock
-*.pid
-*.seed
-*.pid.lock
-
-# Temporary installation files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# ============================================================================
+# Backup Files
+# ============================================================================
+*.bak
+*.backup
+*~
