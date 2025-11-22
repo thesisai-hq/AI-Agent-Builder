@@ -39,7 +39,7 @@ def show_create_page():
     """Display agent creation interface."""
     # Show sidebar info on all pages
     show_sidebar_info()
-    
+
     st.title("➕ Create New Agent")
 
     st.info(

@@ -7,6 +7,7 @@ __version__ = "1.4.0"
 
 from .agent_creator import AgentCreator
 from .agent_loader import AgentLoader
+from .agent_creation_helpers import AgentCreationState
 from .metrics import MetricDefinitions, RuleValidator
 
 # Phase 1 refactoring: AgentTester deprecated
@@ -15,6 +16,7 @@ from .metrics import MetricDefinitions, RuleValidator
 __all__ = [
     "AgentLoader",
     "AgentCreator",
+    "AgentCreationState",
     "MetricDefinitions",
     "RuleValidator",
 ]

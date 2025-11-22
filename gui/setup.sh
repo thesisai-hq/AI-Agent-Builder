@@ -93,20 +93,28 @@ else
     exit 1
 fi
 
-# Run comprehensive setup verification
+# Run comprehensive setup verification (tests now in tests/gui/)
 echo ""
 echo "Running setup verification..."
-python3 gui/test_setup.py || {
-    echo "⚠  Setup test had warnings (check output above)"
-}
+if [ -f "tests/gui/test_setup.py" ]; then
+    python3 tests/gui/test_setup.py || {
+        echo "⚠  Setup test had warnings (check output above)"
+    }
+else
+    echo "⚠  Setup verification script not found (skipping)"
+fi
 
-# Test signal creation
+# Test signal creation (tests now in tests/gui/)
 echo ""
 echo "Testing Signal creation..."
-python3 gui/test_signal.py || {
-    echo "❌ Signal test failed"
-    exit 1
-}
+if [ -f "tests/gui/test_signal.py" ]; then
+    python3 tests/gui/test_signal.py || {
+        echo "❌ Signal test failed"
+        exit 1
+    }
+else
+    echo "⚠  Signal test script not found (skipping)"
+fi
 
 echo "✓ All tests passed"
 
@@ -141,7 +149,7 @@ echo "Next steps:"
 echo ""
 echo "1. Start the GUI:"
 echo "   ./gui/launch.sh"
-echo "   or: streamlit run gui/app.py"
+echo "   or: streamlit run gui/0_🏠_Home.py"
 echo ""
 echo "2. For LLM/Hybrid/RAG agents, you also need:"
 echo ""

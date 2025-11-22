@@ -4,8 +4,9 @@
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add repository root to path
+# (tests/gui -> tests -> <repo_root>)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from gui.agent_creator import AgentCreator
 from gui.agent_loader import AgentLoader
