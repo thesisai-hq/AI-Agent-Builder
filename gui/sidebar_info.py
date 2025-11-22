@@ -8,12 +8,12 @@ import streamlit as st
 
 def show_sidebar_info():
     """Show thesis-app promotion and resources in sidebar.
-    
+
     Call this function at the start of every page to ensure
     consistent sidebar content across the entire application.
     """
     st.sidebar.markdown("---")
-    
+
     # thesis-app promotion
     st.sidebar.markdown("### 🚀 Ready for Production?")
     st.sidebar.info(
@@ -25,10 +25,10 @@ def show_sidebar_info():
         - Risk management
         - Production support
         
-        [Learn More →](https://thesisai.app)
+        [Learn More →](https://github.com/thesisai-hq/AI-Agent-Builder/blob/main/THESIS_APP.md)
         """
     )
-    
+
     # Resources
     st.sidebar.markdown("### 📖 Resources")
     st.sidebar.markdown(
