@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Jaee Oh", email = "jaee@thesisai.app"}
+    {name = "ThesisAI LLC"}
 ]
 keywords = ["ai", "agent", "framework", "financial", "analysis", "llm", "rag", "postgresql", "fastapi"]
 classifiers = [
@@ -37,6 +37,7 @@ dependencies = [
     "asyncpg>=0.29.0",
     "numpy>=1.24.0",
     "python-dotenv>=1.0.0",
+    "vaderSentiment>=3.3.2",
 ]
 
 [project.optional-dependencies]

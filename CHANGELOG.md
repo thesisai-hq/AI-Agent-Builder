@@ -14,6 +14,7 @@ Production-ready AI agent framework for financial analysis.
 - **Agent System**: Base class with lazy LLM/RAG initialization
 - **LLM Support**: OpenAI, Anthropic, and Ollama with automatic retries
 - **RAG System**: Document analysis with semantic search
+- **Sentiment Analysis**: VADER-based sentiment for news and text analysis
 - **REST API**: FastAPI backend with dependency injection
 - **Type Safety**: Full Pydantic validation and type hints
 - **Error Handling**: Comprehensive exception hierarchy and logging

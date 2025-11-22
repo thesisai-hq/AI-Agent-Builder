@@ -1,104 +1,139 @@
+# ============================================================================
 # Python
+# ============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# Build and distribution
+# ============================================================================
+# Virtual Environments
+# ============================================================================
+venv/
+env/
+.venv/
+ENV/
+
+# ============================================================================
+# Environment Variables & Secrets
+# ============================================================================
+.env
+.env.*
+!.env.example
+
+# ============================================================================
+# Build & Distribution
+# ============================================================================
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-/lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 MANIFEST
 
-# Virtual Environment
-venv/
-env/
-ENV/
-.venv
-.env/
+# ============================================================================
+# Testing
+# ============================================================================
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
 
-# IDE
+# ============================================================================
+# IDE & Editors
+# ============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# ============================================================================
+# Operating System
+# ============================================================================
+# macOS
 .DS_Store
+.AppleDouble
+._*
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-*.cover
-.hypothesis/
+# Windows
+Thumbs.db
+Desktop.ini
 
-# Environment
-.env
-.env.local
-.env.*.local
+# Linux
+.directory
+.Trash-*
 
+# ============================================================================
 # Database
+# ============================================================================
 *.db
 *.sqlite
 *.sql.backup
 pg_dump_*.sql
 
+# ============================================================================
 # Logs
+# ============================================================================
 *.log
 logs/
 
-# OS
-.DS_Store
-Thumbs.db
-*.bak
+# ============================================================================
+# Streamlit
+# ============================================================================
+.streamlit/
 
-# Docker
-docker-compose.override.yml
-
-# Development/Internal files (remove before publishing)
-CLEANUP_CHECKLIST.md
-IMPROVEMENTS_SUMMARY.md
-IMPLEMENTATION_REPORT.md
-TEST_FIXES.md
-diagnose_postgres.py
-setup_test_db.sh
-
-# Jupyter Notebooks (if any)
-.ipynb_checkpoints/
-*.ipynb
-
-# Type checking
+# ============================================================================
+# Type Checking & Linting
+# ============================================================================
 .mypy_cache/
-.dmypy.json
-dmypy.json
+.ruff_cache/
 .pytype/
 
-# Backup files
+# ============================================================================
+# Docker
+# ============================================================================
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ============================================================================
+# Temporary Files & Cleanup Scripts
+# ============================================================================
+*.tmp
+*.temp
+.cache/
+
+# Temporary cleanup scripts (Phase 1 refactoring)
+cleanup_*.py
+cleanup_*.sh
+verify_*.py
+verify_*.sh
+consolidate_*.py
+CLEANUP_INSTRUCTIONS.md
+PHASE1_COMMANDS.md
+
+# ============================================================================
+# User-Generated Test Files
+# ============================================================================
+examples/myagent.py
+examples/test_*.py
+examples/*.backup.py
+scratch/
+playground/
+
+# ============================================================================
+# Large Data Files
+# ============================================================================
+*.csv.gz
+*.parquet
+large_data/
+
+# ============================================================================
+# Backup Files
+# ============================================================================
+*.bak
+*.backup
 *~
-*.swp
-*.swo
-
-# uv
-.uv/
-uv.lock
-
-# Deprecated files (if they accidentally get added back)
-# Only ignore root-level files, allow in subdirectories
-/setup.py
-/requirements.txt

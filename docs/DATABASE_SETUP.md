@@ -454,7 +454,6 @@ Now that your database is set up:
 
 - **Installation guide**: [GETTING_STARTED.md](GETTING_STARTED.md)
 - **Settings explained**: [CONFIGURATION.md](CONFIGURATION.md)
-- **Quick snippets**: [../QUICK_REFERENCE.md](../QUICK_REFERENCE.md)
 
 ---
 

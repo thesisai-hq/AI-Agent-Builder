@@ -1,274 +1,552 @@
-# AI Agent Framework
+# AI Agent Builder - Learn Investment Analysis with AI
 
-Build AI-powered investment analysis agents in Python.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![For Education](https://img.shields.io/badge/use-education%20only-orange.svg)](DISCLAIMER.md)
 
-## What Is This?
+**Build AI-powered stock analysis agents** - Choose your approach:
 
-A lightweight framework for creating AI agents that analyze stocks and make investment recommendations. Think of it as LEGO blocks for building custom stock analysts.
+---
 
-**Key Features:**
-- 🤖 Rule-based or AI-powered agents
-- 🎨 Visual GUI for building agents (Streamlit)
-- 📊 PostgreSQL database with sample stock data
-- 🔌 Supports OpenAI, Anthropic, or local Ollama
-- 🚀 Production-ready FastAPI server
-- 📦 Works with conda, venv, or system Python
+## Choose Your Path
 
-## Quick Start
+### 🎨 Visual GUI (No Coding Required)
+
+**Perfect for:**
+- 📚 Finance students learning investment concepts
+- 🏫 University courses on quantitative finance
+- 💡 Anyone exploring AI in investing
+- 🧑‍🎓 Beginners with no programming background
+
+**What you get:**
+- Visual agent builder (forms, no code)
+- Pre-built strategies (Buffett, Lynch, Graham)
+- Test with sample data instantly
+- View generated code to learn Python (optional)
+
+**[→ GUI Quick Start](#-gui-quick-start)**
+
+---
+
+### 💻 Python Framework (For Developers)
+
+**Perfect for:**
+- 👨‍💻 Developers building investment systems
+- 🔬 Researchers creating custom strategies
+- 🏢 Teams integrating into larger applications
+- 🎓 Students learning Python + finance together
+
+**What you get:**
+- Full programmatic control
+- Import into your projects
+- Build multi-agent orchestrations
+- REST API for service deployment
+
+**[→ Framework Quick Start](#-framework-quick-start)**
+
+---
+
+**Both paths use the same powerful framework - choose what works for you!**
+
+---
+
+## ⚠️ Educational Tool Only
+
+This is a **learning tool for finance education**. Not for real trading.
+
+- ❌ **NOT financial advice** - For learning only
+- ❌ **NOT for real trading** - Theoretical exercises only
+- ✅ **FOR education** - Learn investment concepts with AI
+
+**Ready for production?** [thesis-app](THESIS_APP.md) - professional platform (coming soon)
+
+**Legal:** [DISCLAIMER.md](DISCLAIMER.md) | [LICENSE](LICENSE)
+
+---
+
+## 🎨 GUI Quick Start
+
+### Setup & Launch
 
 ```bash
-# 1. Install (choose one environment: conda, venv, or system Python)
+# Clone repository
 git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
 cd AI-Agent-Builder
-pip install -e .
 
-# 2. Setup database
-cp .env.example .env
-docker compose up -d postgres
-python seed_data.py
+# One-time setup
+chmod +x gui/setup.sh gui/launch.sh
+./gui/setup.sh
 
-# 3. Run example
-python examples/01_basic.py
+# Launch GUI (every time)
+./gui/launch.sh
 ```
 
-See [Quick Start Guide](QUICK_START.md) for detailed setup with conda/venv options.
+**Opens at:** `http://localhost:8501`
 
-## Simple Example
+**Time to first agent:** 10 minutes (no coding!)
+
+---
+
+### What Gets Installed
+
+✅ **GUI framework** (Streamlit)  
+✅ **PDF processing** (PyPDF2)  
+✅ **All LLM providers** (Ollama, OpenAI, Anthropic)  
+✅ **RAG support** (sentence-transformers)  
+✅ **Framework core** (FastAPI, PostgreSQL client, Pydantic)
+
+**Everything installed - full functionality immediately!**
+
+---
+
+### Optional: Database Setup (For Real Data)
+
+**GUI works with mock data by default.** For testing with database:
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Start PostgreSQL
+docker compose up -d postgres
+sleep 10
+
+# Add sample data (AAPL, MSFT, TSLA, JPM)
+python seed_data.py
+```
+
+---
+
+### Optional: LLM Setup (For AI Agents)
+
+**Rule-Based agents work immediately!** For LLM/RAG/Hybrid agents:
+
+**Ollama (Free, Local AI - Recommended):**
+```bash
+# Install Ollama service
+curl https://ollama.ai/install.sh | sh
+
+# Download model (~4GB)
+ollama pull llama3.2
+
+# Start service (keep running)
+ollama serve
+```
+
+**Or use the visual "⚙️ LLM Setup" wizard in the GUI!**
+
+**OpenAI/Anthropic (Cloud APIs):**
+```bash
+# Add API key to .env
+nano .env
+# Add: OPENAI_API_KEY=sk-your-key
+# or: ANTHROPIC_API_KEY=sk-ant-your-key
+```
+
+**[Complete GUI Guide →](GUI_QUICK_START.md)**
+
+---
+
+## 💻 Framework Quick Start
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/thesisai-hq/AI-Agent-Builder.git
+cd AI-Agent-Builder
+
+# Install with pip (standard Python workflow)
+pip install -e ".[all]"
+```
+
+**That's it!** Framework is installed and ready to use.
+
+**Alternative installations:**
+```bash
+# Minimal (core only)
+pip install -e .
+
+# With LLM support
+pip install -e ".[llm]"
+
+# With RAG support
+pip install -e ".[rag]"
+
+# Development tools
+pip install -e ".[dev]"
+
+# Everything (recommended)
+pip install -e ".[all]"
+```
+
+**Time to first agent:** 5 minutes
+
+---
+
+### Optional: Virtual Environment (Recommended)
+
+```bash
+# Create isolated environment
+python3 -m venv venv
+
+# Activate
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# Then install
+pip install -e ".[all]"
+```
+
+---
+
+### Optional: Database Setup
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Start PostgreSQL with Docker
+docker compose up -d postgres
+sleep 10
+
+# Seed sample data
+python seed_data.py
+```
+
+**Note:** Many examples work without database (mock data)
+
+---
+
+### Your First Agent (5 Minutes)
+
+Create `my_agent.py`:
 
 ```python
 from agent_framework import Agent, Signal, Database, Config
 import asyncio
 
 class ValueAgent(Agent):
-    """Buy undervalued stocks (PE < 15)"""
+    """Buy undervalued stocks with low PE ratios."""
     
-    def analyze(self, ticker, data):
+    async def analyze(self, ticker: str, data: dict) -> Signal:
         pe = data.get('pe_ratio', 0)
         
         if pe < 15:
-            return Signal('bullish', 0.8, f'Undervalued at PE={pe:.1f}')
+            return Signal(
+                direction='bullish',
+                confidence=0.8,
+                reasoning=f'Undervalued: PE={pe}'
+            )
         elif pe > 30:
-            return Signal('bearish', 0.7, f'Overvalued at PE={pe:.1f}')
-        else:
-            return Signal('neutral', 0.5, 'Fair value')
+            return Signal(
+                direction='bearish',
+                confidence=0.7,
+                reasoning=f'Overvalued: PE={pe}'
+            )
+        return Signal(
+            direction='neutral',
+            confidence=0.6,
+            reasoning='Fair value'
+        )
 
 async def main():
     db = Database(Config.get_database_url())
     await db.connect()
     
     agent = ValueAgent()
-    data = await db.get_fundamentals('AAPL')
-    signal = agent.analyze('AAPL', data)
     
-    print(f"{signal.direction.upper()}: {signal.reasoning}")
+    for ticker in await db.list_tickers():
+        data = await db.get_fundamentals(ticker)
+        signal = await agent.analyze(ticker, data)
+        print(f"{ticker}: {signal.direction} ({signal.confidence:.0%}) - {signal.reasoning}")
+    
     await db.disconnect()
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-## Installation Options
-
-### Core Dependencies Only
+**Run it:**
 ```bash
-pip install -e .
+python my_agent.py
 ```
 
-**Includes:** FastAPI, Pydantic, AsyncPG, basic framework  
-**Can use:** Rule-based agents, database connections  
-**Cannot use:** LLM-powered agents
-
-### With LLM Support (OpenAI, Anthropic, Ollama)
-```bash
-pip install -e ".[llm]"
+**Output:**
+```
+AAPL: neutral (60%) - Fair value
+MSFT: neutral (60%) - Fair value
+TSLA: bearish (70%) - Overvalued: PE=52.3
+JPM: bullish (80%) - Undervalued: PE=11.2
 ```
 
-**Includes:** Core + OpenAI, Anthropic, Ollama packages  
-**Can use:** All agent types (rule-based, LLM-powered, hybrid)  
-**Recommended for:** Development and LLM agent usage
-
-### With RAG (Document Analysis)
-```bash
-pip install -e ".[rag]"
-```
-
-### With Development Tools
-```bash
-pip install -e ".[dev]"
-```
-
-### Everything
-```bash
-pip install -e ".[all]"
-```
-
-### Individual LLM Providers
-```bash
-pip install ollama      # Just Ollama
-pip install openai      # Just OpenAI
-pip install anthropic   # Just Anthropic
-```
-
-**Important:** LLM packages are optional. If you see errors like "No module named 'ollama'", install LLM dependencies:
-```bash
-pip install 'ai-agent-framework[llm]'  # All providers
-# OR
-pip install ollama  # Specific provider
-```
-
-## GUI - Visual Agent Builder
-
-Build agents visually with no coding required!
-
-```bash
-# Setup
-./gui/setup.sh
-
-# Launch
-./gui/launch.sh
-```
-
-**Features:**
-- 📋 Browse existing agents
-- ➕ Create agents (Rule-Based, LLM-Powered, Hybrid)
-- 🧪 Test agents with mock or real data
-- 💾 Save directly to `examples/`
-
-See **[GUI Quick Start](GUI_QUICK_START.md)** for details.
-
-## Documentation
-
-### Quick Start Guides
-- **[GUI Quick Start](GUI_QUICK_START.md)** - Visual agent builder (5 min)
-- **[Quick Start](QUICK_START.md)** - Framework setup (5 min)
-
-### Framework Documentation
-- **[Getting Started](docs/GETTING_STARTED.md)** - Detailed installation
-- **[Configuration](docs/CONFIGURATION.md)** - Environment settings
-- **[Database Guide](docs/DATABASE_SETUP.md)** - Database setup
-- **[LLM Customization](docs/LLM_CUSTOMIZATION.md)** - AI configuration
-- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Architecture
-
-### GUI Documentation
-- **[GUI README](gui/README.md)** - Complete GUI guide
-
-## Project Structure
-
-```
-AI-Agent-Builder/
-├── agent_framework/        # Core framework
-│   ├── __init__.py        # Public API exports
-│   ├── agent.py           # Base Agent class
-│   ├── models.py          # Pydantic data models
-│   ├── database.py        # PostgreSQL client
-│   ├── llm.py             # LLM integrations
-│   ├── rag.py             # Document analysis
-│   ├── api.py             # FastAPI server
-│   ├── config.py          # Configuration management
-│   └── utils.py           # Utility functions
-│
-├── gui/                   # Visual agent builder (NEW)
-│   ├── app.py            # Streamlit GUI application
-│   ├── agent_loader.py   # Load/save agents
-│   ├── agent_creator.py  # Generate agent code
-│   ├── agent_tester.py   # Test agents
-│   └── README.md         # GUI documentation
-│
-├── examples/              # Working examples
-│   ├── 01_basic.py        # Simple rule-based agents
-│   ├── 02_llm_agent.py    # AI-powered agents
-│   ├── 03_rag_agent.py    # Document analysis
-│   └── 04_custom_llm_config.py  # LLM customization
-│
-├── docs/                  # Documentation
-├── tests/                 # Test suite
-├── pyproject.toml         # Package configuration (PEP 621)
-└── docker-compose.yml     # Database setup
-```
-
-## Common Commands
-
-```bash
-# Activate environment (choose your setup)
-conda activate agent-framework          # If using conda
-source venv/bin/activate                # If using venv
-# (no activation needed for system Python)
-
-# Start database
-docker compose up -d postgres
-
-# Run examples
-python examples/01_basic.py
-python examples/02_llm_agent.py
-
-# Run tests
-pytest tests/
-
-# Stop database
-docker compose down
-```
-
-## Using AI (Optional)
-
-### Free Local AI (Ollama)
-```bash
-# Install Ollama
-curl https://ollama.ai/install.sh | sh
-
-# Download model
-ollama pull llama3.2
-
-# Install framework with LLM support
-pip install -e ".[llm]"
-```
-
-### OpenAI ChatGPT
-```bash
-# Add to .env
-OPENAI_API_KEY=sk-your-key-here
-
-# Install with LLM support
-pip install -e ".[llm]"
-```
-
-### Anthropic Claude
-```bash
-# Add to .env
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# Install with LLM support
-pip install -e ".[llm]"
-```
-
-## Requirements
-
-- Python 3.10+
-- Docker (for PostgreSQL)
-- Terminal: WSL2, macOS, or Linux
-
-## Optional: Ultra-Fast Installation with uv
-
-Want 10-100x faster installs? Use [uv](https://github.com/astral-sh/uv):
-
-```bash
-# Install uv (one-time setup)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Use uv instead of pip (same commands)
-uv pip install -e ".[all]"
-
-# uv is a drop-in replacement - works with existing pyproject.toml
-```
-
-## License
-
-MIT License - See [LICENSE](LICENSE) file.
-
-## Support
-
-- **Issues:** [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
-- **Documentation:** [docs/](docs/)
-- **Examples:** [examples/](examples/)
+**[Complete Framework Guide →](docs/FRAMEWORK_QUICKSTART.md)**
 
 ---
 
-Built for learning and experimentation. Not financial advice.
+## 🎓 What You'll Learn
+
+### Finance Concepts
+- **Value investing** (Warren Buffett, Benjamin Graham)
+- **Growth investing** (Peter Lynch, GARP)
+- **Risk assessment** and portfolio construction
+- **SEC filing analysis** with AI
+- **Multi-factor** investment strategies
+- **Quantitative screening** techniques
+
+### AI/Tech Skills (Optional)
+- Using **AI for analysis** (ChatGPT, Claude, LLaMA)
+- **Prompt engineering** for financial analysis
+- **Document processing** with RAG
+- **Python basics** (by viewing generated code)
+- **Database queries** and data management
+- **Async programming** patterns
+
+**GUI users:** Learn concepts without coding  
+**Framework users:** Learn Python + finance together
+
+---
+
+## 🤖 Four Agent Types
+
+Create agents either way - visual forms **OR** Python code:
+
+### 📊 Rule-Based (Start Here!)
+
+**Concept:** Clear if/then rules you define  
+**Example:** "Buy if PE < 15 AND ROE > 15%"  
+**Speed:** Very fast (milliseconds)  
+**Setup:** None - works immediately!
+
+**GUI:** Fill form → Generate code  
+**Framework:** Write Python class directly
+
+---
+
+### 🧠 LLM-Powered (AI Intelligence)
+
+**Concept:** Uses AI for nuanced analysis  
+**Example:** "Apple shows strong competitive moat..."  
+**Speed:** Slower (2-5 seconds)  
+**Setup:** Ollama (free) or OpenAI/Anthropic (paid)
+
+**GUI:** Configure in forms → AI reasoning  
+**Framework:** LLMConfig + system prompts
+
+---
+
+### 🔀 Hybrid (Best of Both)
+
+**Concept:** Rules filter + AI analyzes  
+**Example:** Filter 1000 stocks → AI analyzes top 50  
+**Speed:** Fast screening, selective analysis  
+**Setup:** Same as LLM
+
+**GUI:** Define rules + LLM config  
+**Framework:** Two-stage analyze() method
+
+---
+
+### 📄 RAG-Powered (Document Analysis)
+
+**Concept:** Analyzes long documents  
+**Example:** Extract insights from 100-page 10-K  
+**Speed:** Varies by document size  
+**Setup:** Same as LLM
+
+**GUI:** Upload PDF → Get insights  
+**Framework:** RAGSystem + document processing
+
+**[Complete Agent Type Guide →](docs/CHOOSING_AGENT_TYPE.md)**
+
+---
+
+## 🎨 GUI Features
+
+**No coding required!** Create agents through visual interface:
+
+- 🎨 **Agent Builder** - Form-based creation
+- 📚 **Example Gallery** - Buffett, Lynch, Graham strategies
+- 🧪 **Testing** - Try agents on sample or real data
+- 👁️ **Code Viewer** - See generated Python code
+- 📄 **PDF Upload** - Analyze SEC filings
+- ⚙️ **LLM Setup Wizard** - Step-by-step AI configuration
+- 💾 **Save & Share** - Export agents as Python files
+
+**[Complete GUI Guide →](GUI_QUICK_START.md)**
+
+---
+
+## 💻 Framework Features
+
+**Full programmatic control** for developers:
+
+```python
+# Import and use in your code
+from agent_framework import (
+    Agent, Signal, Database, Config,
+    LLMConfig, RAGConfig, AgentConfig
+)
+
+# Build custom agents
+class MyAgent(Agent):
+    async def analyze(self, ticker, data):
+        # Your logic here
+        return Signal(...)
+
+# Use in your projects
+agent = MyAgent()
+signal = await agent.analyze('AAPL', data)
+```
+
+**Framework capabilities:**
+- ✅ Import as library (`pip install`)
+- ✅ REST API server (FastAPI)
+- ✅ Multi-agent orchestration
+- ✅ Custom database queries
+- ✅ Async operations
+- ✅ Type safety (Pydantic)
+
+**Run examples:**
+```bash
+python examples/01_basic.py       # Rule-based agent
+python examples/02_llm_agent.py   # AI-powered agent
+python examples/03_hybrid.py      # Hybrid agent
+```
+
+**[Complete Framework Guide →](docs/FRAMEWORK_QUICKSTART.md)**
+
+---
+
+## 📚 Learning Path
+
+### For GUI Users (No Coding)
+
+**Week 1:**
+1. Run `./gui/setup.sh` (10 min)
+2. Create rule-based agent (30 min)
+3. Test with sample data (20 min)
+4. Try example strategies (1 hour)
+
+**Week 2:**
+5. Setup Ollama (10 min)
+6. Create AI-powered agent (30 min)
+7. Compare AI vs rules (20 min)
+
+**Week 3+:**
+8. Create hybrid agent (30 min)
+9. Upload and analyze PDFs (45 min)
+10. Build custom strategy (2 hours)
+
+**Total:** 8-12 hours over 3 weeks
+
+---
+
+### For Framework Users (Python)
+
+**Day 1:**
+1. `pip install -e ".[all]"` (5 min)
+2. Run `examples/01_basic.py` (5 min)
+3. Modify and experiment (30 min)
+
+**Day 2:**
+4. Build custom agent class (30 min)
+5. Add LLM integration (30 min)
+6. Test with database (20 min)
+
+**Day 3+:**
+7. Build multi-agent system (2 hours)
+8. Deploy REST API (1 hour)
+9. Integrate into your project (varies)
+
+**Total:** 5-8 hours to proficiency
+
+---
+
+## 🎯 Quick Commands Reference
+
+### GUI Users
+```bash
+./gui/setup.sh            # One-time setup
+./gui/launch.sh           # Launch GUI
+```
+
+### Framework Users  
+```bash
+pip install -e ".[all]"         # Install everything
+pip install -e ".[dev]"         # Install with dev tools
+pip install -e .                # Core only
+
+python examples/01_basic.py     # Run example
+python -m agent_framework.api   # Start API server
+pytest tests/ -v                # Run tests
+```
+
+### Database (Optional)
+```bash
+docker compose up -d postgres   # Start PostgreSQL
+python seed_data.py             # Add sample data
+docker compose down             # Stop services
+```
+
+---
+
+## 📖 Documentation
+
+### For GUI Users
+- [GUI Quick Start](GUI_QUICK_START.md) - Visual interface walkthrough
+- Creating agents visually with forms
+- Testing agents with mock/real data
+
+### For Framework Users
+- [Framework Quick Start](docs/FRAMEWORK_QUICKSTART.md) - Pip install & code
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
+- [Integration Patterns](docs/INTEGRATION_PATTERNS.md) - Real-world usage
+- [Example Code](examples/README.md) - Working examples
+
+### For Both
+- [Getting Started](docs/GETTING_STARTED.md) - Installation overview
+- [Configuration](docs/CONFIGURATION.md) - Environment settings
+- [Database Setup](docs/DATABASE_SETUP.md) - PostgreSQL guide
+- [LLM Customization](docs/LLM_CUSTOMIZATION.md) - AI configuration
+- [Choosing Agent Type](docs/CHOOSING_AGENT_TYPE.md) - Which to use
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues
+
+---
+
+## 🎓 For Universities & Educators
+
+**For GUI-based courses:**
+- ✅ Zero coding barrier
+- ✅ Setup: Two commands
+- ✅ Immediate results
+
+**For programming courses:**
+- ✅ Standard pip install
+- ✅ Real-world framework design
+- ✅ Production patterns (async, typing, testing)
+
+**[University Setup Guide →](docs/UNIVERSITY_SETUP.md)**
+
+---
+
+## 🤝 Contributing
+
+- 🐛 **Report bugs** - [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)
+- 📖 **Improve docs** - Pull requests welcome
+- 🎓 **Add examples** - Share your strategies
+- 💡 **Suggest features** - [Discussions](https://github.com/thesisai-hq/AI-Agent-Builder/discussions)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📜 License
+
+MIT License - Free to use, modify, and distribute. See [LICENSE](LICENSE).
+
+**Educational Disclaimer:** Not financial advice. For learning only. See [DISCLAIMER.md](DISCLAIMER.md).
+
+---
+
+*Interested in production trading tools? [thesis-app is coming soon](THESIS_APP.md).*

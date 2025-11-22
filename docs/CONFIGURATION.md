@@ -427,9 +427,10 @@ docker-compose up -d postgres
 
 ## Need More Help?
 
-- **AI customization**: [LLM_CUSTOMIZATION.md](LLM_CUSTOMIZATION.md)
-- **Database setup**: [DATABASE_SETUP.md](DATABASE_SETUP.md)
-- **Quick reference**: [../QUICK_REFERENCE.md](../QUICK_REFERENCE.md)
+- **AI customization:** [LLM_CUSTOMIZATION.md](LLM_CUSTOMIZATION.md)
+- **Database setup:** [DATABASE_SETUP.md](DATABASE_SETUP.md)
+- **Troubleshooting:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- **Quick start:** [../QUICK_START.md](../QUICK_START.md)
 
 ---
 
