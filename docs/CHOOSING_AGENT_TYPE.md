@@ -359,6 +359,8 @@ python examples/04_rag_agent.py
 ---
 
 See also:
+- [Data Flow](DATA_FLOW.md) - Understand how each agent type processes data ⭐
+- [Multi-Agent Systems](MULTI_AGENT_SYSTEMS.md) - Combine different agent types ⭐
 - [Hybrid Agents Explained](HYBRID_AGENTS.md) - Deep dive on hybrid
 - [LLM Customization](LLM_CUSTOMIZATION.md) - AI configuration
 - [Examples Guide](../examples/README.md) - Try all types

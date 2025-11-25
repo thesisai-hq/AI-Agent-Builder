@@ -500,8 +500,9 @@ docker compose down             # Stop services
 
 ### For Framework Users
 - [Framework Quick Start](docs/FRAMEWORK_QUICKSTART.md) - Pip install & code
+- [Data Flow](docs/DATA_FLOW.md) - Complete transparency on how agents work ⭐
+- [Multi-Agent Systems](docs/MULTI_AGENT_SYSTEMS.md) - Build orchestrated strategies ⭐
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
-- [Integration Patterns](docs/INTEGRATION_PATTERNS.md) - Real-world usage
 - [Example Code](examples/README.md) - Working examples
 
 ### For Both
@@ -510,6 +511,8 @@ docker compose down             # Stop services
 - [Database Setup](docs/DATABASE_SETUP.md) - PostgreSQL guide
 - [LLM Customization](docs/LLM_CUSTOMIZATION.md) - AI configuration
 - [Choosing Agent Type](docs/CHOOSING_AGENT_TYPE.md) - Which to use
+- [Data Flow](docs/DATA_FLOW.md) - Understand how data flows through agents ⭐
+- [Multi-Agent Systems](docs/MULTI_AGENT_SYSTEMS.md) - Orchestration patterns ⭐
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues
 
 ---

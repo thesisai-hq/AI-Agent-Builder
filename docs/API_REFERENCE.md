@@ -848,6 +848,8 @@ We use the **compound score** as it provides the best overall sentiment indicato
 
 ## Next Steps
 
+- **[Data Flow](DATA_FLOW.md)** - Understand how data flows through agents ⭐
+- **[Multi-Agent Systems](MULTI_AGENT_SYSTEMS.md)** - Build orchestrated strategies ⭐
 - **[Configuration Guide](CONFIGURATION.md)** - Environment variables
 - **[Database Setup](DATABASE_SETUP.md)** - PostgreSQL details
 - **[Project Structure](PROJECT_STRUCTURE.md)** - Code organization

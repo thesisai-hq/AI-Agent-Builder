@@ -498,6 +498,8 @@ examples/
 
 ## Resources
 
+- **Data Flow:** [DATA_FLOW.md](DATA_FLOW.md) - Understand how agents process data ⭐
+- **Multi-Agent Systems:** [MULTI_AGENT_SYSTEMS.md](MULTI_AGENT_SYSTEMS.md) - Orchestration patterns ⭐
 - **Getting Started:** [GETTING_STARTED.md](GETTING_STARTED.md)
 - **API Reference:** [API_REFERENCE.md](API_REFERENCE.md)
 - **Examples:** [../examples/README.md](../examples/README.md)

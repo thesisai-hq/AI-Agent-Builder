@@ -562,9 +562,11 @@ uv pip install -e ".[all]"
 
 ## Next Steps
 
+- Read [DATA_FLOW.md](DATA_FLOW.md) - Understand how data flows through agents ⭐
+- Read [MULTI_AGENT_SYSTEMS.md](MULTI_AGENT_SYSTEMS.md) - Learn orchestration patterns ⭐
 - Read [CONFIGURATION.md](CONFIGURATION.md) for settings
 - Read [LLM_CUSTOMIZATION.md](LLM_CUSTOMIZATION.md) for AI options
-- See [QUICK_START.md](../QUICK_START.md) for quick commands reference
+- See [FRAMEWORK_QUICKSTART.md](FRAMEWORK_QUICKSTART.md) for framework guide
 
 ---
 

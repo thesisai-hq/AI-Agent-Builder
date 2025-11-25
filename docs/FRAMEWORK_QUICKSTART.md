@@ -838,6 +838,8 @@ ollama serve  # Must be running
 ## Next Steps
 
 **Explore:**
+- 🔍 [Data Flow](DATA_FLOW.md) - Complete transparency on how agents work ⭐
+- 🤝 [Multi-Agent Systems](MULTI_AGENT_SYSTEMS.md) - Build orchestrated strategies ⭐
 - 📖 [API Reference](API_REFERENCE.md) - Complete API documentation
 - 📊 [Project Structure](PROJECT_STRUCTURE.md) - Code organization
 - 🧪 [Testing Guide](../tests/README.md) - Writing tests
