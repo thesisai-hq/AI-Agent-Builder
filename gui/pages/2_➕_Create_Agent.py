@@ -97,6 +97,7 @@ def show_create_page():
                 chunk_size=rag_config["chunk_size"] if rag_config else None,
                 chunk_overlap=rag_config["chunk_overlap"] if rag_config else None,
                 top_k=rag_config["top_k"] if rag_config else None,
+                custom_queries=rag_config["custom_queries"] if rag_config else None,
             )
 
             AgentCreationState.set_generated_code(code)

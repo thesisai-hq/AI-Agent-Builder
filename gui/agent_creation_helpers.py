@@ -303,7 +303,7 @@ def show_rag_configuration() -> Dict:
     """Show RAG configuration UI.
 
     Returns:
-        Dict with RAG config: chunk_size, chunk_overlap, top_k
+        Dict with RAG config: chunk_size, chunk_overlap, top_k, custom_queries
     """
     st.markdown("**RAG Configuration**")
 
@@ -314,8 +314,68 @@ def show_rag_configuration() -> Dict:
     top_k = st.number_input(
         "Top K Results", 1, 10, 3, 1, help="Number of relevant chunks to retrieve"
     )
+    
+    # Query customization
+    st.markdown("**📝 Query Questions**")
+    st.caption("Customize the questions the agent asks when analyzing documents")
+    
+    with st.expander("➕ Customize Query Questions", expanded=False):
+        st.info(
+            """
+            **Default Questions:**
+            1. What are the key financial metrics and performance?
+            2. What are the main risks or challenges?
+            3. What are the growth opportunities?
+            
+            **Add Your Own:**
+            Customize questions to focus on specific aspects of documents.
+            
+            **Examples:**
+            - What is the company's competitive advantage?
+            - What are the management's key priorities?
+            - What regulatory challenges does the company face?
+            - How is the company addressing ESG concerns?
+            """
+        )
+        
+        use_custom_queries = st.checkbox(
+            "Use custom queries instead of defaults",
+            help="Check this to replace default queries with your own"
+        )
+        
+        custom_queries = []
+        if use_custom_queries:
+            num_queries = st.number_input(
+                "Number of Queries",
+                min_value=1,
+                max_value=10,
+                value=3,
+                help="How many questions should the agent ask?"
+            )
+            
+            for i in range(num_queries):
+                query = st.text_area(
+                    f"Query {i + 1}",
+                    key=f"rag_query_{i}",
+                    placeholder=f"Example: What are the key financial metrics?",
+                    help=f"Question {i + 1} that will be asked when analyzing documents"
+                )
+                if query and query.strip():
+                    custom_queries.append(query.strip())
+            
+            if custom_queries:
+                st.success(f"✅ {len(custom_queries)} custom queries configured")
+            else:
+                st.warning("⚠️ No queries entered. Default queries will be used.")
+        else:
+            st.info("ℹ️ Using default queries. Check the box above to customize.")
 
-    return {"chunk_size": chunk_size, "chunk_overlap": chunk_overlap, "top_k": top_k}
+    return {
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+        "top_k": top_k,
+        "custom_queries": custom_queries if custom_queries else None
+    }
 
 
 # ============================================================================

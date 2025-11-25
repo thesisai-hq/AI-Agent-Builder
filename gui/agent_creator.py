@@ -117,6 +117,7 @@ class AgentCreator:
         chunk_size: Optional[int] = None,
         chunk_overlap: Optional[int] = None,
         top_k: Optional[int] = None,
+        custom_queries: Optional[List[str]] = None,
     ) -> str:
         """Generate complete agent code with enhanced confidence.
 
@@ -166,6 +167,11 @@ class AgentCreator:
                 safe_user_instructions,
             )
         elif agent_type == "RAG-Powered":
+            # Sanitize custom queries
+            safe_custom_queries = None
+            if custom_queries:
+                safe_custom_queries = [self._escape_string_literal(q) for q in custom_queries if q and q.strip()]
+            
             return self._generate_rag_agent(
                 safe_agent_name,
                 safe_description,
@@ -178,6 +184,7 @@ class AgentCreator:
                 safe_chunk_size,
                 safe_chunk_overlap,
                 safe_top_k,
+                safe_custom_queries,
             )
         else:  # Hybrid
             return self._generate_hybrid_agent(
@@ -611,14 +618,43 @@ if __name__ == "__main__":
         chunk_size: int = 300,
         chunk_overlap: int = 50,
         top_k: int = 3,
+        custom_queries: Optional[List[str]] = None,
     ) -> str:
         """Generate RAG agent code.
 
         SECURITY: All inputs already sanitized by caller.
         """
 
-        custom_query = user_prompt_instructions or ""
         safe_prompt = system_prompt or "You are a financial document analyst."
+        
+        # Build queries list code
+        if custom_queries and len(custom_queries) > 0:
+            # User provided custom queries
+            queries_code = "queries = [\n"
+            for query in custom_queries:
+                queries_code += f'                "{query}",\n'
+            
+            # If user_prompt_instructions provided, add as additional query
+            if user_prompt_instructions and user_prompt_instructions.strip():
+                queries_code += f'                "{user_prompt_instructions}",\n'
+            
+            queries_code += "            ]"
+        else:
+            # Use default queries
+            queries_code = '''queries = [
+                "What are the key financial metrics and performance?",
+                "What are the main risks or challenges?",
+                "What are the growth opportunities?"
+            ]'''
+            
+            # If user_prompt_instructions provided, add as additional query
+            if user_prompt_instructions and user_prompt_instructions.strip():
+                queries_code = f'''queries = [
+                "What are the key financial metrics and performance?",
+                "What are the main risks or challenges?",
+                "What are the growth opportunities?",
+                "{user_prompt_instructions}"
+            ]'''
 
         return f'''"""Auto-generated RAG-powered agent: {agent_name}
 
@@ -676,15 +712,8 @@ class {agent_name}(Agent):
             chunks_added = self.rag.add_document(document_text)
             print(f"  📄 Processed {{chunks_added}} chunks")
             
-            queries = [
-                "What are the key financial metrics and performance?",
-                "What are the main risks or challenges?",
-                "What are the growth opportunities?"
-            ]
-            
-            custom_q = """{custom_query}"""
-            if custom_q and custom_q.strip():
-                queries.append(custom_q)
+            # Query questions for document analysis
+            {queries_code}
             
             insights = []
             for query in queries:
