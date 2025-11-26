@@ -271,10 +271,13 @@ python 04_rag_agent.py  # Requires: ollama + llama3.2 + sentence-transformers
 
 ## 📖 **Additional Resources**
 
-- **Framework Documentation:** [README.md](../README.md)
-- **Agent Guidelines:** [AGENT_FILE_GUIDELINES.md](../docs/AGENT_FILE_GUIDELINES.md)
-- **Hybrid Agents:** [HYBRID_AGENTS.md](../docs/HYBRID_AGENTS.md)
-- **LLM Setup:** [LLM_CUSTOMIZATION.md](../docs/LLM_CUSTOMIZATION.md)
+- [Data Flow](../docs/DATA_FLOW.md) - How each example processes data ⭐
+- [Multi-Agent Systems](../docs/MULTI_AGENT_SYSTEMS.md) - Combine examples together ⭐
+- [Framework Documentation](../README.md) - Complete guide
+- [Agent Guidelines](../docs/AGENT_FILE_GUIDELINES.md) - Best practices
+- [Hybrid Agents](../docs/HYBRID_AGENTS.md) - Deep dive on hybrid
+- [LLM Setup](../docs/LLM_CUSTOMIZATION.md) - AI configuration
+- [Choosing Agent Type](../docs/CHOOSING_AGENT_TYPE.md) - Type comparison
 
 ---
 

@@ -366,4 +366,13 @@ Result: Safe candidates with detailed risk analysis
 
 ---
 
+## Related Documentation
+
+- [Data Flow](DATA_FLOW.md) - See how hybrid agents process data in two stages
+- [Multi-Agent Systems](MULTI_AGENT_SYSTEMS.md) - Combine hybrid with other agent types
+- [Choosing Agent Type](CHOOSING_AGENT_TYPE.md) - When to use hybrid vs other types
+- [LLM Customization](LLM_CUSTOMIZATION.md) - Configure the LLM analysis stage
+
+---
+
 **Your observation was correct:** The UI wasn't showing what makes hybrid agents special. This is now fixed! 🎉

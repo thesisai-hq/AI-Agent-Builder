@@ -464,6 +464,13 @@ More tokens = more money spent on API calls.
 3. **Adjust one setting at a time**: See what changes
 4. **Create specialized agents**: Different settings for different tasks
 
+## Related Documentation
+
+- [Data Flow](DATA_FLOW.md) - See how LLM agents process data ⭐
+- [Choosing Agent Type](CHOOSING_AGENT_TYPE.md) - LLM vs Rule-Based vs Hybrid
+- [Hybrid Agents](HYBRID_AGENTS.md) - Combine rules + LLM
+- [Multi-Agent Systems](MULTI_AGENT_SYSTEMS.md) - Run multiple LLM agents together
+
 ## More Examples
 
 See [examples/04_rag_agent.py](../examples/04_rag_agent.py) for working code with temperature and token setting!

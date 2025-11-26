@@ -1001,9 +1001,11 @@ pip list | grep agent-framework
 ### Where to Get Help
 
 1. **Check documentation:**
-   - [GETTING_STARTED.md](GETTING_STARTED.md) - Setup guide
-   - [CONFIGURATION.md](CONFIGURATION.md) - Settings
-   - [DATABASE_SETUP.md](DATABASE_SETUP.md) - Database help
+   - [Data Flow](DATA_FLOW.md) - Understand how agents work ⭐
+   - [Getting Started](GETTING_STARTED.md) - Setup guide
+   - [Configuration](CONFIGURATION.md) - Settings
+   - [Database Setup](DATABASE_SETUP.md) - Database help
+   - [LLM Customization](LLM_CUSTOMIZATION.md) - AI configuration
 
 2. **Search existing issues:**
    - [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)

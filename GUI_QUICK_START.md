@@ -405,6 +405,8 @@ python3 gui/test_setup.py
 - **👁️ View** → See code with explanations
 
 **Documentation:**
+- [Data Flow](docs/DATA_FLOW.md) - How agents process data ⭐
+- [Multi-Agent Systems](docs/MULTI_AGENT_SYSTEMS.md) - Combine agents ⭐
 - [Full Setup Guide](docs/GETTING_STARTED.md)
 - [Agent Type Comparison](docs/CHOOSING_AGENT_TYPE.md)
 - [LLM Customization](docs/LLM_CUSTOMIZATION.md)

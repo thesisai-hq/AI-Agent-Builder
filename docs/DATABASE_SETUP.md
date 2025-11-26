@@ -450,10 +450,12 @@ Now that your database is set up:
 3. ✅ Build your first agent
 4. ✅ Experiment and have fun!
 
-## More Help
+## Related Documentation
 
-- **Installation guide**: [GETTING_STARTED.md](GETTING_STARTED.md)
-- **Settings explained**: [CONFIGURATION.md](CONFIGURATION.md)
+- [Data Flow](DATA_FLOW.md) - Understand database queries in agent flow ⭐
+- [Configuration](CONFIGURATION.md) - Database settings explained
+- [Getting Started](GETTING_STARTED.md) - Complete installation guide
+- [API Reference](API_REFERENCE.md) - Database methods documentation
 
 ---
 

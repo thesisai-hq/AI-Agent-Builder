@@ -628,8 +628,10 @@ Keep what you need, delete what you don't use.
 4. Ask in class or study group
 
 **For AI-Agent-Builder issues:**
-- See [GUI_QUICK_START.md](../GUI_QUICK_START.md)
-- See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- See [Data Flow](DATA_FLOW.md) - Understand how LLM agents work ⭐
+- See [LLM Customization](LLM_CUSTOMIZATION.md) - Advanced LLM configuration
+- See [GUI Quick Start](../GUI_QUICK_START.md) - GUI guide
+- See [Troubleshooting](TROUBLESHOOTING.md) - Common issues
 - Run `python3 gui/test_setup.py`
 
 ---

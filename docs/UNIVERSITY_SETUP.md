@@ -911,9 +911,14 @@ If you publish research using this tool:
 
 ## 📞 Get Help
 
+**Documentation:**
+- [Data Flow](DATA_FLOW.md) - How agents work transparently ⭐
+- [Multi-Agent Systems](MULTI_AGENT_SYSTEMS.md) - Advanced orchestration ⭐
+- [Getting Started](GETTING_STARTED.md) - Installation
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues
+
 **Technical issues:** [GitHub Issues](https://github.com/thesisai-hq/AI-Agent-Builder/issues)  
 **Questions & Discussion:** [GitHub Discussions](https://github.com/thesisai-hq/AI-Agent-Builder/discussions)  
-**Documentation:** [docs/](../docs/) directory
 
 ---
 

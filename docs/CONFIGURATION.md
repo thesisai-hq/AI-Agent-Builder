@@ -427,10 +427,11 @@ docker-compose up -d postgres
 
 ## Need More Help?
 
-- **AI customization:** [LLM_CUSTOMIZATION.md](LLM_CUSTOMIZATION.md)
-- **Database setup:** [DATABASE_SETUP.md](DATABASE_SETUP.md)
-- **Troubleshooting:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-- **Quick start:** [../QUICK_START.md](../QUICK_START.md)
+- [Data Flow](DATA_FLOW.md) - How configuration affects data processing ⭐
+- [LLM Customization](LLM_CUSTOMIZATION.md) - AI customization
+- [Database Setup](DATABASE_SETUP.md) - Database setup
+- [Getting Started](GETTING_STARTED.md) - Installation guide
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues
 
 ---
 
