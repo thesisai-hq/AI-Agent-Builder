@@ -24,6 +24,19 @@ from .confidence import (
     enhanced_parse_llm_signal,
 )
 
+# Compression
+from .compression import (
+    SelectiveCompressor,
+    SemanticCompressor,
+    HybridCompressor,
+    CompressionMetrics,
+    CompressionQualityChecker,
+    estimate_tokens,
+    should_compress,
+    format_fundamentals_compressed,
+    calculate_monthly_savings,
+)
+
 # Database
 from .database import ConnectionError, Database, DatabaseError, QueryError
 
@@ -68,4 +81,14 @@ __all__ = [
     "EnhancedConfidenceCalculator",
     "calculate_simple_confidence",
     "enhanced_parse_llm_signal",
+    # Compression
+    "SelectiveCompressor",
+    "SemanticCompressor",
+    "HybridCompressor",
+    "CompressionMetrics",
+    "CompressionQualityChecker",
+    "estimate_tokens",
+    "should_compress",
+    "format_fundamentals_compressed",
+    "calculate_monthly_savings",
 ]
