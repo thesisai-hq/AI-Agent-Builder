@@ -1,7 +1,7 @@
 """LLM client with error handling, retries, and system prompts."""
 
 import logging
-import time
+import asyncio
 from typing import List, Optional
 
 from .models import LLMConfig
@@ -107,7 +107,7 @@ class LLMClient:
             logger.error(f"Failed to initialize {self.config.provider} client: {e}")
             raise LLMError(f"Could not initialize {self.config.provider}: {e}") from e
 
-    def chat(self, message: str, context: Optional[str] = None) -> str:
+    async def chat(self, message: str, context: Optional[str] = None) -> str:
         """Send chat message with optional context and retries.
 
         Args:
@@ -121,7 +121,8 @@ class LLMClient:
             LLMError: If all retries fail
             RateLimitError: If rate limit exceeded
         """
-        client = self._get_client()
+        # Initialize client in thread to avoid blocking the event loop
+        client = await asyncio.to_thread(self._get_client)
 
         # Build messages with system prompt (persona) if provided
         messages = []
@@ -134,16 +135,16 @@ class LLMClient:
 
         messages.append({"role": "user", "content": full_message})
 
-        # Retry logic with exponential backoff
+        # Retry logic with exponential backoff (async-safe)
         last_error = None
         for attempt in range(self.config.max_retries):
             try:
                 if self.config.provider == "openai":
-                    return self._chat_openai(client, messages)
+                    return await asyncio.to_thread(self._chat_openai, client, messages)
                 elif self.config.provider == "anthropic":
-                    return self._chat_anthropic(client, messages)
+                    return await asyncio.to_thread(self._chat_anthropic, client, messages)
                 elif self.config.provider == "ollama":
-                    return self._chat_ollama(client, messages)
+                    return await asyncio.to_thread(self._chat_ollama, client, messages)
 
             except Exception as e:
                 last_error = e
@@ -154,13 +155,13 @@ class LLMClient:
                     if attempt < self.config.max_retries - 1:
                         wait_time = 2 ** (attempt + 2)  # 4, 8, 16 seconds
                         logger.info(f"Rate limited, waiting {wait_time}s")
-                        time.sleep(wait_time)
+                        await asyncio.sleep(wait_time)
                     else:
                         raise RateLimitError("Rate limit exceeded") from e
                 # Exponential backoff for other errors
                 elif attempt < self.config.max_retries - 1:
                     wait_time = 2**attempt  # 1, 2, 4 seconds
-                    time.sleep(wait_time)
+                    await asyncio.sleep(wait_time)
 
         # All retries failed
         logger.error(f"All {self.config.max_retries} attempts failed")
