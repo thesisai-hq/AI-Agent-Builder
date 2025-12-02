@@ -135,7 +135,7 @@ Be thorough but concise. Extract what matters most for investment decisions.""",
 
         try:
             # STEP 1: Add document to RAG system (chunking + embedding)
-            chunks_added = self.rag.add_document(document_text)
+            chunks_added = await self.rag.add_document(document_text)
             print(f"  📄 Processed {chunks_added} chunks ({len(document_text):,} characters)")
 
             # STEP 2: Query specific aspects of the filing
@@ -150,11 +150,11 @@ Be thorough but concise. Extract what matters most for investment decisions.""",
                 print(f"  🔍 Query {i}/{len(queries)}: {query[:50]}...")
 
                 # STEP 3: Retrieve relevant chunks
-                context = self.rag.query(query)
+                context = await self.rag.query(query)
 
                 # STEP 4: Use LLM to analyze retrieved context
                 try:
-                    response = self.llm.chat(
+                    response = await self.llm.chat(
                         message=f"Based on the following excerpt from the SEC filing, answer: {query}",
                         context=context,
                     )
@@ -179,7 +179,7 @@ Be thorough but concise. Extract what matters most for investment decisions.""",
 Provide an investment recommendation.
 Format: DIRECTION|CONFIDENCE|REASONING"""
 
-                synthesis = self.llm.chat(synthesis_prompt)
+                synthesis = await self.llm.chat(synthesis_prompt)
 
                 # Parse LLM synthesis
                 from agent_framework import parse_llm_signal

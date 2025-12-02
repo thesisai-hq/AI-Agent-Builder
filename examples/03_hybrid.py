@@ -119,7 +119,7 @@ Be critical and thorough. Growth without quality is risky.""",
             print("  🧠 Running AI quality analysis...")
 
             # STAGE 2: LLM analysis (SLOW - seconds, but only on candidates)
-            return self._llm_quality_analysis(ticker, data)
+            return await self._llm_quality_analysis(ticker, data)
         else:
             # Didn't pass growth screening - skip LLM
             return Signal(
@@ -128,7 +128,7 @@ Be critical and thorough. Growth without quality is risky.""",
                 reasoning=f"Did not pass growth screening (Growth={revenue_growth:.1f}%, Margin={profit_margin:.1f}%). Criteria: Growth >15% AND Margin >10%",
             )
 
-    def _llm_quality_analysis(self, ticker: str, data: dict) -> Signal:
+    async def _llm_quality_analysis(self, ticker: str, data: dict) -> Signal:
         """Stage 2: Deep LLM analysis for quality assessment.
 
         This only runs on stocks that passed Stage 1 screening.
@@ -157,7 +157,7 @@ Format: DIRECTION|CONFIDENCE|REASONING"""
 
         try:
             # LLM analyzes quality
-            response = self.llm.chat(prompt)
+            response = await self.llm.chat(prompt)
             return parse_llm_signal(response, f"Hybrid analysis of {ticker}")
 
         except Exception as e:

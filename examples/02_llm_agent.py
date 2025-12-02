@@ -123,7 +123,7 @@ Example: bullish|75|Strong ROE of 25% indicates excellent management efficiency.
 
         try:
             # Query LLM (uses system prompt automatically)
-            response = self.llm.chat(prompt)
+            response = await self.llm.chat(prompt)
 
             # Parse LLM response
             return parse_llm_signal(response, f"Quality analysis of {ticker}")

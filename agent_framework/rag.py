@@ -8,6 +8,7 @@ WARNING: This implementation loads all documents into memory. For production:
 """
 
 import logging
+import asyncio
 from typing import List
 
 import numpy as np
@@ -118,7 +119,7 @@ class RAGSystem:
         logger.debug(f"Split text into {len(chunks)} chunks")
         return chunks
 
-    def add_document(self, text: str) -> int:
+    async def add_document(self, text: str) -> int:
         """Add document to RAG system.
 
         Args:
@@ -148,9 +149,9 @@ class RAGSystem:
 
             self.documents.extend(chunks)
 
-            # Generate embeddings
-            model = self._get_model()
-            new_embeddings = model.encode(chunks, show_progress_bar=False)
+            # Generate embeddings (offload encoding to thread to avoid blocking loop)
+            model = await asyncio.to_thread(self._get_model)
+            new_embeddings = await asyncio.to_thread(model.encode, chunks, show_progress_bar=False)
 
             if self.embeddings is None:
                 self.embeddings = new_embeddings
@@ -164,7 +165,7 @@ class RAGSystem:
             logger.error(f"Failed to add document: {e}")
             raise RAGError("Could not process document") from e
 
-    def query(self, question: str, return_scores: bool = False) -> str:
+    async def query(self, question: str, return_scores: bool = False) -> str:
         """Query documents and return relevant context.
 
         Args:
@@ -182,9 +183,11 @@ class RAGSystem:
             return ""
 
         try:
-            # Encode question
-            model = self._get_model()
-            query_embedding = model.encode([question], show_progress_bar=False)[0]
+            # Encode question (offload to thread)
+            model = await asyncio.to_thread(self._get_model)
+            query_embedding = (
+                await asyncio.to_thread(model.encode, [question], show_progress_bar=False)
+            )[0]
 
             # Calculate cosine similarity
             similarities = np.dot(self.embeddings, query_embedding) / (

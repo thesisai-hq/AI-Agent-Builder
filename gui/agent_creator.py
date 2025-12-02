@@ -170,8 +170,10 @@ class AgentCreator:
             # Sanitize custom queries
             safe_custom_queries = None
             if custom_queries:
-                safe_custom_queries = [self._escape_string_literal(q) for q in custom_queries if q and q.strip()]
-            
+                safe_custom_queries = [
+                    self._escape_string_literal(q) for q in custom_queries if q and q.strip()
+                ]
+
             return self._generate_rag_agent(
                 safe_agent_name,
                 safe_description,
@@ -564,7 +566,7 @@ class {agent_name}(Agent):
         prompt = f"""{prompt_content}"""
         
         try:
-            response = self.llm.chat(prompt)
+            response = await self.llm.chat(prompt)
             # Use enhanced parser that validates confidence quality
             return enhanced_parse_llm_signal(response, f"Analysis of {{ticker}}")
         except Exception as e:
@@ -626,35 +628,35 @@ if __name__ == "__main__":
         """
 
         safe_prompt = system_prompt or "You are a financial document analyst."
-        
+
         # Build queries list code
         if custom_queries and len(custom_queries) > 0:
             # User provided custom queries
             queries_code = "queries = [\n"
             for query in custom_queries:
                 queries_code += f'                "{query}",\n'
-            
+
             # If user_prompt_instructions provided, add as additional query
             if user_prompt_instructions and user_prompt_instructions.strip():
                 queries_code += f'                "{user_prompt_instructions}",\n'
-            
+
             queries_code += "            ]"
         else:
             # Use default queries
-            queries_code = '''queries = [
+            queries_code = """queries = [
                 "What are the key financial metrics and performance?",
                 "What are the main risks or challenges?",
                 "What are the growth opportunities?"
-            ]'''
-            
+            ]"""
+
             # If user_prompt_instructions provided, add as additional query
             if user_prompt_instructions and user_prompt_instructions.strip():
-                queries_code = f'''queries = [
+                queries_code = f"""queries = [
                 "What are the key financial metrics and performance?",
                 "What are the main risks or challenges?",
                 "What are the growth opportunities?",
                 "{user_prompt_instructions}"
-            ]'''
+            ]"""
 
         return f'''"""Auto-generated RAG-powered agent: {agent_name}
 
@@ -709,7 +711,7 @@ class {agent_name}(Agent):
             )
         
         try:
-            chunks_added = self.rag.add_document(document_text)
+            chunks_added = await self.rag.add_document(document_text)
             print(f"  📄 Processed {{chunks_added}} chunks")
             
             # Query questions for document analysis
@@ -717,9 +719,9 @@ class {agent_name}(Agent):
             
             insights = []
             for query in queries:
-                context = self.rag.query(query)
+                context = await self.rag.query(query)
                 try:
-                    response = self.llm.chat(
+                    response = await self.llm.chat(
                         message=f"Based on the document, answer: {{query}}",
                         context=context
                     )
@@ -880,7 +882,7 @@ class {agent_name}(Agent):
         prompt = f"""{prompt_content}"""
         
         try:
-            response = self.llm.chat(prompt)
+            response = await self.llm.chat(prompt)
             return enhanced_parse_llm_signal(response, f"Hybrid analysis of {{ticker}}")
         except Exception as e:
             print(f"⚠️  LLM error: {{e}}")

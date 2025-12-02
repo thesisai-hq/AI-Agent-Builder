@@ -256,7 +256,12 @@ class TestRAGSystem:
         rag = RAGSystem(config)
 
         text = "This is a test document with some content."
-        chunks_added = rag.add_document(text)
+        # RAG add_document is async
+        import pytest
+
+        import asyncio
+
+        chunks_added = asyncio.run(rag.add_document(text))
         assert chunks_added > 0
         assert len(rag.documents) > 0
 
@@ -268,11 +273,13 @@ class TestRAGSystem:
         rag = RAGSystem(config)
 
         # Add documents
-        rag.add_document("Apple is a technology company that makes iPhones.")
-        rag.add_document("Microsoft develops software and cloud services.")
+        import asyncio
+
+        asyncio.run(rag.add_document("Apple is a technology company that makes iPhones."))
+        asyncio.run(rag.add_document("Microsoft develops software and cloud services."))
 
         # Query
-        result = rag.query("Tell me about Apple")
+        result = asyncio.run(rag.query("Tell me about Apple"))
         assert len(result) > 0
 
     def test_clear(self):
@@ -282,7 +289,9 @@ class TestRAGSystem:
         config = RAGConfig()
         rag = RAGSystem(config)
 
-        rag.add_document("Test document")
+        import asyncio
+
+        asyncio.run(rag.add_document("Test document"))
         assert len(rag.documents) > 0
 
         rag.clear()

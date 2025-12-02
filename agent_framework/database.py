@@ -95,6 +95,14 @@ class Database:
             self._pool = None
             logger.info("Database disconnected")
 
+    # Implement the context manager protocol
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.disconnect()
+
     @asynccontextmanager
     async def acquire(self):
         """Acquire connection from pool.
