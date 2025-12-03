@@ -20,7 +20,7 @@ class DatabaseError(Exception):
     pass
 
 
-class ConnectionError(DatabaseError):
+class DBConnectionError(DatabaseError):
     """Database connection error."""
 
     pass
@@ -66,7 +66,7 @@ class Database:
         """Create connection pool.
 
         Raises:
-            ConnectionError: If connection fails
+            DBConnectionError: If connection fails
         """
         if self._pool is not None:
             logger.warning("Database already connected")
@@ -86,7 +86,7 @@ class Database:
             )
         except Exception as e:
             logger.error(f"Failed to connect to database: {e}")
-            raise ConnectionError(f"Could not connect to database: {e}") from e
+            raise DBConnectionError(f"Could not connect to database: {e}") from e
 
     async def disconnect(self) -> None:
         """Close connection pool."""
@@ -108,17 +108,17 @@ class Database:
         """Acquire connection from pool.
 
         Raises:
-            ConnectionError: If pool not initialized
+            DBConnectionError: If pool not initialized
         """
         if self._pool is None:
-            raise ConnectionError("Database not connected. Call connect() first.")
+            raise DBConnectionError("Database not connected. Call connect() first.")
 
         try:
             async with self._pool.acquire() as connection:
                 yield connection
         except asyncpg.PostgresError as e:
             logger.error(f"Database connection error: {e}")
-            raise ConnectionError(f"Failed to acquire connection: {e}") from e
+            raise DBConnectionError(f"Failed to acquire connection: {e}") from e
 
     @asynccontextmanager
     async def transaction(self):
@@ -131,7 +131,7 @@ class Database:
                 # Commits automatically on success, rolls back on error
 
         Raises:
-            ConnectionError: If connection fails
+            DBConnectionError: If connection fails
         """
         async with self.acquire() as conn:
             async with conn.transaction():
