@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .config import Config
 
@@ -157,13 +157,14 @@ class RAGConfig(BaseModel):
         "frozen": True,
     }
 
-    @field_validator("chunk_overlap")
-    @classmethod
-    def validate_overlap(cls, v: int, info) -> int:
-        """Ensure overlap is less than chunk size."""
-        if "chunk_size" in info.data and v >= info.data["chunk_size"]:
-            raise ValueError("chunk_overlap must be less than chunk_size")
-        return v
+    @model_validator(mode="after")
+    def validate_overlap(self) -> "RAGConfig":
+        if self.chunk_overlap >= self.chunk_size:
+            raise ValueError(
+                f"chunk_overlap ({self.chunk_overlap}) must be less than "
+                f"chunk_size ({self.chunk_size})"
+            )
+        return self
 
 
 class AgentConfig(BaseModel):
