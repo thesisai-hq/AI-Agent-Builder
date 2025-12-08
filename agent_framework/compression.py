@@ -1273,7 +1273,7 @@ def get_selective_compressor() -> SelectiveCompressor:
 
 
 def get_semantic_compressor(
-    compression_model: str = "gpt-4o-mini", provider: str = "openai"
+    compression_model: str = "llama3.2", provider: str = "ollama"
 ) -> SemanticCompressor:
     """Get singleton semantic compressor instance."""
     global _semantic_compressor
