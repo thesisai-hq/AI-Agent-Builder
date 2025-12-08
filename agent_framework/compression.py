@@ -288,8 +288,8 @@ class SemanticCompressor:
 
     def __init__(
         self,
-        compression_model: str = "gpt-4o-mini",
-        provider: str = "openai",
+        compression_model: str = "llama3.2",
+        provider: str = "ollama",
         temperature: float = 0.2,
         max_tokens: int = 500,
     ):
@@ -302,9 +302,9 @@ class SemanticCompressor:
             max_tokens: Max tokens for compression output
 
         Recommended configurations:
+            Ollama: llama3.2 (free, local) - DEFAULT  # <-- Add DEFAULT here
             OpenAI: gpt-4o-mini (cheap, fast)
             Anthropic: claude-3-5-haiku-20241022 (cheap, fast)
-            Ollama: llama3.2 (free, local, slower)
         """
         self.compression_model = compression_model
         self.provider = provider
@@ -641,7 +641,11 @@ class HybridCompressor:
         >>> # Total: 85% reduction
     """
 
-    def __init__(self, compression_model: str = "gpt-4o-mini", provider: str = "openai"):
+    def __init__(
+        self,
+        compression_model: str = "llama3.2",  # Changed from "gpt-4o-mini"
+        provider: str = "ollama",  # Changed from "openai"
+    ):
         """Initialize hybrid compressor.
 
         Args:
@@ -936,7 +940,11 @@ class AdaptiveCompressor:
     Best for: Varied content where you don't know length in advance
     """
 
-    def __init__(self, compression_model: str = "gpt-4o-mini", provider: str = "openai"):
+    def __init__(
+        self,
+        compression_model: str = "llama3.2",  # Changed from "gpt-4o-mini"
+        provider: str = "ollama",  # Changed from "openai"
+    ):
         """Initialize adaptive compressor.
 
         Args:
