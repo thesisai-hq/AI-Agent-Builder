@@ -38,7 +38,7 @@ from .compression import (
 )
 
 # Database
-from .database import ConnectionError, Database, DatabaseError, QueryError
+from .database import DBConnectionError, Database, DatabaseError, QueryError
 
 # LLM and RAG
 from .llm import APIError, LLMClient, LLMError, RateLimitError
@@ -66,7 +66,7 @@ __all__ = [
     "RateLimitError",
     "RAGError",
     "DatabaseError",
-    "ConnectionError",
+    "DBConnectionError",
     "QueryError",
     # API
     "api_app",

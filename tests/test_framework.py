@@ -121,9 +121,9 @@ class TestDatabase:
         """Test connection error handling."""
         db = Database("postgresql://invalid:invalid@localhost:9999/nonexistent")
 
-        from agent_framework.database import ConnectionError
+        from agent_framework.database import DBConnectionError
 
-        with pytest.raises(ConnectionError):
+        with pytest.raises(DBConnectionError):
             await db.connect()
 
     @pytest.mark.asyncio

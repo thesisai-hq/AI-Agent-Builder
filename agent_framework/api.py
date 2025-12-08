@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from .config import Config
-from .database import ConnectionError as DBConnectionError
+from .database import DBConnectionError
 from .database import Database, DatabaseError
 
 # Configure logging
