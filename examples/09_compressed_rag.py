@@ -65,8 +65,8 @@ class CompressedRAGAgent(Agent):
                 top_k=10,  # Retrieve MORE chunks than usual (was 3)
             ),
             llm=LLMConfig(
-                provider="openai",
-                model="gpt-4o",
+                provider="ollama",
+                compression_model="llama3.2",
                 temperature=0.5,
                 max_tokens=1500,
                 system_prompt="You are a financial document analyst. Provide concise, factual insights.",
@@ -75,7 +75,7 @@ class CompressedRAGAgent(Agent):
         super().__init__(config)
 
         # Initialize compressor
-        self.compressor = SemanticCompressor(provider="openai", model="gpt-4o-mini")
+        self.compressor = SemanticCompressor(provider="ollama", compression_model="llama3.2")
 
         # Track metrics
         self.metrics = CompressionMetrics()
