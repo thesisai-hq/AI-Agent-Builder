@@ -5,7 +5,7 @@ a single source of truth.
 """
 
 import re
-from typing import Dict, Optional
+from typing import Dict
 
 
 class LLMErrorHandler:
@@ -19,31 +19,41 @@ class LLMErrorHandler:
             signal: Signal object with reasoning
 
         Returns:
-            True if this is a fallback signal
+            True if this is a fallback signal indicating LLM failure
         """
         reasoning = signal.reasoning.lower()
 
+        # These indicators suggest the LLM itself failed, not other systems
         fallback_indicators = [
             "llm unavailable",
             "llm error",
             "llm service unavailable",
             "using fallback",
-            "no module named",
-            "connection refused",
-            "connection failed",
+            "no module named 'ollama'",
+            "no module named 'openai'",
+            "no module named 'anthropic'",
             "api error",
             "rate limit",
-            "authentication",
             "api key",
             "model not found",
-            "not downloaded",
+            "model not downloaded",
+            "ollama",  # Specific to Ollama errors
+            "openai",  # Specific to OpenAI errors
+            "anthropic",  # Specific to Anthropic errors
         ]
 
         return any(indicator in reasoning for indicator in fallback_indicators)
 
     @staticmethod
     def parse_error(reasoning: str) -> Dict:
-        """Parse LLM error reasoning to extract useful information.
+        """Parse error reasoning to extract useful information.
+
+        Distinguishes between:
+        - LLM/Ollama connection errors
+        - Database connection errors
+        - Package import errors
+        - API key errors
+        - Other errors
 
         Args:
             reasoning: Signal reasoning string or error message
@@ -61,7 +71,9 @@ class LLMErrorHandler:
             "description": "",
         }
 
-        # Module not found errors
+        # =================================================================
+        # 1. Module/Package not found errors
+        # =================================================================
         if "no module named 'ollama'" in reasoning_lower or "import ollama" in reasoning_lower:
             error_info.update(
                 {
@@ -71,6 +83,7 @@ class LLMErrorHandler:
                     "description": "Ollama Python package not installed",
                 }
             )
+
         elif "no module named 'openai'" in reasoning_lower or "import openai" in reasoning_lower:
             error_info.update(
                 {
@@ -80,6 +93,7 @@ class LLMErrorHandler:
                     "description": "OpenAI Python package not installed",
                 }
             )
+
         elif (
             "no module named 'anthropic'" in reasoning_lower
             or "import anthropic" in reasoning_lower
@@ -93,8 +107,38 @@ class LLMErrorHandler:
                 }
             )
 
-        # Connection errors (Ollama not running)
-        elif "connection refused" in reasoning_lower or "connect" in reasoning_lower:
+        # =================================================================
+        # 2. Database connection errors (NOT LLM errors!)
+        # =================================================================
+        elif any(
+            db_indicator in reasoning_lower
+            for db_indicator in [
+                "database",
+                "postgresql",
+                "postgres",
+                "asyncpg",
+                "psycopg",
+                "db_host",
+                "db_port",
+                "fundamentals",  # Table name from our schema
+                "thesis_data",  # Schema name
+            ]
+        ):
+            error_info.update(
+                {
+                    "error_type": "database_error",
+                    "provider": None,
+                    "install_command": None,
+                    "description": "Database connection error. Check PostgreSQL is running and credentials are correct.",
+                }
+            )
+
+        # =================================================================
+        # 3. Ollama-specific connection errors
+        # =================================================================
+        elif "ollama" in reasoning_lower and (
+            "connection" in reasoning_lower or "refused" in reasoning_lower
+        ):
             error_info.update(
                 {
                     "error_type": "connection_error",
@@ -104,12 +148,25 @@ class LLMErrorHandler:
                 }
             )
 
-        # Model not found (need to pull)
-        elif (
-            "model" in reasoning_lower
-            and ("not found" in reasoning_lower or "not downloaded" in reasoning_lower)
+        # =================================================================
+        # 4. Generic connection errors on port 11434 (Ollama's default port)
+        # =================================================================
+        elif "11434" in reasoning_lower and "connection" in reasoning_lower:
+            error_info.update(
+                {
+                    "error_type": "connection_error",
+                    "provider": "ollama",
+                    "install_command": None,
+                    "description": "Ollama service not running. Start with: ollama serve",
+                }
+            )
+
+        # =================================================================
+        # 5. Model not found (need to pull)
+        # =================================================================
+        elif "model" in reasoning_lower and (
+            "not found" in reasoning_lower or "not downloaded" in reasoning_lower
         ):
-            # Try to extract model name from reasoning
             model_match = re.search(r"model[\s'\"]*([a-z0-9\.:_-]+)", reasoning_lower)
             model_name = model_match.group(1) if model_match else "llama3.2"
 
@@ -123,7 +180,9 @@ class LLMErrorHandler:
                 }
             )
 
-        # API key errors
+        # =================================================================
+        # 6. API key errors
+        # =================================================================
         elif "api key" in reasoning_lower or "authentication" in reasoning_lower:
             if "openai" in reasoning_lower:
                 provider = "openai"
@@ -144,7 +203,9 @@ class LLMErrorHandler:
                 }
             )
 
-        # Rate limit errors
+        # =================================================================
+        # 7. Rate limit errors
+        # =================================================================
         elif "rate limit" in reasoning_lower:
             error_info.update(
                 {
@@ -155,7 +216,9 @@ class LLMErrorHandler:
                 }
             )
 
-        # Timeout errors
+        # =================================================================
+        # 8. Timeout errors
+        # =================================================================
         elif "timeout" in reasoning_lower or "timed out" in reasoning_lower:
             error_info.update(
                 {
@@ -166,14 +229,32 @@ class LLMErrorHandler:
                 }
             )
 
-        # Generic LLM error
-        else:
+        # =================================================================
+        # 9. Generic LLM errors (only if LLM-related keywords present)
+        # =================================================================
+        elif any(
+            llm_keyword in reasoning_lower
+            for llm_keyword in ["llm", "ollama", "openai", "anthropic", "gpt", "claude"]
+        ):
             error_info.update(
                 {
                     "error_type": "llm_error",
                     "provider": None,
                     "install_command": None,
                     "description": "LLM service encountered an error",
+                }
+            )
+
+        # =================================================================
+        # 10. Unknown errors - don't assume LLM
+        # =================================================================
+        else:
+            error_info.update(
+                {
+                    "error_type": "unknown",
+                    "provider": None,
+                    "install_command": None,
+                    "description": str(reasoning)[:200],  # First 200 chars of error
                 }
             )
 
@@ -255,6 +336,46 @@ ollama serve
 
 Keep the terminal open while using the GUI."""
 
+        elif error_type == "database_error":
+            return """❌ **Database Connection Error**
+
+**Problem:** Cannot connect to PostgreSQL database
+
+**Solutions:**
+
+1. **Check if PostgreSQL is running:**
+```bash
+# Docker
+docker ps | grep postgres
+
+# Or check service
+systemctl status postgresql
+```
+
+2. **Start the database:**
+```bash
+# If using Docker
+cd AI-Agent-Builder
+docker-compose up -d
+
+# Or start PostgreSQL service
+systemctl start postgresql
+```
+
+3. **Verify connection settings in `.env`:**
+```bash
+DB_HOST=localhost
+DB_PORT=5433
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=agent_framework
+```
+
+4. **Run database setup:**
+```bash
+python setup_test_db.py
+```"""
+
         elif error_type == "missing_api_key":
             provider = error_info.get("provider", "unknown")
             env_var = f"{provider.upper()}_API_KEY" if provider != "unknown" else "API_KEY"
@@ -279,7 +400,7 @@ nano .env
 Then restart the GUI."""
 
         elif error_type == "rate_limit":
-            return """❌ **Rate Limit Exceeded**
+            return """⚠️ **Rate Limit Exceeded**
 
 **Problem:** Too many API requests
 
@@ -298,7 +419,7 @@ Then restart the GUI."""
 - If using Ollama, check if `ollama serve` is running
 - For API providers, check your internet connection"""
 
-        else:
+        elif error_type == "llm_error":
             return f"""❌ **LLM Error**
 
 **Problem:** {error_info.get("description", "LLM service encountered an error")}
@@ -308,3 +429,16 @@ Then restart the GUI."""
 2. Verify API keys are set in `.env` file
 3. Check internet connection
 4. Try a different LLM provider"""
+
+        else:
+            # Unknown error - show the actual error message
+            description = error_info.get("description", "Unknown error occurred")
+            return f"""❌ **Error**
+
+**Details:** {description}
+
+**Troubleshooting:**
+- Check that all dependencies are installed
+- Verify database is running (for Rule-Based agents)
+- Check LLM service is running (for LLM agents)
+- Review the error message above for specific issues"""
